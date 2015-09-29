@@ -14,6 +14,7 @@ import (
 
 	"./connectforward"
 	"./lanternpro"
+	"./tokenfilter"
 )
 
 var (
@@ -21,6 +22,7 @@ var (
 	keyfile = flag.String("keyfile", "", "the cert key file name")
 	https   = flag.Bool("https", false, "listen on https")
 	addr    = flag.String("addr", ":8080", "the address to listen")
+	token   = flag.String("token", "", "Lantern token")
 
 	tenYearsFromToday  = time.Now().AddDate(10, 0, 0)
 	processStart       = time.Now()
@@ -34,10 +36,20 @@ func main() {
 		return
 	}
 
+	// The following middleware is run from last to first:
+	var handler http.Handler
+
 	// Handles CONNECT and direct proxying requests
 	connectFwd, _ := connectforward.New()
-	// Processes requests before passing them to HTTPConnectForwarder
+	// Handles Lantern Pro users
 	lanternPro, _ := lanternpro.New(connectFwd)
+	if *token != "" {
+		// Bounces back requests without the proper token
+		tokenFilter, _ := tokenfilter.New(lanternPro, *token)
+		handler = tokenFilter
+	} else {
+		handler = lanternPro
+	}
 
 	var l net.Listener
 	var err error
@@ -52,7 +64,7 @@ func main() {
 	}
 
 	proxy := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		lanternPro.ServeHTTP(w, req)
+		handler.ServeHTTP(w, req)
 	})
 
 	http.Serve(l, proxy)
