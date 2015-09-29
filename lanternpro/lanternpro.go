@@ -15,5 +15,9 @@ func New(next http.Handler) (*LanternProFilter, error) {
 }
 
 func (f *LanternProFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	f.next.ServeHTTP(w, req)
+	if req.Header.Get("X-Lantern-Auth-Token") == "" {
+
+	} else {
+		f.next.ServeHTTP(w, req)
+	}
 }
