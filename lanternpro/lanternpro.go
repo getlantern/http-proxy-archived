@@ -1,9 +1,15 @@
+// Lantern Pro middleware will identify Pro users and forward their requests
+// immediately.  It will intercept non-Pro users and limit their total transfer
+
 package lanternpro
 
 import (
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/Workiva/go-datastructures/set"
@@ -19,9 +25,10 @@ type LanternProFilter struct {
 }
 
 type Client struct {
-	Created    time.Time
-	LastAccess time.Time
-	NumBytes   uint64
+	Created     time.Time
+	LastAccess  time.Time
+	TransferIn  int64
+	TransferOut int64
 }
 
 func New(next http.Handler) (*LanternProFilter, error) {
@@ -75,14 +82,15 @@ func (f *LanternProFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		client.LastAccess = time.Now()
 		f.clientRegistry.Insert(key, client)
 	} else {
-		f.clientRegistry.Insert(key,
-			Client{
-				Created:    time.Now(),
-				LastAccess: time.Now(),
-				NumBytes:   0,
-			})
+		clientPtr := &Client{
+			Created:     time.Now(),
+			LastAccess:  time.Now(),
+			TransferIn:  0,
+			TransferOut: 0,
+		}
+		f.clientRegistry.Insert(key, *clientPtr)
 	}
-	f.next.ServeHTTP(w, req)
+	f.intercept(key, client, w, req)
 
 	//clientCache.Add(key, client)
 }
@@ -93,8 +101,96 @@ func (f *LanternProFilter) GatherData(w io.Writer, period time.Duration) {
 			time.Sleep(period)
 			snapshot := f.clientRegistry.Snapshot()
 			for entry := range snapshot.Iterator(nil) {
-				fmt.Fprintf(w, "%s: %v\n", entry.Key, entry.Value.(Client).NumBytes)
+				fmt.Fprintf(w, "%s  In: %v, Out: %v\n",
+					entry.Key,
+					entry.Value.(Client).TransferIn,
+					entry.Value.(Client).TransferOut)
 			}
 		}
 	}()
+}
+
+func (f *LanternProFilter) intercept(key []byte, client Client, w http.ResponseWriter, req *http.Request) {
+	var err error
+	var wg sync.WaitGroup
+	if req.Method == "CONNECT" {
+		var clientConn net.Conn
+		var connOut net.Conn
+
+		respondOK(w, req)
+		if clientConn, _, err = w.(http.Hijacker).Hijack(); err != nil {
+			respondBadGateway(w, req, fmt.Sprintf("Unable to hijack connection: %s", err))
+			return
+		}
+		connOut, err = net.Dial("tcp", req.Host)
+		// Pipe data through CONNECT tunnel
+		closeConns := func() {
+			if clientConn != nil {
+				if err := clientConn.Close(); err != nil {
+					fmt.Printf("Error closing the out connection: %s", err)
+				}
+			}
+			if connOut != nil {
+				if err := connOut.Close(); err != nil {
+					fmt.Printf("Error closing the client connection: %s", err)
+				}
+			}
+		}
+		var closeOnce sync.Once
+		wg.Add(1)
+		go func() {
+			n, _ := io.Copy(connOut, clientConn)
+			atomic.AddInt64(&client.TransferIn, n)
+			closeOnce.Do(closeConns)
+			wg.Done()
+
+		}()
+		n, _ := io.Copy(clientConn, connOut)
+		atomic.AddInt64(&client.TransferOut, n)
+		closeOnce.Do(closeConns)
+		fmt.Println("== CONNECT DONE ==")
+	} else {
+		f.next.ServeHTTP(w, req)
+		// TODO: byte counting in this case
+	}
+	wg.Wait()
+	f.clientRegistry.Insert(key, client)
+}
+
+func respondOK(writer io.Writer, req *http.Request) error {
+	defer func() {
+		if err := req.Body.Close(); err != nil {
+			fmt.Printf("Error closing body of OK response: %s", err)
+		}
+	}()
+
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		ProtoMajor: 1,
+		ProtoMinor: 1,
+	}
+
+	return resp.Write(writer)
+}
+
+func respondBadGateway(w io.Writer, req *http.Request, msgs ...string) {
+	defer func() {
+		if err := req.Body.Close(); err != nil {
+			fmt.Printf("Error closing body of OK response: %s", err)
+		}
+	}()
+
+	resp := &http.Response{
+		StatusCode: http.StatusBadGateway,
+		ProtoMajor: 1,
+		ProtoMinor: 1,
+	}
+	err := resp.Write(w)
+	if err == nil {
+		for _, msg := range msgs {
+			if _, err = w.Write([]byte(msg)); err != nil {
+				fmt.Printf("Error writing error to io.Writer: %s", err)
+			}
+		}
+	}
 }
