@@ -1,3 +1,3 @@
 #!/usr/bin/env sh
 
-go run main.go log.go tls.go -token=111
+go run -race main.go log.go tls.go -token=111

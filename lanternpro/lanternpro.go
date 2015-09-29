@@ -15,6 +15,8 @@ import (
 	"github.com/Workiva/go-datastructures/set"
 	"github.com/Workiva/go-datastructures/trie/ctrie"
 	//"github.com/hashicorp/golang-lru"
+
+	"../utils"
 )
 
 type LanternProFilter struct {
@@ -25,6 +27,7 @@ type LanternProFilter struct {
 }
 
 type Client struct {
+	sync.Mutex
 	Created     time.Time
 	LastAccess  time.Time
 	TransferIn  int64
@@ -61,7 +64,7 @@ func (f *LanternProFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// If this point is reached, handle the request as a non-Pro user
-	var client Client
+	var client *Client
 	key := []byte(lanternUID)
 
 	// Try first in the cache
@@ -78,19 +81,21 @@ func (f *LanternProFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	*/
 
 	if val, ok := f.clientRegistry.Lookup(key); ok {
-		client = val.(Client)
-		client.LastAccess = time.Now()
-		f.clientRegistry.Insert(key, client)
+		client = val.(*Client)
+		//client.LastAccess = time.Now()
+		//f.clientRegistry.Insert(key, client)
 	} else {
-		clientPtr := &Client{
+		client = &Client{
 			Created:     time.Now(),
 			LastAccess:  time.Now(),
 			TransferIn:  0,
 			TransferOut: 0,
 		}
-		f.clientRegistry.Insert(key, *clientPtr)
+		f.clientRegistry.Insert(key, client)
 	}
-	f.intercept(key, client, w, req)
+	var atomicClient atomic.Value
+	atomicClient.Store(client)
+	f.intercept(key, atomicClient, w, req)
 
 	//clientCache.Add(key, client)
 }
@@ -101,25 +106,28 @@ func (f *LanternProFilter) GatherData(w io.Writer, period time.Duration) {
 			time.Sleep(period)
 			snapshot := f.clientRegistry.Snapshot()
 			for entry := range snapshot.Iterator(nil) {
+				client := entry.Value.(*Client)
+				client.Lock()
 				fmt.Fprintf(w, "%s  In: %v, Out: %v\n",
 					entry.Key,
-					entry.Value.(Client).TransferIn,
-					entry.Value.(Client).TransferOut)
+					client.TransferIn,
+					client.TransferOut)
+				client.Unlock()
 			}
 		}
 	}()
 }
 
-func (f *LanternProFilter) intercept(key []byte, client Client, w http.ResponseWriter, req *http.Request) {
+func (f *LanternProFilter) intercept(key []byte, atomicClient atomic.Value, w http.ResponseWriter, req *http.Request) {
 	var err error
 	var wg sync.WaitGroup
 	if req.Method == "CONNECT" {
 		var clientConn net.Conn
 		var connOut net.Conn
 
-		respondOK(w, req)
+		utils.RespondOK(w, req)
 		if clientConn, _, err = w.(http.Hijacker).Hijack(); err != nil {
-			respondBadGateway(w, req, fmt.Sprintf("Unable to hijack connection: %s", err))
+			utils.RespondBadGateway(w, req, fmt.Sprintf("Unable to hijack connection: %s", err))
 			return
 		}
 		connOut, err = net.Dial("tcp", req.Host)
@@ -140,13 +148,21 @@ func (f *LanternProFilter) intercept(key []byte, client Client, w http.ResponseW
 		wg.Add(1)
 		go func() {
 			n, _ := io.Copy(connOut, clientConn)
-			atomic.AddInt64(&client.TransferIn, n)
+			client := atomicClient.Load().(*Client)
+			client.Lock()
+			client.TransferIn = client.TransferIn + n
+			client.Unlock()
 			closeOnce.Do(closeConns)
 			wg.Done()
 
 		}()
 		n, _ := io.Copy(clientConn, connOut)
-		atomic.AddInt64(&client.TransferOut, n)
+
+		client := atomicClient.Load().(*Client)
+		client.Lock()
+		client.TransferOut = client.TransferOut + n
+		client.Unlock()
+
 		closeOnce.Do(closeConns)
 		fmt.Println("== CONNECT DONE ==")
 	} else {
@@ -154,43 +170,4 @@ func (f *LanternProFilter) intercept(key []byte, client Client, w http.ResponseW
 		// TODO: byte counting in this case
 	}
 	wg.Wait()
-	f.clientRegistry.Insert(key, client)
-}
-
-func respondOK(writer io.Writer, req *http.Request) error {
-	defer func() {
-		if err := req.Body.Close(); err != nil {
-			fmt.Printf("Error closing body of OK response: %s", err)
-		}
-	}()
-
-	resp := &http.Response{
-		StatusCode: http.StatusOK,
-		ProtoMajor: 1,
-		ProtoMinor: 1,
-	}
-
-	return resp.Write(writer)
-}
-
-func respondBadGateway(w io.Writer, req *http.Request, msgs ...string) {
-	defer func() {
-		if err := req.Body.Close(); err != nil {
-			fmt.Printf("Error closing body of OK response: %s", err)
-		}
-	}()
-
-	resp := &http.Response{
-		StatusCode: http.StatusBadGateway,
-		ProtoMajor: 1,
-		ProtoMinor: 1,
-	}
-	err := resp.Write(w)
-	if err == nil {
-		for _, msg := range msgs {
-			if _, err = w.Write([]byte(msg)); err != nil {
-				fmt.Printf("Error writing error to io.Writer: %s", err)
-			}
-		}
-	}
 }

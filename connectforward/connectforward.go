@@ -8,6 +8,8 @@ import (
 	"sync"
 
 	"github.com/mailgun/oxy/forward"
+
+	"../utils"
 )
 
 type HTTPConnectForwarder struct {
@@ -30,9 +32,9 @@ func (p *HTTPConnectForwarder) ServeHTTP(w http.ResponseWriter, req *http.Reques
 		var clientConn net.Conn
 		var connOut net.Conn
 
-		respondOK(w, req)
+		utils.RespondOK(w, req)
 		if clientConn, _, err = w.(http.Hijacker).Hijack(); err != nil {
-			respondBadGateway(w, req, fmt.Sprintf("Unable to hijack connection: %s", err))
+			utils.RespondBadGateway(w, req, fmt.Sprintf("Unable to hijack connection: %s", err))
 			return
 		}
 		connOut, err = net.Dial("tcp", req.Host)
@@ -60,43 +62,5 @@ func (p *HTTPConnectForwarder) ServeHTTP(w http.ResponseWriter, req *http.Reques
 	} else {
 		p.fwd.ServeHTTP(w, req)
 		fmt.Println("== DIRECT PROXYING DONE ==")
-	}
-}
-
-func respondOK(writer io.Writer, req *http.Request) error {
-	defer func() {
-		if err := req.Body.Close(); err != nil {
-			fmt.Printf("Error closing body of OK response: %s", err)
-		}
-	}()
-
-	resp := &http.Response{
-		StatusCode: http.StatusOK,
-		ProtoMajor: 1,
-		ProtoMinor: 1,
-	}
-
-	return resp.Write(writer)
-}
-
-func respondBadGateway(w io.Writer, req *http.Request, msgs ...string) {
-	defer func() {
-		if err := req.Body.Close(); err != nil {
-			fmt.Printf("Error closing body of OK response: %s", err)
-		}
-	}()
-
-	resp := &http.Response{
-		StatusCode: http.StatusBadGateway,
-		ProtoMajor: 1,
-		ProtoMinor: 1,
-	}
-	err := resp.Write(w)
-	if err == nil {
-		for _, msg := range msgs {
-			if _, err = w.Write([]byte(msg)); err != nil {
-				fmt.Printf("Error writing error to io.Writer: %s", err)
-			}
-		}
 	}
 }
