@@ -27,7 +27,6 @@ type LanternProFilter struct {
 }
 
 type Client struct {
-	sync.Mutex
 	Created     time.Time
 	LastAccess  time.Time
 	TransferIn  int64
@@ -107,12 +106,10 @@ func (f *LanternProFilter) GatherData(w io.Writer, period time.Duration) {
 			snapshot := f.clientRegistry.Snapshot()
 			for entry := range snapshot.Iterator(nil) {
 				client := entry.Value.(*Client)
-				client.Lock()
 				fmt.Fprintf(w, "%s  In: %v, Out: %v\n",
 					entry.Key,
-					client.TransferIn,
-					client.TransferOut)
-				client.Unlock()
+					atomic.LoadInt64(&client.TransferIn),
+					atomic.LoadInt64(&client.TransferOut))
 			}
 		}
 	}()
@@ -120,7 +117,6 @@ func (f *LanternProFilter) GatherData(w io.Writer, period time.Duration) {
 
 func (f *LanternProFilter) intercept(key []byte, atomicClient atomic.Value, w http.ResponseWriter, req *http.Request) {
 	var err error
-	var wg sync.WaitGroup
 	if req.Method == "CONNECT" {
 		var clientConn net.Conn
 		var connOut net.Conn
@@ -145,23 +141,17 @@ func (f *LanternProFilter) intercept(key []byte, atomicClient atomic.Value, w ht
 			}
 		}
 		var closeOnce sync.Once
-		wg.Add(1)
 		go func() {
 			n, _ := io.Copy(connOut, clientConn)
 			client := atomicClient.Load().(*Client)
-			client.Lock()
-			client.TransferIn = client.TransferIn + n
-			client.Unlock()
+			atomic.AddInt64(&client.TransferIn, n)
 			closeOnce.Do(closeConns)
-			wg.Done()
 
 		}()
 		n, _ := io.Copy(clientConn, connOut)
 
 		client := atomicClient.Load().(*Client)
-		client.Lock()
-		client.TransferOut = client.TransferOut + n
-		client.Unlock()
+		atomic.AddInt64(&client.TransferOut, n)
 
 		closeOnce.Do(closeConns)
 		fmt.Println("== CONNECT DONE ==")
@@ -169,5 +159,4 @@ func (f *LanternProFilter) intercept(key []byte, atomicClient atomic.Value, w ht
 		f.next.ServeHTTP(w, req)
 		// TODO: byte counting in this case
 	}
-	wg.Wait()
 }
