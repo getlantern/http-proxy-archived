@@ -59,6 +59,7 @@ func (p *HTTPConnectForwarder) ServeHTTP(w http.ResponseWriter, req *http.Reques
 		fmt.Println("== CONNECT DONE ==")
 	} else {
 		p.fwd.ServeHTTP(w, req)
+		fmt.Println("== DIRECT PROXYING DONE ==")
 	}
 }
 
