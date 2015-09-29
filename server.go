@@ -7,12 +7,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/getlantern/golog"
 	"github.com/mailgun/oxy/forward"
-)
-
-var (
-	log = golog.LoggerFor("server")
 )
 
 // Server provides the upstream side of a chained proxy setup. It can be run as
