@@ -32,7 +32,7 @@ func (p *HTTPConnectForwarder) ServeHTTP(w http.ResponseWriter, req *http.Reques
 
 		respondOK(w, req)
 		if clientConn, _, err = w.(http.Hijacker).Hijack(); err != nil {
-			respondBadGateway(w, fmt.Sprintf("Unable to hijack connection: %s", err))
+			respondBadGateway(w, req, fmt.Sprintf("Unable to hijack connection: %s", err))
 			return
 		}
 		connOut, err = net.Dial("tcp", req.Host)
@@ -79,8 +79,13 @@ func respondOK(writer io.Writer, req *http.Request) error {
 	return resp.Write(writer)
 }
 
-func respondBadGateway(w io.Writer, msg string) {
-	fmt.Printf("Responding BadGateway: %v", msg)
+func respondBadGateway(w io.Writer, req *http.Request, msgs ...string) {
+	defer func() {
+		if err := req.Body.Close(); err != nil {
+			fmt.Printf("Error closing body of OK response: %s", err)
+		}
+	}()
+
 	resp := &http.Response{
 		StatusCode: http.StatusBadGateway,
 		ProtoMajor: 1,
@@ -88,8 +93,10 @@ func respondBadGateway(w io.Writer, msg string) {
 	}
 	err := resp.Write(w)
 	if err == nil {
-		if _, err = w.Write([]byte(msg)); err != nil {
-			fmt.Printf("Error writing error to io.Writer: %s", err)
+		for _, msg := range msgs {
+			if _, err = w.Write([]byte(msg)); err != nil {
+				fmt.Printf("Error writing error to io.Writer: %s", err)
+			}
 		}
 	}
 }
