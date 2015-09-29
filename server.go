@@ -1,4 +1,4 @@
-package chained
+package main
 
 import (
 	"fmt"
@@ -7,7 +7,12 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/getlantern/golog"
 	"github.com/mailgun/oxy/forward"
+)
+
+var (
+	log = golog.LoggerFor("server")
 )
 
 // Server provides the upstream side of a chained proxy setup. It can be run as
@@ -35,8 +40,7 @@ func (s *Server) Serve(l net.Listener) error {
 
 // ServeHTTP implements the method from http.Handler.
 func (s *Server) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	//log.Debugf("Got request from %s: %+v", req.Host, req)
-	log.Debugf("Got request from %s", req.Host)
+	log.Debugf("Got request to %s", req.Host)
 	if s.Checker != nil {
 		if err := s.Checker(req); err != nil {
 			log.Debugf("Checker failed %s: %s", req.Host, err)
@@ -44,7 +48,7 @@ func (s *Server) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 			return
 		}
 	}
-	if req.Method == httpConnectMethod {
+	if req.Method == "CONNECT" {
 		s.handleCONNECT(resp, req)
 		return
 	}

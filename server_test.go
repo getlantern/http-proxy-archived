@@ -1,4 +1,4 @@
-package chained
+package main
 
 import (
 	"errors"
@@ -121,4 +121,23 @@ func TestAuth(t *testing.T) {
 	var buf [400]byte
 	_, err = con.Read(buf[:])
 	assert.Contains(t, string(buf[:]), resp, "should get 404 Not Found")
+}
+
+func startServer(t *testing.T) (addr net.Addr, s *Server) {
+	l, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		t.Fatalf("Unable to listen: %s", err)
+	}
+
+	s = &Server{
+		Dial: net.Dial,
+	}
+	go func() {
+		err := s.Serve(l)
+		if err != nil {
+			t.Fatalf("Unable to serve: %s", err)
+		}
+	}()
+
+	return l.Addr(), s
 }
