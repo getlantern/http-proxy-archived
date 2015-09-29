@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"./connectforward"
 	"./lanternpro"
@@ -46,8 +47,8 @@ func main() {
 	var l net.Listener
 	var err error
 	if *https {
-		panic("TLS not implemted")
-		l, err = listenTLS()
+		panic("TLS support not implemented")
+		l, err = listenTLS(*addr)
 	} else {
 		l, err = net.Listen("tcp", *addr)
 	}
@@ -58,6 +59,8 @@ func main() {
 	proxy := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		handler.ServeHTTP(w, req)
 	})
+
+	lanternPro.GatherData(os.Stdout, time.Second)
 
 	http.Serve(l, proxy)
 }
