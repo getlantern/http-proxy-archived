@@ -6,16 +6,10 @@ First get dependencies:
 ```
 go get -t
 ```
-
-Compile and run:
-```
-go build && ./chained-server
-```
-
-Or run directly:
+Then run with:
 
 ```
-go run main.go
+./run-server.sh
 ```
 
 ## Test
@@ -23,14 +17,15 @@ go run main.go
 Direct proxying:
 
 ```
-curl -vLkx localhost:8080 http://bing.com --proxy-header "X-Lantern-Auth-Token: 111"
-curl -vLkx localhost:8080 https://bing.com --proxy-header "X-Lantern-Auth-Token: 111"
+curl -kvx localhost:8080 http://www.google.com/humans.txt --proxy-header "X-Lantern-Auth-Token: 111"
+curl -kvx localhost:8080 https://www.google.com/humans.txt --proxy-header "X-Lantern-Auth-Token: 111"
 ```
 
 Using HTTP connect:
 
 ```
-curl -vLkxp localhost:8080 http://bing.com --proxy-header "X-Lantern-Auth-Token: 111"
+curl -kpvx localhost:8080 http://www.google.com/humans.txt --proxy-header "X-Lantern-Auth-Token: 111"
+curl -kpvx localhost:8080 https://www.google.com/humans.txt --proxy-header "X-Lantern-Auth-Token: 111"
 ```
 
 Without the header, it will respond `404 Not Found`.

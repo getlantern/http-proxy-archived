@@ -1,5 +1,12 @@
 package main
 
+import (
+	"fmt"
+	"io"
+	"math"
+	"time"
+)
+
 type timestamped struct {
 	w io.Writer
 }
