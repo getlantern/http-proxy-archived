@@ -37,14 +37,25 @@ func upsertRedisEntry(key []byte, client *lanternpro.Client) {
 			atomic.LoadInt64(&client.BytesIn),
 			atomic.LoadInt64(&client.BytesOut))
 	}
+	var err error
 	// We are not supposed to be updating a user concurrently, since it's
 	// going to be assigned to one server only.  We are just being cautious
 	// here
-	err := redisClient.HMSet("client:"+string(key),
-		"bytesIn",
-		strconv.FormatInt(atomic.LoadInt64(&client.BytesIn), 10),
-		"bytesOut",
-		strconv.FormatInt(atomic.LoadInt64(&client.BytesOut), 10)).Err()
+	bytesIn := atomic.LoadInt64(&client.BytesIn)
+	bytesOut := atomic.LoadInt64(&client.BytesOut)
+	err = redisClient.HMSet("client:"+string(key),
+		"bytesIn", strconv.FormatInt(bytesIn, 10),
+		"bytesOut", strconv.FormatInt(bytesOut, 10)).Err()
+	if err != nil {
+		fmt.Printf("Error setting Redis key: %v\n", err)
+	}
+	// An auxiliary ordered set for aggregated bytesIn+bytesOut
+	// Redis stores scores as float64
+	err = redisClient.ZAdd("client->bytes",
+		redis.Z{
+			float64(bytesIn + bytesOut),
+			string(key),
+		}).Err()
 	if err != nil {
 		fmt.Printf("Error setting Redis key: %v\n", err)
 	}
