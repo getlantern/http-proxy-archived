@@ -28,4 +28,6 @@ curl -kpvx localhost:8080 http://www.google.com/humans.txt --proxy-header "X-Lan
 curl -kpvx localhost:8080 https://www.google.com/humans.txt --proxy-header "X-Lantern-Auth-Token: 111"
 ```
 
+*Keep in mind that cURL doesn't support tunneling through an HTTPS proxy, so if you use the -https option you have to use other tools for testing*
+
 Without the header, it will respond `404 Not Found`.

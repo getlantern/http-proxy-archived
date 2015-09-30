@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -46,7 +47,6 @@ func main() {
 	var l net.Listener
 	var err error
 	if *https {
-		panic("TLS support not implemented")
 		l, err = listenTLS(*addr)
 	} else {
 		l, err = net.Listen("tcp", *addr)
@@ -57,7 +57,8 @@ func main() {
 
 	// Data gathering
 	if err = connectRedis(); err != nil {
-		panic(err)
+		fmt.Printf("Error connecting to Redis: %v,\nWARNING: NOT REPORTING TO REDIS\n", err)
+		// panic(err)
 	}
 	lanternPro.ScanClientsSnapshot(upsertRedisEntry, time.Second)
 

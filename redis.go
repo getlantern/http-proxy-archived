@@ -31,6 +31,7 @@ func connectRedis() error {
 
 // upsertRedisEntry must be thread-safe
 func upsertRedisEntry(key []byte, client *lanternpro.Client) {
+	// TODO: use "lastAccess" field to avoid updating the unchanged fields
 	if *debug {
 		fmt.Printf("%s  In: %v, Out: %v\n",
 			key,

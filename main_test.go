@@ -3,13 +3,70 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/getlantern/testify/assert"
 )
+
+var servers []*httptest.Server
+
+type mockHandler struct {
+	writer func(w http.ResponseWriter)
+}
+
+func (m *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	m.writer(w)
+}
+
+func (m *mockHandler) Raw(msg string) {
+	m.writer = func(w http.ResponseWriter) {
+		conn, _, _ := w.(http.Hijacker).Hijack()
+		if _, err := conn.Write([]byte(msg)); err != nil {
+			log.Printf("Unable to write to connection: %v\n", err)
+		}
+		if err := conn.Close(); err != nil {
+			log.Printf("Unable to close connection: %v\n", err)
+		}
+	}
+}
+
+func (m *mockHandler) Msg(msg string) {
+	m.writer = func(w http.ResponseWriter) {
+		w.Header()["Content-Length"] = []string{strconv.Itoa(len(msg))}
+		_, _ = w.Write([]byte(msg))
+		w.(http.Flusher).Flush()
+	}
+}
+
+func (m *mockHandler) Timeout(d time.Duration, msg string) {
+	m.writer = func(w http.ResponseWriter) {
+		time.Sleep(d)
+		w.Header()["Content-Length"] = []string{strconv.Itoa(len(msg))}
+		_, _ = w.Write([]byte(msg))
+		w.(http.Flusher).Flush()
+	}
+}
+
+func newMockServer(msg string) (string, *mockHandler) {
+	m := mockHandler{nil}
+	m.Msg(msg)
+	s := httptest.NewServer(&m)
+	servers = append(servers, s)
+	return s.URL, &m
+}
+
+func stopMockServers() {
+	for _, s := range servers {
+		s.Close()
+	}
+}
 
 func TestCONNECT(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\n\r\n"
@@ -19,10 +76,10 @@ func TestCONNECT(t *testing.T) {
 	defer stopMockServers()
 	site, _ := newMockServer("holla!")
 	u, _ := url.Parse(site)
-	log.Debugf("Started target site at %s", u)
+	log.Printf("Started target site at %s\n", u)
 
 	addr, _ := startServer(t)
-	log.Debugf("Started proxy server at %s", addr)
+	log.Printf("Started proxy server at %s\n", addr)
 
 	con, err := net.Dial("tcp", addr.String())
 	if !assert.NoError(t, err, "should dial proxy server") {
@@ -54,17 +111,17 @@ func TestCONNECT(t *testing.T) {
 }
 
 func TestGET(t *testing.T) {
-	log.Debugf("TestGET")
+	log.Println("TestGET")
 	reqTemplate := "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n"
 	resp := "HTTP/1.1 200 OK\r\n"
 	content := "holla!\n"
 	defer stopMockServers()
 	site, _ := newMockServer(content)
 	u, _ := url.Parse(site)
-	log.Debugf("Started target site at %s", u)
+	log.Printf("Started target site at %s\n", u)
 
 	addr, _ := startServer(t)
-	log.Debugf("Started proxy server at %s", addr)
+	log.Printf("Started proxy server at %s\n", addr)
 
 	con, err := net.Dial("tcp", addr.String())
 	if !assert.NoError(t, err, "should dial proxy server") {
@@ -89,20 +146,20 @@ func TestGET(t *testing.T) {
 }
 
 func TestAuth(t *testing.T) {
-	log.Debugf("TestGET")
+	log.Println("TestGET")
 	reqTemplate := "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n"
 	resp := "HTTP/1.1 404 Not Found\r\n"
 	content := "holla!\n"
 	defer stopMockServers()
 	site, _ := newMockServer(content)
 	u, _ := url.Parse(site)
-	log.Debugf("Started target site at %s", u)
+	log.Printf("Started target site at %s\n", u)
 
 	addr, s := startServer(t)
 	s.Checker = func(req *http.Request) error {
 		return errors.New("dsafda")
 	}
-	log.Debugf("Started proxy server at %s", addr)
+	log.Printf("Started proxy server at %s\n", addr)
 
 	con, err := net.Dial("tcp", addr.String())
 	if !assert.NoError(t, err, "should dial proxy server") {
