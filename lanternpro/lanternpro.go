@@ -27,10 +27,10 @@ type LanternProFilter struct {
 }
 
 type Client struct {
-	Created     time.Time
-	LastAccess  time.Time
-	TransferIn  int64
-	TransferOut int64
+	Created    time.Time
+	LastAccess time.Time
+	BytesIn    int64
+	BytesOut   int64
 }
 
 func New(next http.Handler) (*LanternProFilter, error) {
@@ -85,10 +85,10 @@ func (f *LanternProFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		//f.clientRegistry.Insert(key, client)
 	} else {
 		client = &Client{
-			Created:     time.Now(),
-			LastAccess:  time.Now(),
-			TransferIn:  0,
-			TransferOut: 0,
+			Created:    time.Now(),
+			LastAccess: time.Now(),
+			BytesIn:    0,
+			BytesOut:   0,
 		}
 		f.clientRegistry.Insert(key, client)
 	}
@@ -99,17 +99,21 @@ func (f *LanternProFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	//clientCache.Add(key, client)
 }
 
-func (f *LanternProFilter) GatherData(w io.Writer, period time.Duration) {
+// ScanClientsSnapshot will run a fn over each client on a specific snapshot in
+// time.  It will do it periodically given the second argument.
+// Note that the provided function must operate on the clients concurrently
+// with other routines.
+func (f *LanternProFilter) ScanClientsSnapshot(fn func([]byte, *Client), period time.Duration) {
 	go func() {
 		for {
 			time.Sleep(period)
 			snapshot := f.clientRegistry.Snapshot()
+			// Note: Remember that if the snapshot is not going to
+			// be fully iterated, it will leak.  A cancelling chanel
+			// needs to be used
 			for entry := range snapshot.Iterator(nil) {
 				client := entry.Value.(*Client)
-				fmt.Fprintf(w, "%s  In: %v, Out: %v\n",
-					entry.Key,
-					atomic.LoadInt64(&client.TransferIn),
-					atomic.LoadInt64(&client.TransferOut))
+				fn(entry.Key, client)
 			}
 		}
 	}()
@@ -143,20 +147,22 @@ func (f *LanternProFilter) intercept(key []byte, atomicClient atomic.Value, w ht
 		var closeOnce sync.Once
 		go func() {
 			n, _ := io.Copy(connOut, clientConn)
+
 			client := atomicClient.Load().(*Client)
-			atomic.AddInt64(&client.TransferIn, n)
+			atomic.AddInt64(&client.BytesIn, n)
+
 			closeOnce.Do(closeConns)
 
 		}()
 		n, _ := io.Copy(clientConn, connOut)
 
 		client := atomicClient.Load().(*Client)
-		atomic.AddInt64(&client.TransferOut, n)
+		atomic.AddInt64(&client.BytesOut, n)
 
 		closeOnce.Do(closeConns)
 		fmt.Println("== CONNECT DONE ==")
 	} else {
 		f.next.ServeHTTP(w, req)
-		// TODO: byte counting in this case
+		// TODO: byte counting in this case (by using custom response writer and inspecting req)
 	}
 }

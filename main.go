@@ -18,8 +18,7 @@ var (
 	https   = flag.Bool("https", false, "listen on https")
 	addr    = flag.String("addr", ":8080", "the address to listen")
 	token   = flag.String("token", "", "Lantern token")
-
-	logTimestampFormat = "Jan 02 15:04:05.000"
+	debug   = flag.Bool("debug", false, "Produce debug output")
 )
 
 func main() {
@@ -56,11 +55,16 @@ func main() {
 		panic(err)
 	}
 
+	// Data gathering
+	if err = connectRedis(); err != nil {
+		panic(err)
+	}
+	lanternPro.ScanClientsSnapshot(upsertRedisEntry, time.Second)
+
+	// Set up server
 	proxy := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		handler.ServeHTTP(w, req)
 	})
-
-	lanternPro.GatherData(os.Stdout, time.Second)
 
 	http.Serve(l, proxy)
 }

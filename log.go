@@ -7,6 +7,10 @@ import (
 	"time"
 )
 
+var (
+	logTimestampFormat = "Jan 02 15:04:05.000"
+)
+
 type timestamped struct {
 	w io.Writer
 }
