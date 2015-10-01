@@ -8,12 +8,13 @@ import (
 )
 
 var (
-	help    = flag.Bool("help", false, "Get usage help")
-	keyfile = flag.String("keyfile", "", "the cert key file name")
-	https   = flag.Bool("https", false, "listen on https")
-	addr    = flag.String("addr", ":8080", "the address to listen")
-	token   = flag.String("token", "", "Lantern token")
-	debug   = flag.Bool("debug", false, "Produce debug output")
+	help     = flag.Bool("help", false, "Get usage help")
+	keyfile  = flag.String("key", "", "Private key file name")
+	certfile = flag.String("cert", "", "Certificate file name")
+	https    = flag.Bool("https", false, "Use TLS for client to proxy communication")
+	addr     = flag.String("addr", ":8080", "Address to listen")
+	token    = flag.String("token", "", "Lantern token")
+	debug    = flag.Bool("debug", false, "Produce debug output")
 )
 
 func main() {
@@ -37,7 +38,7 @@ func main() {
 		upsertRedisEntry, time.Second,
 	)
 	if *https {
-		err = server.ServeHTTPS(*addr, nil)
+		err = server.ServeHTTPS(*addr, *keyfile, *certfile, nil)
 	} else {
 		err = server.ServeHTTP(*addr, nil)
 	}

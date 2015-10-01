@@ -61,9 +61,9 @@ func (s *Server) ServeHTTP(addr string, ready *chan bool) error {
 	return http.Serve(s.listener, proxy)
 }
 
-func (s *Server) ServeHTTPS(addr string, ready *chan bool) error {
+func (s *Server) ServeHTTPS(addr, keyfile, certfile string, ready *chan bool) error {
 	var err error
-	if s.listener, err = listenTLS(addr); err != nil {
+	if s.listener, err = listenTLS(addr, keyfile, certfile); err != nil {
 		return err
 	}
 

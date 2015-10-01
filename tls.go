@@ -16,16 +16,25 @@ var (
 	processStart      = time.Now()
 )
 
-func listenTLS(addr string) (net.Listener, error) {
+func listenTLS(addr, pkfile, certfile string) (net.Listener, error) {
 	host, _, err := net.SplitHostPort(addr)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to split host and port for %v: %v\n", addr, err)
 	}
-	ctx := CertContext{
-		PKFile:         "key.pem",
-		ServerCertFile: "cert.pem",
+
+	mypkfile := pkfile
+	if mypkfile == "" {
+		mypkfile = "key.pem"
 	}
-	err = ctx.InitServerCert(host)
+	mycertfile := certfile
+	if mycertfile == "" {
+		mycertfile = "cert.pem"
+	}
+	ctx := CertContext{
+		PKFile:         mypkfile,
+		ServerCertFile: mycertfile,
+	}
+	err = ctx.initServerCert(host)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to init server cert: %s\n", err)
 	}
@@ -55,7 +64,7 @@ type CertContext struct {
 
 // InitServerCert initializes a PK + cert for use by a server proxy, signed by
 // the CA certificate.  We always generate a new certificate just in case.
-func (ctx *CertContext) InitServerCert(host string) (err error) {
+func (ctx *CertContext) initServerCert(host string) (err error) {
 	if ctx.PK, err = keyman.LoadPKFromFile(ctx.PKFile); err != nil {
 		if os.IsNotExist(err) {
 			fmt.Printf("Creating new PK at: %s\n", ctx.PKFile)
