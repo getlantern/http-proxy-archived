@@ -25,10 +25,17 @@ const (
 	targetResponse = "Fight for a Free Internet!"
 )
 
+type proxy struct {
+	protocol string
+	addr     string
+}
+
 var (
 	targetURL    *url.URL
 	proxyAddr    net.Addr
 	tlsProxyAddr net.Addr
+
+	testProxies []proxy
 
 	serverCertificate *keyman.Certificate
 	// TODO: this should be imported from tlsdefaults package, but is not being
@@ -74,6 +81,11 @@ func TestMain(m *testing.M) {
 	tlsProxyAddr = tlsServer.listener.Addr()
 	log.Printf("Started proxy server at %s\n", tlsProxyAddr.String())
 
+	testProxies = []proxy{
+		{"http", proxyAddr.String()},
+		{"https", tlsProxyAddr.String()},
+	}
+
 	os.Exit(m.Run())
 }
 
@@ -82,43 +94,8 @@ func TestConnectNoToken(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-UID: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 404 Not Found\r\n"
 
-	proxies := []struct {
-		protocol string
-		addr     string
-	}{
-		{"http", proxyAddr.String()},
-		{"https", tlsProxyAddr.String()},
-	}
-	for _, proxy := range proxies {
-		var conn net.Conn
+	testRoundTrip(t, testProxies, func(conn net.Conn) {
 		var err error
-		if proxy.protocol == "http" {
-			conn, err = net.Dial("tcp", proxy.addr)
-		} else if proxy.protocol == "https" {
-			x509cert := serverCertificate.X509()
-			tlsConn, err := tls.Dial("tcp", proxy.addr, &tls.Config{
-				CipherSuites:       preferredCipherSuites,
-				InsecureSkipVerify: true,
-			})
-			if !assert.NoError(t, err, "should dial proxy server") {
-				t.FailNow()
-			}
-			conn = tlsConn
-			if !tlsConn.ConnectionState().PeerCertificates[0].Equal(x509cert) {
-				if err := tlsConn.Close(); err != nil {
-					log.Printf("Error closing chained server connection: %s\n", err)
-				}
-				t.Fatal("Server's certificate didn't match expected")
-			}
-
-		} else {
-			t.Fatal("Unknown protocol")
-		}
-
-		defer func() {
-			assert.NoError(t, conn.Close(), "should close connection")
-		}()
-
 		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, clientUID)
 		t.Log("\n" + req)
 		_, err = conn.Write([]byte(req))
@@ -132,7 +109,7 @@ func TestConnectNoToken(t *testing.T) {
 			"should get 404 Not Found because no token was provided") {
 			t.FailNow()
 		}
-	}
+	})
 }
 
 // Bad X-Lantern-Auth-Token -> 404
@@ -140,27 +117,22 @@ func TestConnectBadToken(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-UID: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 404 Not Found\r\n"
 
-	conn, err := net.Dial("tcp", proxyAddr.String())
-	if !assert.NoError(t, err, "should dial proxy server") {
-		t.FailNow()
-	}
-	defer func() {
-		assert.NoError(t, conn.Close(), "should close connection")
-	}()
+	testRoundTrip(t, testProxies, func(conn net.Conn) {
+		var err error
+		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, "B4dT0k3n", clientUID)
+		t.Log("\n" + req)
+		_, err = conn.Write([]byte(req))
+		if !assert.NoError(t, err, "should write CONNECT request") {
+			t.FailNow()
+		}
 
-	req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, "B4dT0k3n", clientUID)
-	t.Log("\n" + req)
-	_, err = conn.Write([]byte(req))
-	if !assert.NoError(t, err, "should write CONNECT request") {
-		t.FailNow()
-	}
-
-	var buf [400]byte
-	_, err = conn.Read(buf[:])
-	if !assert.Contains(t, string(buf[:]), connectResp,
-		"should get 404 Not Found because no token was provided") {
-		t.FailNow()
-	}
+		var buf [400]byte
+		_, err = conn.Read(buf[:])
+		if !assert.Contains(t, string(buf[:]), connectResp,
+			"should get 404 Not Found because no token was provided") {
+			t.FailNow()
+		}
+	})
 }
 
 // No X-Lantern-UID -> 404
@@ -168,27 +140,22 @@ func TestConnectNoUID(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 404 Not Found\r\n"
 
-	conn, err := net.Dial("tcp", proxyAddr.String())
-	if !assert.NoError(t, err, "should dial proxy server") {
-		t.FailNow()
-	}
-	defer func() {
-		assert.NoError(t, conn.Close(), "should close connection")
-	}()
+	testRoundTrip(t, testProxies, func(conn net.Conn) {
+		var err error
+		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, validToken)
+		t.Log("\n" + req)
+		_, err = conn.Write([]byte(req))
+		if !assert.NoError(t, err, "should write CONNECT request") {
+			t.FailNow()
+		}
 
-	req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, validToken)
-	t.Log("\n" + req)
-	_, err = conn.Write([]byte(req))
-	if !assert.NoError(t, err, "should write CONNECT request") {
-		t.FailNow()
-	}
-
-	var buf [400]byte
-	_, err = conn.Read(buf[:])
-	if !assert.Contains(t, string(buf[:]), connectResp,
-		"should get 404 Not Found because no token was provided") {
-		t.FailNow()
-	}
+		var buf [400]byte
+		_, err = conn.Read(buf[:])
+		if !assert.Contains(t, string(buf[:]), connectResp,
+			"should get 404 Not Found because no token was provided") {
+			t.FailNow()
+		}
+	})
 }
 
 // X-Lantern-Auth-Token + X-Lantern-UID -> 200 OK <- Tunneled request -> 200 OK
@@ -196,35 +163,37 @@ func TestConnectOK(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-UID: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 200 OK\r\n"
 
-	conn, err := net.Dial("tcp", proxyAddr.String())
-	if !assert.NoError(t, err, "should dial proxy server") {
-		t.FailNow()
-	}
-	defer func() {
-		assert.NoError(t, conn.Close(), "should close connection")
-	}()
+	testRoundTrip(t, testProxies, func(conn net.Conn) {
+		conn, err := net.Dial("tcp", proxyAddr.String())
+		if !assert.NoError(t, err, "should dial proxy server") {
+			t.FailNow()
+		}
+		defer func() {
+			assert.NoError(t, conn.Close(), "should close connection")
+		}()
 
-	req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, validToken, clientUID)
-	t.Log("\n" + req)
-	_, err = conn.Write([]byte(req))
-	if !assert.NoError(t, err, "should write CONNECT request") {
-		t.FailNow()
-	}
+		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, validToken, clientUID)
+		t.Log("\n" + req)
+		_, err = conn.Write([]byte(req))
+		if !assert.NoError(t, err, "should write CONNECT request") {
+			t.FailNow()
+		}
 
-	var buf [400]byte
-	_, err = conn.Read(buf[:])
-	if !assert.Contains(t, string(buf[:]), connectResp,
-		"should get 200 OK") {
-		t.FailNow()
-	}
+		var buf [400]byte
+		_, err = conn.Read(buf[:])
+		if !assert.Contains(t, string(buf[:]), connectResp,
+			"should get 200 OK") {
+			t.FailNow()
+		}
 
-	_, err = conn.Write([]byte(tunneledReq))
-	if !assert.NoError(t, err, "should write tunneled data") {
-		t.FailNow()
-	}
+		_, err = conn.Write([]byte(tunneledReq))
+		if !assert.NoError(t, err, "should write tunneled data") {
+			t.FailNow()
+		}
 
-	_, err = conn.Read(buf[:])
-	assert.Contains(t, string(buf[:]), targetResponse, "should read tunneled response")
+		_, err = conn.Read(buf[:])
+		assert.Contains(t, string(buf[:]), targetResponse, "should read tunneled response")
+	})
 }
 
 func setUpNewHTTPServer() (*Server, error) {
@@ -255,6 +224,45 @@ func setUpNewHTTPSServer() (*Server, error) {
 	}
 	serverCertificate, err = keyman.LoadCertificateFromFile("cert.pem")
 	return s, err
+}
+
+func testRoundTrip(t *testing.T, proxies []proxy, checkerFn func(conn net.Conn)) {
+	for _, proxy := range proxies {
+		var conn net.Conn
+		var err error
+
+		switch proxy.protocol {
+		case "http":
+			conn, err = net.Dial("tcp", proxy.addr)
+			if !assert.NoError(t, err, "should dial proxy server") {
+				t.FailNow()
+			}
+		case "https":
+			var tlsConn *tls.Conn
+			x509cert := serverCertificate.X509()
+			tlsConn, err = tls.Dial("tcp", proxy.addr, &tls.Config{
+				CipherSuites:       preferredCipherSuites,
+				InsecureSkipVerify: true,
+			})
+			if !assert.NoError(t, err, "should dial proxy server") {
+				t.FailNow()
+			}
+			conn = tlsConn
+			if !tlsConn.ConnectionState().PeerCertificates[0].Equal(x509cert) {
+				if err := tlsConn.Close(); err != nil {
+					log.Printf("Error closing chained server connection: %s\n", err)
+				}
+				t.Fatal("Server's certificate didn't match expected")
+			}
+		default:
+			t.Fatal("Unknown protocol")
+		}
+		defer func() {
+			assert.NoError(t, conn.Close(), "should close connection")
+		}()
+
+		checkerFn(conn)
+	}
 }
 
 //

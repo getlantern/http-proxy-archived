@@ -119,8 +119,7 @@ func (f *LanternProFilter) ScanClientsSnapshot(fn func([]byte, *Client), period 
 	}()
 }
 
-func (f *LanternProFilter) intercept(key []byte, atomicClient atomic.Value, w http.ResponseWriter, req *http.Request) {
-	var err error
+func (f *LanternProFilter) intercept(key []byte, atomicClient atomic.Value, w http.ResponseWriter, req *http.Request) (err error) {
 	if req.Method == "CONNECT" {
 		var clientConn net.Conn
 		var connOut net.Conn
@@ -130,7 +129,9 @@ func (f *LanternProFilter) intercept(key []byte, atomicClient atomic.Value, w ht
 			utils.RespondBadGateway(w, req, fmt.Sprintf("Unable to hijack connection: %s", err))
 			return
 		}
-		connOut, err = net.Dial("tcp", req.Host)
+		if connOut, err = net.Dial("tcp", req.Host); err != nil {
+			return
+		}
 		// Pipe data through CONNECT tunnel
 		closeConns := func() {
 			if clientConn != nil {
@@ -160,9 +161,9 @@ func (f *LanternProFilter) intercept(key []byte, atomicClient atomic.Value, w ht
 		atomic.AddInt64(&client.BytesOut, n)
 
 		closeOnce.Do(closeConns)
-		fmt.Println("== CONNECT DONE ==")
 	} else {
 		f.next.ServeHTTP(w, req)
 		// TODO: byte counting in this case (by using custom response writer and inspecting req)
 	}
+	return
 }
