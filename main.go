@@ -3,14 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"net"
-	"net/http"
 	"os"
 	"time"
-
-	"./connectforward"
-	"./lanternpro"
-	"./tokenfilter"
 )
 
 var (
@@ -23,49 +17,32 @@ var (
 )
 
 func main() {
+	var err error
+
 	_ = flag.CommandLine.Parse(os.Args[1:])
 	if *help {
 		flag.Usage()
 		return
 	}
 
-	// The following middleware is run from last to first:
-	var handler http.Handler
-
-	// Handles CONNECT and direct proxying requests
-	connectFwd, _ := connectforward.New()
-	// Handles Lantern Pro users
-	lanternPro, _ := lanternpro.New(connectFwd)
-	if *token != "" {
-		// Bounces back requests without the proper token
-		tokenFilter, _ := tokenfilter.New(lanternPro, *token)
-		handler = tokenFilter
-	} else {
-		handler = lanternPro
+	server := NewServer()
+	// Connect to Redis before initiating the server
+	if err = connectRedis(); err != nil {
+		fmt.Printf("Error connecting to Redis: %v,\nWARNING: NOT REPORTING TO REDIS\n", err)
+		// panic(err)
 	}
 
-	var l net.Listener
-	var err error
 	if *https {
-		l, err = listenTLS(*addr)
+		err = server.ServeHTTPS(*addr)
 	} else {
-		l, err = net.Listen("tcp", *addr)
+		err = server.ServeHTTP(*addr)
 	}
 	if err != nil {
 		panic(err)
 	}
 
-	// Data gathering
-	if err = connectRedis(); err != nil {
-		fmt.Printf("Error connecting to Redis: %v,\nWARNING: NOT REPORTING TO REDIS\n", err)
-		// panic(err)
-	}
-	lanternPro.ScanClientsSnapshot(upsertRedisEntry, time.Second)
-
-	// Set up server
-	proxy := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		handler.ServeHTTP(w, req)
-	})
-
-	http.Serve(l, proxy)
+	// Perform data collection
+	server.lanternProComponent.ScanClientsSnapshot(
+		upsertRedisEntry, time.Second,
+	)
 }
