@@ -34,9 +34,16 @@ func listenTLS(addr, pkfile, certfile string) (net.Listener, error) {
 		PKFile:         mypkfile,
 		ServerCertFile: mycertfile,
 	}
-	err = ctx.initServerCert(host)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to init server cert: %s\n", err)
+	_, err1 := os.Stat(ctx.ServerCertFile)
+	_, err2 := os.Stat(ctx.PKFile)
+	if os.IsNotExist(err1) || os.IsNotExist(err2) {
+		fmt.Println("At least one of the Key/Cert files is not found -> Generating new key pair")
+		err = ctx.initServerCert(host)
+		if err != nil {
+			return nil, fmt.Errorf("Unable to init server cert: %s\n", err)
+		}
+	} else if *debug {
+		fmt.Println("Using provided Key/Cert files")
 	}
 
 	tlsConfig := tlsdefaults.Server()
