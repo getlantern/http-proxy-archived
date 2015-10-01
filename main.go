@@ -25,24 +25,23 @@ func main() {
 		return
 	}
 
-	server := NewServer()
+	server := NewServer(*token)
 	// Connect to Redis before initiating the server
 	if err = connectRedis(); err != nil {
 		fmt.Printf("Error connecting to Redis: %v,\nWARNING: NOT REPORTING TO REDIS\n", err)
 		// panic(err)
 	}
 
-	if *https {
-		err = server.ServeHTTPS(*addr)
-	} else {
-		err = server.ServeHTTP(*addr)
-	}
-	if err != nil {
-		panic(err)
-	}
-
-	// Perform data collection
+	// Start data collection
 	server.lanternProComponent.ScanClientsSnapshot(
 		upsertRedisEntry, time.Second,
 	)
+	if *https {
+		err = server.ServeHTTPS(*addr, nil)
+	} else {
+		err = server.ServeHTTP(*addr, nil)
+	}
+	if err != nil {
+		fmt.Printf("Error serving: %v\n", err)
+	}
 }

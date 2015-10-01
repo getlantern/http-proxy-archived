@@ -17,7 +17,7 @@ type Server struct {
 	listener             net.Listener
 }
 
-func NewServer() *Server {
+func NewServer(token string) *Server {
 	// The following middleware is run from last to first:
 	var handler http.Handler
 
@@ -26,9 +26,9 @@ func NewServer() *Server {
 	// Handles Lantern Pro users
 	lanternPro, _ := lanternpro.New(connectFwd)
 	var tokenFilter *tokenfilter.TokenFilter
-	if *token != "" {
+	if token != "" {
 		// Bounces back requests without the proper token
-		tokenFilter, _ = tokenfilter.New(lanternPro, *token)
+		tokenFilter, _ = tokenfilter.New(lanternPro, token)
 		handler = tokenFilter
 	} else {
 		handler = lanternPro
@@ -43,7 +43,7 @@ func NewServer() *Server {
 	return server
 }
 
-func (s *Server) ServeHTTP(addr string) error {
+func (s *Server) ServeHTTP(addr string, ready *chan bool) error {
 	var err error
 	if s.listener, err = net.Listen("tcp", addr); err != nil {
 		return err
@@ -54,10 +54,14 @@ func (s *Server) ServeHTTP(addr string) error {
 		func(w http.ResponseWriter, req *http.Request) {
 			s.handler.ServeHTTP(w, req)
 		})
+
+	if ready != nil {
+		*ready <- true
+	}
 	return http.Serve(s.listener, proxy)
 }
 
-func (s *Server) ServeHTTPS(addr string) error {
+func (s *Server) ServeHTTPS(addr string, ready *chan bool) error {
 	var err error
 	if s.listener, err = listenTLS(addr); err != nil {
 		return err
@@ -68,5 +72,9 @@ func (s *Server) ServeHTTPS(addr string) error {
 		func(w http.ResponseWriter, req *http.Request) {
 			s.handler.ServeHTTP(w, req)
 		})
+
+	if ready != nil {
+		*ready <- true
+	}
 	return http.Serve(s.listener, proxy)
 }
