@@ -8,7 +8,8 @@ import (
 )
 
 const (
-	INFO = iota
+	DEBUG = iota
+	INFO
 	WARN
 	ERROR
 )
@@ -24,25 +25,25 @@ type LogLevel int
 
 // Logger defines a simple logging interface
 type Logger interface {
+	Debugf(format string, args ...interface{})
 	Infof(format string, args ...interface{})
 	Warningf(format string, args ...interface{})
 	Errorf(format string, args ...interface{})
 }
 
-type NOPLogger struct {
-}
+type NOPLogger struct{}
 
-func (*NOPLogger) Infof(format string, args ...interface{}) {
+func (*NOPLogger) Debugf(format string, args ...interface{}) {}
 
-}
-func (*NOPLogger) Warningf(format string, args ...interface{}) {
-}
+func (*NOPLogger) Infof(format string, args ...interface{}) {}
 
-func (*NOPLogger) Errorf(format string, args ...interface{}) {
-}
+func (*NOPLogger) Warningf(format string, args ...interface{}) {}
+
+func (*NOPLogger) Errorf(format string, args ...interface{}) {}
 
 // TimeLogger logs to stdout with a timestamp
 type TimeLogger struct {
+	debugW *io.Writer
 	infoW  *io.Writer
 	warnW  *io.Writer
 	errorW *io.Writer
@@ -50,6 +51,9 @@ type TimeLogger struct {
 
 func NewTimeLogger(w *io.Writer, lvl LogLevel) *TimeLogger {
 	l := &TimeLogger{}
+	if lvl <= DEBUG {
+		l.debugW = w
+	}
 	if lvl <= INFO {
 		l.infoW = w
 	}
@@ -58,17 +62,22 @@ func NewTimeLogger(w *io.Writer, lvl LogLevel) *TimeLogger {
 	}
 	if lvl <= ERROR {
 		l.errorW = w
-		fmt.Println("SHOULD BE SET!")
 	}
 	return l
+}
+
+func (t *TimeLogger) Debugf(format string, args ...interface{}) {
+	if t.debugW != nil {
+		t.write(t.debugW, "DEBUG ", fmt.Sprintf(format, args...))
+	}
 }
 
 func (t *TimeLogger) Infof(format string, args ...interface{}) {
 	if t.infoW != nil {
 		t.write(t.infoW, "INFO  ", fmt.Sprintf(format, args...))
 	}
-
 }
+
 func (t *TimeLogger) Warningf(format string, args ...interface{}) {
 	if t.warnW != nil {
 		t.write(t.warnW, "WARN  ", fmt.Sprintf(format, args...))

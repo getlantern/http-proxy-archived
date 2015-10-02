@@ -35,9 +35,9 @@ func Logger(l utils.Logger) optSetter {
 
 func New(next http.Handler, setters ...optSetter) (*TokenFilter, error) {
 	f := &TokenFilter{
+		log:   utils.NullLogger,
 		next:  next,
 		token: "",
-		log:   utils.NullLogger,
 	}
 	for _, s := range setters {
 		if err := s(f); err != nil {
@@ -50,7 +50,7 @@ func New(next http.Handler, setters ...optSetter) (*TokenFilter, error) {
 
 func (f *TokenFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	reqStr, _ := httputil.DumpRequest(req, true)
-	f.log.Infof("Token Filter Middleware received request:\n%s\n", reqStr)
+	f.log.Debugf("Token Filter Middleware received request:\n%s", reqStr)
 
 	token := req.Header.Get(tokenHeader)
 	if token == "" || token != f.token {

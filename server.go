@@ -21,17 +21,22 @@ type Server struct {
 }
 
 func NewServer(token string) *Server {
+	stdWriter := io.Writer(os.Stdout)
 	// The following middleware is run from last to first:
 	// Handles CONNECT and direct proxying requests
-	connectFwd, _ := connectforward.New()
+	connectFwd, _ := connectforward.New(
+		connectforward.Logger(utils.NewTimeLogger(&stdWriter, utils.DEBUG)),
+	)
 	// Handles Lantern Pro users
-	lanternPro, _ := lanternpro.New(connectFwd)
+	lanternPro, _ := lanternpro.New(
+		connectFwd,
+		lanternpro.Logger(utils.NewTimeLogger(&stdWriter, utils.DEBUG)),
+	)
 	// Bounces back requests without the proper token
-	stdWriter := io.Writer(os.Stdout)
 	tokenFilter, _ := tokenfilter.New(
 		lanternPro,
 		tokenfilter.TokenSetter(token),
-		tokenfilter.Logger(utils.NewTimeLogger(&stdWriter, utils.ERROR)),
+		tokenfilter.Logger(utils.NewTimeLogger(&stdWriter, utils.DEBUG)),
 	)
 
 	server := &Server{

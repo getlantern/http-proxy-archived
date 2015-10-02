@@ -25,7 +25,7 @@ const (
 )
 
 type LanternProFilter struct {
-	debug          bool
+	log            utils.Logger
 	next           http.Handler
 	proTokens      *set.Set
 	clientRegistry *ctrie.Ctrie
@@ -39,21 +39,36 @@ type Client struct {
 	BytesOut   int64
 }
 
-func New(next http.Handler) (*LanternProFilter, error) {
-	return &LanternProFilter{
-		debug:          true,
+type optSetter func(f *LanternProFilter) error
+
+func Logger(l utils.Logger) optSetter {
+	return func(f *LanternProFilter) error {
+		f.log = l
+		return nil
+	}
+}
+
+func New(next http.Handler, setters ...optSetter) (*LanternProFilter, error) {
+	f := &LanternProFilter{
+		log:            utils.NullLogger,
 		next:           next,
 		proTokens:      set.New(),
 		clientRegistry: ctrie.New(nil),
-	}, nil
+	}
+
+	for _, s := range setters {
+		if err := s(f); err != nil {
+			return nil, err
+		}
+	}
+
+	return f, nil
 }
 
 func (f *LanternProFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	if f.debug {
-		fmt.Println("Lantern Pro Middleware received request:")
-		reqStr, _ := httputil.DumpRequest(req, true)
-		fmt.Printf(string(reqStr))
-	}
+	reqStr, _ := httputil.DumpRequest(req, true)
+	f.log.Debugf("Lantern Pro Middleware received request:\n%s", reqStr)
+
 	lanternUID := req.Header.Get(uidHeader)
 	lanternProToken := req.Header.Get("X-Lantern-Pro-Token")
 

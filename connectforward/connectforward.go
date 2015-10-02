@@ -14,11 +14,21 @@ import (
 )
 
 type HTTPConnectForwarder struct {
-	debug bool
-	fwd   *forward.Forwarder
+	log utils.Logger
+	fwd *forward.Forwarder
 }
 
-func New() (*HTTPConnectForwarder, error) {
+type optSetter func(f *HTTPConnectForwarder) error
+
+func Logger(l utils.Logger) optSetter {
+	return func(f *HTTPConnectForwarder) error {
+		f.log = l
+		return nil
+	}
+}
+
+func New(setters ...optSetter) (*HTTPConnectForwarder, error) {
+	// TODO: connectforward should handle CONNECT and direct, and do the bytecounting (or split this last one if feasible/reasonable)
 	fwd, err := forward.New(
 		//forward.Logger(utils.NewTimeLogger()),
 		forward.PassHostHeader(true),
@@ -26,24 +36,27 @@ func New() (*HTTPConnectForwarder, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &HTTPConnectForwarder{
-		debug: true,
-		fwd:   fwd,
-	}, nil
+
+	f := &HTTPConnectForwarder{
+		log: utils.NullLogger,
+		fwd: fwd,
+	}
+	for _, s := range setters {
+		if err := s(f); err != nil {
+			return nil, err
+		}
+	}
+
+	return f, nil
 }
 
-func (p *HTTPConnectForwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	if p.debug {
-		fmt.Println("HTTPConnectForwarder Middleware received request:")
-		reqStr, _ := httputil.DumpRequest(req, true)
-		fmt.Printf(string(reqStr))
-	}
+func (f *HTTPConnectForwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	reqStr, _ := httputil.DumpRequest(req, true)
+	f.log.Debugf("HTTPConnectForwarder Middleware received request:\n%s", reqStr)
 
 	var err error
 	if req.Method == "CONNECT" {
-		if p.debug {
-			fmt.Println("CONNECT proxying")
-		}
+		f.log.Infof("CONNECT proxying\n")
 		var clientConn net.Conn
 		var connOut net.Conn
 
@@ -74,10 +87,8 @@ func (p *HTTPConnectForwarder) ServeHTTP(w http.ResponseWriter, req *http.Reques
 		_, _ = io.Copy(clientConn, connOut)
 		closeOnce.Do(closeConns)
 	} else {
-		if p.debug {
-			fmt.Println("Direct proxying")
-		}
+		f.log.Infof("Direct proxying\n")
 		fmt.Println(req.Host)
-		p.fwd.ServeHTTP(w, req)
+		f.fwd.ServeHTTP(w, req)
 	}
 }
