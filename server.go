@@ -1,44 +1,44 @@
 package main
 
 import (
+	"io"
 	"net"
 	"net/http"
+	"os"
 
 	"./connectforward"
 	"./lanternpro"
 	"./tokenfilter"
+	"./utils"
 )
 
 type Server struct {
 	forwarderComponent   *connectforward.HTTPConnectForwarder
 	lanternProComponent  *lanternpro.LanternProFilter
 	tokenFilterComponent *tokenfilter.TokenFilter
-	handler              http.Handler
+	firstComponent       http.Handler
 	listener             net.Listener
 }
 
 func NewServer(token string) *Server {
 	// The following middleware is run from last to first:
-	var handler http.Handler
-
 	// Handles CONNECT and direct proxying requests
 	connectFwd, _ := connectforward.New()
 	// Handles Lantern Pro users
 	lanternPro, _ := lanternpro.New(connectFwd)
-	var tokenFilter *tokenfilter.TokenFilter
-	if token != "" {
-		// Bounces back requests without the proper token
-		tokenFilter, _ = tokenfilter.New(lanternPro, token)
-		handler = tokenFilter
-	} else {
-		handler = lanternPro
-	}
+	// Bounces back requests without the proper token
+	stdWriter := io.Writer(os.Stdout)
+	tokenFilter, _ := tokenfilter.New(
+		lanternPro,
+		tokenfilter.TokenSetter(token),
+		tokenfilter.Logger(utils.NewTimeLogger(&stdWriter, utils.ERROR)),
+	)
 
 	server := &Server{
 		forwarderComponent:   connectFwd,
 		lanternProComponent:  lanternPro,
 		tokenFilterComponent: tokenFilter,
-		handler:              handler,
+		firstComponent:       tokenFilter,
 	}
 	return server
 }
@@ -52,7 +52,7 @@ func (s *Server) ServeHTTP(addr string, ready *chan bool) error {
 	// Set up server
 	proxy := http.HandlerFunc(
 		func(w http.ResponseWriter, req *http.Request) {
-			s.handler.ServeHTTP(w, req)
+			s.firstComponent.ServeHTTP(w, req)
 		})
 
 	if ready != nil {
@@ -70,7 +70,7 @@ func (s *Server) ServeHTTPS(addr, keyfile, certfile string, ready *chan bool) er
 	// Set up server
 	proxy := http.HandlerFunc(
 		func(w http.ResponseWriter, req *http.Request) {
-			s.handler.ServeHTTP(w, req)
+			s.firstComponent.ServeHTTP(w, req)
 		})
 
 	if ready != nil {

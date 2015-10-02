@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -19,7 +20,12 @@ import (
 	"../utils"
 )
 
+const (
+	uidHeader = "X-Lantern-UID"
+)
+
 type LanternProFilter struct {
+	debug          bool
 	next           http.Handler
 	proTokens      *set.Set
 	clientRegistry *ctrie.Ctrie
@@ -35,6 +41,7 @@ type Client struct {
 
 func New(next http.Handler) (*LanternProFilter, error) {
 	return &LanternProFilter{
+		debug:          true,
 		next:           next,
 		proTokens:      set.New(),
 		clientRegistry: ctrie.New(nil),
@@ -42,7 +49,12 @@ func New(next http.Handler) (*LanternProFilter, error) {
 }
 
 func (f *LanternProFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	lanternUID := req.Header.Get("X-Lantern-UID")
+	if f.debug {
+		fmt.Println("Lantern Pro Middleware received request:")
+		reqStr, _ := httputil.DumpRequest(req, true)
+		fmt.Printf(string(reqStr))
+	}
+	lanternUID := req.Header.Get(uidHeader)
 	lanternProToken := req.Header.Get("X-Lantern-Pro-Token")
 
 	// If a Pro token is found in the header, test if its valid and then let
@@ -162,7 +174,11 @@ func (f *LanternProFilter) intercept(key []byte, atomicClient atomic.Value, w ht
 
 		closeOnce.Do(closeConns)
 	} else {
+		req.Header.Del(uidHeader)
 		f.next.ServeHTTP(w, req)
+
+		// HERE!!!
+
 		// TODO: byte counting in this case (by using custom response writer and inspecting req)
 	}
 	return

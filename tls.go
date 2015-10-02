@@ -13,7 +13,6 @@ import (
 
 var (
 	tenYearsFromToday = time.Now().AddDate(10, 0, 0)
-	processStart      = time.Now()
 )
 
 func listenTLS(addr, pkfile, certfile string) (net.Listener, error) {
@@ -42,9 +41,9 @@ func listenTLS(addr, pkfile, certfile string) (net.Listener, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Unable to init server cert: %s\n", err)
 		}
-	} else if *debug {
+	} /* else if *debug {
 		fmt.Println("Using provided Key/Cert files")
-	}
+	}*/
 
 	tlsConfig := tlsdefaults.Server()
 	cert, err := tls.LoadX509KeyPair(ctx.ServerCertFile, ctx.PKFile)
