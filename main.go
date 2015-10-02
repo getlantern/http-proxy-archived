@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"time"
+
+	"./utils"
 )
 
 var (
@@ -34,7 +36,7 @@ func main() {
 	}
 
 	// Start data collection
-	server.lanternProComponent.ScanClientsSnapshot(
+	utils.ScanClientsSnapshot(
 		upsertRedisEntry, time.Second,
 	)
 	if *https {
