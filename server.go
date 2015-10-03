@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"./forward"
 	"./httpconnect"
 	"./profilter"
 	"./tokenfilter"
@@ -23,18 +24,25 @@ type Server struct {
 func NewServer(token string) *Server {
 	stdWriter := io.Writer(os.Stdout)
 
-	// The following middleware is run from last to first
+	// The following middleware architecture can be seen as a chain of
+	// filters that is run from last to first.
 	// Don't forget to check Oxy and Gorilla's handlers for middleware.
+
+	// Handles Direct Proxying
+	forwardHandler, _ := forward.New(
+		nil,
+		forward.Logger(utils.NewTimeLogger(&stdWriter, utils.DEBUG)),
+	)
 
 	// Handles HTTP CONNECT
 	connectHandler, _ := httpconnect.New(
-		nil,
-		httpconnect.Logger(utils.NewTimeLogger(&stdWriter, utils.DEBUG)),
+		forwardHandler,
+		httpconnect.Logger(utils.NewTimeLogger(&stdWriter, utils.ERROR)),
 	)
-	// Handles Lantern Pro users
+	// Identifies Lantern Pro users (currently NOOP)
 	lanternPro, _ := profilter.New(
 		connectHandler,
-		profilter.Logger(utils.NewTimeLogger(&stdWriter, utils.DEBUG)),
+		profilter.Logger(utils.NewTimeLogger(&stdWriter, utils.ERROR)),
 	)
 	// Bounces back requests without the proper token
 	tokenFilter, _ := tokenfilter.New(

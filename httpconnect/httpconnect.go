@@ -101,7 +101,7 @@ func (f *HTTPConnectHandler) intercept(key []byte, atomicClient atomic.Value, w 
 	// If the request is not HTTP CONNECT, pass along to the next handler
 	if req.Method != "CONNECT" {
 		f.next.ServeHTTP(w, req)
-		// TODO: byte counting in this case (by using custom response writer and inspecting req)
+		return
 	}
 
 	f.log.Debugf("Proxying CONNECT request\n")
