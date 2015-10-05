@@ -84,7 +84,7 @@ func TestConnectNoToken(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-UID: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 404 Not Found\r\n"
 
-	testFn := func(conn net.Conn, targetURL *url.URL) {
+	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
 		var err error
 		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, clientUID)
 		t.Log("\n" + req)
@@ -102,15 +102,18 @@ func TestConnectNoToken(t *testing.T) {
 	}
 
 	testRoundTrip(t, httpProxy, httpTargetServer, testFn)
+	testRoundTrip(t, tlsProxy, httpTargetServer, testFn)
+
+	testRoundTrip(t, httpProxy, tlsTargetServer, testFn)
+	testRoundTrip(t, tlsProxy, tlsTargetServer, testFn)
 }
 
-/*
 // Bad X-Lantern-Auth-Token -> 404
 func TestConnectBadToken(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-UID: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 404 Not Found\r\n"
 
-	testRoundTrip(t, testProxies, func(conn net.Conn, targetURL *url.URL) {
+	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
 		var err error
 		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, "B4dT0k3n", clientUID)
 		t.Log("\n" + req)
@@ -125,7 +128,13 @@ func TestConnectBadToken(t *testing.T) {
 			"should get 404 Not Found because no token was provided") {
 			t.FailNow()
 		}
-	})
+	}
+
+	testRoundTrip(t, httpProxy, httpTargetServer, testFn)
+	testRoundTrip(t, tlsProxy, httpTargetServer, testFn)
+
+	testRoundTrip(t, httpProxy, tlsTargetServer, testFn)
+	testRoundTrip(t, tlsProxy, tlsTargetServer, testFn)
 }
 
 // No X-Lantern-UID -> 404
@@ -134,7 +143,7 @@ func TestConnectNoUID(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 404 Not Found\r\n"
 
-	testRoundTrip(t, testProxies, func(conn net.Conn, targetURL *url.URL) {
+	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
 		var err error
 		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, validToken)
 		t.Log("\n" + req)
@@ -149,7 +158,13 @@ func TestConnectNoUID(t *testing.T) {
 			"should get 404 Not Found because no token was provided") {
 			t.FailNow()
 		}
-	})
+	}
+
+	testRoundTrip(t, httpProxy, httpTargetServer, testFn)
+	testRoundTrip(t, tlsProxy, httpTargetServer, testFn)
+
+	testRoundTrip(t, httpProxy, tlsTargetServer, testFn)
+	testRoundTrip(t, tlsProxy, tlsTargetServer, testFn)
 }
 
 // X-Lantern-Auth-Token + X-Lantern-UID -> 200 OK <- Tunneled request -> 200 OK
@@ -157,8 +172,8 @@ func TestConnectOK(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-UID: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 200 OK\r\n"
 
-	testRoundTrip(t, testProxies, func(conn net.Conn, targetURL *url.URL) {
-		conn, err := net.Dial("tcp", proxyAddr.String())
+	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
+		conn, err := net.Dial("tcp", proxy.listener.Addr().String())
 		if !assert.NoError(t, err, "should dial proxy server") {
 			t.FailNow()
 		}
@@ -188,23 +203,25 @@ func TestConnectOK(t *testing.T) {
 		buf = [400]byte{}
 		_, err = conn.Read(buf[:])
 		assert.Contains(t, string(buf[:]), targetResponse, "should read tunneled response")
-	})
-}
-*/
+	}
 
-func testRoundTrip(t *testing.T, proxy *Server, target *targetHandler, checkerFn func(conn net.Conn, targetURL *url.URL)) {
+	testRoundTrip(t, httpProxy, httpTargetServer, testFn)
+	testRoundTrip(t, tlsProxy, httpTargetServer, testFn)
+}
+
+func testRoundTrip(t *testing.T, proxy *Server, target *targetHandler, checkerFn func(conn net.Conn, proxy *Server, targetURL *url.URL)) {
 	var conn net.Conn
 	var err error
 
 	addr := proxy.listener.Addr().String()
 	if !proxy.tls {
-		fmt.Printf("client -> %s (using HTTP) -> %s (using %s)", addr, target.server.URL, "HTTPS")
+		fmt.Printf("client -> %s (using HTTP) -> %s (using %s)\n", addr, target.server.URL, "HTTPS")
 		conn, err = net.Dial("tcp", addr)
 		if !assert.NoError(t, err, "should dial proxy server") {
 			t.FailNow()
 		}
 	} else {
-		fmt.Printf("client -> %s (using HTTPS) -> %s (using %s)", addr, target.server.URL, "HTTPS")
+		fmt.Printf("client -> %s (using HTTPS) -> %s (using %s)\n", addr, target.server.URL, "HTTPS")
 		var tlsConn *tls.Conn
 		x509cert := serverCertificate.X509()
 		tlsConn, err = tls.Dial("tcp", addr, &tls.Config{
@@ -227,7 +244,7 @@ func testRoundTrip(t *testing.T, proxy *Server, target *targetHandler, checkerFn
 	}()
 
 	url, _ := url.Parse(target.server.URL)
-	checkerFn(conn, url)
+	checkerFn(conn, proxy, url)
 }
 
 //
