@@ -19,6 +19,7 @@ type Server struct {
 	tokenFilterComponent *tokenfilter.TokenFilter
 	firstComponent       http.Handler
 	listener             net.Listener
+	tls                  bool
 }
 
 func NewServer(token string) *Server {
@@ -48,7 +49,7 @@ func NewServer(token string) *Server {
 	tokenFilter, _ := tokenfilter.New(
 		lanternPro,
 		tokenfilter.TokenSetter(token),
-		tokenfilter.Logger(utils.NewTimeLogger(&stdWriter, utils.DEBUG)),
+		tokenfilter.Logger(utils.NewTimeLogger(&stdWriter, utils.ERROR)),
 	)
 
 	server := &Server{
@@ -75,6 +76,7 @@ func (s *Server) ServeHTTP(addr string, ready *chan bool) error {
 	if ready != nil {
 		*ready <- true
 	}
+	s.tls = false
 	return http.Serve(s.listener, proxy)
 }
 
@@ -93,5 +95,6 @@ func (s *Server) ServeHTTPS(addr, keyfile, certfile string, ready *chan bool) er
 	if ready != nil {
 		*ready <- true
 	}
+	s.tls = true
 	return http.Serve(s.listener, proxy)
 }

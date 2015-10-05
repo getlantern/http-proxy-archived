@@ -25,17 +25,13 @@ const (
 	targetResponse = "Fight for a Free Internet!"
 )
 
-type proxy struct {
-	protocol string
-	addr     string
-}
-
 var (
-	targetURL    *url.URL
-	proxyAddr    net.Addr
-	tlsProxyAddr net.Addr
-
-	testProxies []proxy
+	httpProxy        *Server
+	tlsProxy         *Server
+	httpTargetServer *targetHandler
+	httpTargetURL    string
+	tlsTargetServer  *targetHandler
+	tlsTargetURL     string
 
 	serverCertificate *keyman.Certificate
 	// TODO: this should be imported from tlsdefaults package, but is not being
@@ -56,35 +52,29 @@ var (
 
 func TestMain(m *testing.M) {
 	flag.Parse()
+	var err error
 
 	// Set up mock target servers
-	defer stopMockServers()
-	site, _ := newMockServer(targetResponse)
-	targetURL, _ = url.Parse(site)
-	log.Printf("Started target site at %s\n", targetURL)
+	httpTargetURL, httpTargetServer = newTargetHandler(targetResponse, false)
+	defer httpTargetServer.Close()
+	tlsTargetURL, tlsTargetServer = newTargetHandler(targetResponse, true)
+	defer tlsTargetServer.Close()
 
 	// Set up HTTP chained server
-	httpServer, err := setUpNewHTTPServer()
+	httpProxy, err = setUpNewHTTPServer()
 	if err != nil {
 		log.Println("Error starting proxy server")
 		os.Exit(1)
 	}
-	proxyAddr = httpServer.listener.Addr()
-	log.Printf("Started proxy server at %s\n", proxyAddr.String())
+	log.Printf("Started HTTP proxy server at %s\n", httpProxy.listener.Addr().String())
 
 	// Set up HTTPS chained server
-	tlsServer, err := setUpNewHTTPSServer()
+	tlsProxy, err = setUpNewHTTPSServer()
 	if err != nil {
 		log.Println("Error starting proxy server")
 		os.Exit(1)
 	}
-	tlsProxyAddr = tlsServer.listener.Addr()
-	log.Printf("Started proxy server at %s\n", tlsProxyAddr.String())
-
-	testProxies = []proxy{
-		{"http", proxyAddr.String()},
-		{"https", tlsProxyAddr.String()},
-	}
+	log.Printf("Started HTTPS proxy server at %s\n", tlsProxy.listener.Addr().String())
 
 	os.Exit(m.Run())
 }
@@ -94,7 +84,7 @@ func TestConnectNoToken(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-UID: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 404 Not Found\r\n"
 
-	testRoundTrip(t, testProxies, func(conn net.Conn) {
+	testFn := func(conn net.Conn, targetURL *url.URL) {
 		var err error
 		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, clientUID)
 		t.Log("\n" + req)
@@ -109,15 +99,18 @@ func TestConnectNoToken(t *testing.T) {
 			"should get 404 Not Found because no token was provided") {
 			t.FailNow()
 		}
-	})
+	}
+
+	testRoundTrip(t, httpProxy, httpTargetServer, testFn)
 }
 
+/*
 // Bad X-Lantern-Auth-Token -> 404
 func TestConnectBadToken(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-UID: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 404 Not Found\r\n"
 
-	testRoundTrip(t, testProxies, func(conn net.Conn) {
+	testRoundTrip(t, testProxies, func(conn net.Conn, targetURL *url.URL) {
 		var err error
 		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, "B4dT0k3n", clientUID)
 		t.Log("\n" + req)
@@ -137,10 +130,11 @@ func TestConnectBadToken(t *testing.T) {
 
 // No X-Lantern-UID -> 404
 func TestConnectNoUID(t *testing.T) {
+	t.SkipNow()
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 404 Not Found\r\n"
 
-	testRoundTrip(t, testProxies, func(conn net.Conn) {
+	testRoundTrip(t, testProxies, func(conn net.Conn, targetURL *url.URL) {
 		var err error
 		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, validToken)
 		t.Log("\n" + req)
@@ -163,7 +157,7 @@ func TestConnectOK(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-UID: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 200 OK\r\n"
 
-	testRoundTrip(t, testProxies, func(conn net.Conn) {
+	testRoundTrip(t, testProxies, func(conn net.Conn, targetURL *url.URL) {
 		conn, err := net.Dial("tcp", proxyAddr.String())
 		if !assert.NoError(t, err, "should dial proxy server") {
 			t.FailNow()
@@ -191,9 +185,58 @@ func TestConnectOK(t *testing.T) {
 			t.FailNow()
 		}
 
+		buf = [400]byte{}
 		_, err = conn.Read(buf[:])
 		assert.Contains(t, string(buf[:]), targetResponse, "should read tunneled response")
 	})
+}
+*/
+
+func testRoundTrip(t *testing.T, proxy *Server, target *targetHandler, checkerFn func(conn net.Conn, targetURL *url.URL)) {
+	var conn net.Conn
+	var err error
+
+	addr := proxy.listener.Addr().String()
+	if !proxy.tls {
+		fmt.Printf("client -> %s (using HTTP) -> %s (using %s)", addr, target.server.URL, "HTTPS")
+		conn, err = net.Dial("tcp", addr)
+		if !assert.NoError(t, err, "should dial proxy server") {
+			t.FailNow()
+		}
+	} else {
+		fmt.Printf("client -> %s (using HTTPS) -> %s (using %s)", addr, target.server.URL, "HTTPS")
+		var tlsConn *tls.Conn
+		x509cert := serverCertificate.X509()
+		tlsConn, err = tls.Dial("tcp", addr, &tls.Config{
+			CipherSuites:       preferredCipherSuites,
+			InsecureSkipVerify: true,
+		})
+		if !assert.NoError(t, err, "should dial proxy server") {
+			t.FailNow()
+		}
+		conn = tlsConn
+		if !tlsConn.ConnectionState().PeerCertificates[0].Equal(x509cert) {
+			if err := tlsConn.Close(); err != nil {
+				log.Printf("Error closing chained server connection: %s\n", err)
+			}
+			t.Fatal("Server's certificate didn't match expected")
+		}
+	}
+	defer func() {
+		assert.NoError(t, conn.Close(), "should close connection")
+	}()
+
+	url, _ := url.Parse(target.server.URL)
+	checkerFn(conn, url)
+}
+
+//
+// Proxy server
+//
+
+type proxy struct {
+	protocol string
+	addr     string
 }
 
 func setUpNewHTTPServer() (*Server, error) {
@@ -226,61 +269,21 @@ func setUpNewHTTPSServer() (*Server, error) {
 	return s, err
 }
 
-func testRoundTrip(t *testing.T, proxies []proxy, checkerFn func(conn net.Conn)) {
-	for _, proxy := range proxies {
-		var conn net.Conn
-		var err error
-
-		switch proxy.protocol {
-		case "http":
-			conn, err = net.Dial("tcp", proxy.addr)
-			if !assert.NoError(t, err, "should dial proxy server") {
-				t.FailNow()
-			}
-		case "https":
-			var tlsConn *tls.Conn
-			x509cert := serverCertificate.X509()
-			tlsConn, err = tls.Dial("tcp", proxy.addr, &tls.Config{
-				CipherSuites:       preferredCipherSuites,
-				InsecureSkipVerify: true,
-			})
-			if !assert.NoError(t, err, "should dial proxy server") {
-				t.FailNow()
-			}
-			conn = tlsConn
-			if !tlsConn.ConnectionState().PeerCertificates[0].Equal(x509cert) {
-				if err := tlsConn.Close(); err != nil {
-					log.Printf("Error closing chained server connection: %s\n", err)
-				}
-				t.Fatal("Server's certificate didn't match expected")
-			}
-		default:
-			t.Fatal("Unknown protocol")
-		}
-		defer func() {
-			assert.NoError(t, conn.Close(), "should close connection")
-		}()
-
-		checkerFn(conn)
-	}
-}
-
 //
-// Mock server
+// Mock target server
 // Emulating locally a target site for testing tunnels
 //
 
-var mockServers []*httptest.Server
-
-type mockHandler struct {
+type targetHandler struct {
 	writer func(w http.ResponseWriter)
+	server *httptest.Server
 }
 
-func (m *mockHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (m *targetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.writer(w)
 }
 
-func (m *mockHandler) Raw(msg string) {
+func (m *targetHandler) Raw(msg string) {
 	m.writer = func(w http.ResponseWriter) {
 		conn, _, _ := w.(http.Hijacker).Hijack()
 		if _, err := conn.Write([]byte(msg)); err != nil {
@@ -292,7 +295,7 @@ func (m *mockHandler) Raw(msg string) {
 	}
 }
 
-func (m *mockHandler) Msg(msg string) {
+func (m *targetHandler) Msg(msg string) {
 	m.writer = func(w http.ResponseWriter) {
 		w.Header()["Content-Length"] = []string{strconv.Itoa(len(msg))}
 		_, _ = w.Write([]byte(msg))
@@ -300,7 +303,7 @@ func (m *mockHandler) Msg(msg string) {
 	}
 }
 
-func (m *mockHandler) Timeout(d time.Duration, msg string) {
+func (m *targetHandler) Timeout(d time.Duration, msg string) {
 	m.writer = func(w http.ResponseWriter) {
 		time.Sleep(d)
 		w.Header()["Content-Length"] = []string{strconv.Itoa(len(msg))}
@@ -309,16 +312,18 @@ func (m *mockHandler) Timeout(d time.Duration, msg string) {
 	}
 }
 
-func newMockServer(msg string) (string, *mockHandler) {
-	m := mockHandler{nil}
-	m.Msg(msg)
-	s := httptest.NewServer(&m)
-	mockServers = append(mockServers, s)
-	return s.URL, &m
+func (m *targetHandler) Close() {
+	m.Close()
 }
 
-func stopMockServers() {
-	for _, s := range mockServers {
-		s.Close()
+func newTargetHandler(msg string, tls bool) (string, *targetHandler) {
+	m := targetHandler{}
+	m.Msg(msg)
+	if tls {
+		m.server = httptest.NewTLSServer(&m)
+	} else {
+		m.server = httptest.NewServer(&m)
 	}
+	log.Printf("Started target site at %v\n", m.server.URL)
+	return m.server.URL, &m
 }
