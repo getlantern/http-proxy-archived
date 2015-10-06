@@ -71,11 +71,17 @@ func GetClient(key []byte) atomic.Value {
 		//client.LastAccess = time.Now()
 		//f.clientRegistry.Insert(key, client)
 	} else {
-		client = &Client{
-			Created:    time.Now(),
-			LastAccess: time.Now(),
-			BytesIn:    0,
-			BytesOut:   0,
+		// First try to retrieve it from Redis
+		if redisClient != nil {
+			client, ok = getRedisEntry(key)
+		}
+		if client == nil {
+			client = &Client{
+				Created:    time.Now(),
+				LastAccess: time.Now(),
+				BytesIn:    0,
+				BytesOut:   0,
+			}
 		}
 		clientRegistry.Insert(key, client)
 	}

@@ -5,8 +5,14 @@ import (
 	"os"
 	"strconv"
 	"sync/atomic"
+	"time"
 
 	"gopkg.in/redis.v3"
+)
+
+const (
+	bytesInField  = "bytesIn"
+	bytesOutField = "bytesOut"
 )
 
 var (
@@ -45,8 +51,8 @@ func UpsertRedisEntry(key []byte, client *Client) {
 	bytesIn := atomic.LoadInt64(&client.BytesIn)
 	bytesOut := atomic.LoadInt64(&client.BytesOut)
 	err = redisClient.HMSet("client:"+string(key),
-		"bytesIn", strconv.FormatInt(bytesIn, 10),
-		"bytesOut", strconv.FormatInt(bytesOut, 10)).Err()
+		bytesInField, strconv.FormatInt(bytesIn, 10),
+		bytesOutField, strconv.FormatInt(bytesOut, 10)).Err()
 	if err != nil {
 		fmt.Printf("Error setting Redis key: %v\n", err)
 	}
@@ -60,4 +66,27 @@ func UpsertRedisEntry(key []byte, client *Client) {
 	if err != nil {
 		fmt.Printf("Error setting Redis key: %v\n", err)
 	}
+}
+
+func getRedisEntry(key []byte) (*Client, bool) {
+	hmget := redisClient.HMGet("client:"+string(key), bytesInField, bytesOutField)
+	result, err := hmget.Result()
+	if err != nil {
+		return nil, false
+	}
+	var bytesIn int64
+	if result[0] != nil {
+		bytesIn, _ = strconv.ParseInt(result[0].(string), 10, 64)
+	}
+	var bytesOut int64
+	if result[1] != nil {
+		bytesOut, _ = strconv.ParseInt(result[1].(string), 10, 64)
+	}
+
+	return &Client{
+		Created:    time.Now(),
+		LastAccess: time.Now(),
+		BytesIn:    bytesIn,
+		BytesOut:   bytesOut,
+	}, true
 }
