@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	//"time"
+	"time"
 
 	"./utils"
 )
@@ -42,11 +42,9 @@ func main() {
 	}
 
 	// Start data collection
-	/*
-		utils.ScanClientsSnapshot(
-			upsertRedisEntry, time.Second,
-		)
-	*/
+	utils.ScanClientsSnapshot(
+		upsertRedisEntry, 2*time.Second,
+	)
 	if *https {
 		err = server.ServeHTTPS(*addr, *keyfile, *certfile, nil)
 	} else {

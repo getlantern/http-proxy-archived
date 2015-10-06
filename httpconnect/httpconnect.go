@@ -12,10 +12,6 @@ import (
 	"../utils"
 )
 
-const (
-	uidHeader = "X-Lantern-UID"
-)
-
 type HTTPConnectHandler struct {
 	log  utils.Logger
 	next http.Handler
@@ -48,8 +44,7 @@ func (f *HTTPConnectHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	reqStr, _ := httputil.DumpRequest(req, true)
 	f.log.Debugf("HTTPConnectHandler Middleware received request:\n%s", reqStr)
 
-	lanternUID := req.Header.Get(uidHeader)
-	req.Header.Del(uidHeader)
+	lanternUID := req.Header.Get(utils.UIDHeader)
 
 	// A UID must be provided always by the client.  Respond 404 otherwise.
 	if lanternUID == "" {

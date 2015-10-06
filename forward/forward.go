@@ -5,8 +5,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	//"sync/atomic"
-	//	"strconv"
+	"sync/atomic"
 	"time"
 
 	"../utils"
@@ -57,7 +56,7 @@ func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	start := time.Now().UTC()
 	reqClone := f.cloneRequest(req, req.URL)
 
-	reqStr, _ = httputil.DumpRequest(reqClone, true)
+	reqStr, _ = httputil.DumpRequestOut(reqClone, true)
 	f.log.Debugf("Forward Middleware forwards request:\n%s", reqStr)
 
 	response, err := f.roundTripper.RoundTrip(reqClone)
@@ -78,9 +77,12 @@ func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	n, _ := io.Copy(w, response.Body)
 
-	//client := atomicClient.Load().(*utils.Client)
-	//atomic.AddInt64(&client.BytesOut, len(reqStr))
-	//atomic.AddInt64(&client.BytesIn, len(respStr))
+	lanternUID := req.Header.Get(utils.UIDHeader)
+	key := []byte(lanternUID)
+	atomicClient := utils.GetClient(key)
+	client := atomicClient.Load().(*utils.Client)
+	atomic.AddInt64(&client.BytesOut, int64(len(reqStr)))
+	atomic.AddInt64(&client.BytesIn, int64(len(respStr)))
 	f.log.Debugf("%v\n", n)
 
 	response.Body.Close()
