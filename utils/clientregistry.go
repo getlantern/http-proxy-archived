@@ -1,8 +1,10 @@
 package utils
 
 import (
+	"sync/atomic"
 	"time"
 
+	//"github.com/hashicorp/golang-lru"
 	"github.com/Workiva/go-datastructures/trie/ctrie"
 )
 
@@ -13,12 +15,19 @@ type Client struct {
 	BytesOut   int64
 }
 
+// Used for request contexts (attaching the client structure to the request)
+type Key int
+
+const ClientKey Key = 0
+
 var (
-	ClientRegistry *ctrie.Ctrie
+	clientRegistry *ctrie.Ctrie
+	// Client Cache to avoid hitting the clientRegistry when possible
+	// clientCache, _ = lru.New(32) // 32 seems a reasonable number of concurrent users per server
 )
 
 func init() {
-	ClientRegistry = ctrie.New(nil)
+	clientRegistry = ctrie.New(nil)
 }
 
 // ScanClientsSnapshot will run a fn over each client on a specific snapshot in
@@ -29,7 +38,7 @@ func ScanClientsSnapshot(fn func([]byte, *Client), period time.Duration) {
 	go func() {
 		for {
 			time.Sleep(period)
-			snapshot := ClientRegistry.Snapshot()
+			snapshot := clientRegistry.Snapshot()
 			// Note: Remember that if the snapshot is not going to
 			// be fully iterated, it will leak.  A cancelling chanel
 			// needs to be used
@@ -39,4 +48,40 @@ func ScanClientsSnapshot(fn func([]byte, *Client), period time.Duration) {
 			}
 		}
 	}()
+}
+
+func GetClient(key []byte) atomic.Value {
+	var client *Client
+
+	// Try first in the cache
+	// TODO: Actually, leave optimizations for later
+	/*
+		if client, ok := clientCache.Get(key); ok {
+			client.(*Client).LastAccess = time.Now()
+			// TODO: numbytes
+			clientRegistry.Insert(key, *(client.(*Client)))
+			return
+		} else {
+			clientCache.Set(key, *client)
+		}
+	*/
+
+	if val, ok := clientRegistry.Lookup(key); ok {
+		client = val.(*Client)
+		//client.LastAccess = time.Now()
+		//f.clientRegistry.Insert(key, client)
+	} else {
+		client = &Client{
+			Created:    time.Now(),
+			LastAccess: time.Now(),
+			BytesIn:    0,
+			BytesOut:   0,
+		}
+		clientRegistry.Insert(key, client)
+	}
+	var atomicClient atomic.Value
+	atomicClient.Store(client)
+	//clientCache.Add(key, client)
+
+	return atomicClient
 }

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	//"sync/atomic"
 	//	"strconv"
 	"time"
 
@@ -77,8 +78,11 @@ func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	n, _ := io.Copy(w, response.Body)
 
-	// TODO
-	f.log.Debugf("TODO: Byte counting: %v\n", n)
+	//client := atomicClient.Load().(*utils.Client)
+	//atomic.AddInt64(&client.BytesOut, len(reqStr))
+	//atomic.AddInt64(&client.BytesIn, len(respStr))
+	f.log.Debugf("%v\n", n)
+
 	response.Body.Close()
 }
 
