@@ -139,7 +139,6 @@ func TestConnectBadToken(t *testing.T) {
 
 // No X-Lantern-UID -> 404
 func TestConnectNoUID(t *testing.T) {
-	t.SkipNow()
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 404 Not Found\r\n"
 
@@ -173,17 +172,9 @@ func TestConnectOK(t *testing.T) {
 	connectResp := "HTTP/1.1 200 OK\r\n"
 
 	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
-		conn, err := net.Dial("tcp", proxy.listener.Addr().String())
-		if !assert.NoError(t, err, "should dial proxy server") {
-			t.FailNow()
-		}
-		defer func() {
-			assert.NoError(t, conn.Close(), "should close connection")
-		}()
-
 		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, validToken, clientUID)
 		t.Log("\n" + req)
-		_, err = conn.Write([]byte(req))
+		_, err := conn.Write([]byte(req))
 		if !assert.NoError(t, err, "should write CONNECT request") {
 			t.FailNow()
 		}
@@ -207,6 +198,123 @@ func TestConnectOK(t *testing.T) {
 
 	testRoundTrip(t, httpProxy, httpTargetServer, testFn)
 	testRoundTrip(t, tlsProxy, httpTargetServer, testFn)
+
+	// TODO
+	//testRoundTrip(t, httpProxy, tlsTargetServer, testFn)
+	//testRoundTrip(t, tlsProxy, tlsTargetServer, testFn)
+}
+
+// No X-Lantern-Auth-Token -> 404
+func TestDirectNoToken(t *testing.T) {
+	connectReq := "GET /%s HTTP/1.1\r\nHost: %s\r\nX-Lantern-UID: %s\r\n\r\n"
+	connectResp := "HTTP/1.1 404 Not Found\r\n"
+
+	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
+		var err error
+		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, clientUID)
+		t.Log("\n" + req)
+		_, err = conn.Write([]byte(req))
+		if !assert.NoError(t, err, "should write CONNECT request") {
+			t.FailNow()
+		}
+
+		var buf [400]byte
+		_, err = conn.Read(buf[:])
+		if !assert.Contains(t, string(buf[:]), connectResp,
+			"should get 404 Not Found because no token was provided") {
+			t.FailNow()
+		}
+	}
+
+	testRoundTrip(t, httpProxy, httpTargetServer, testFn)
+	testRoundTrip(t, tlsProxy, httpTargetServer, testFn)
+
+	testRoundTrip(t, httpProxy, tlsTargetServer, testFn)
+	testRoundTrip(t, tlsProxy, tlsTargetServer, testFn)
+}
+
+// Bad X-Lantern-Auth-Token -> 404
+func TestDirectBadToken(t *testing.T) {
+	connectReq := "GET /%s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-UID: %s\r\n\r\n"
+	connectResp := "HTTP/1.1 404 Not Found\r\n"
+
+	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
+		var err error
+		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, "B4dT0k3n", clientUID)
+		t.Log("\n" + req)
+		_, err = conn.Write([]byte(req))
+		if !assert.NoError(t, err, "should write CONNECT request") {
+			t.FailNow()
+		}
+
+		var buf [400]byte
+		_, err = conn.Read(buf[:])
+		if !assert.Contains(t, string(buf[:]), connectResp,
+			"should get 404 Not Found because no token was provided") {
+			t.FailNow()
+		}
+	}
+
+	testRoundTrip(t, httpProxy, httpTargetServer, testFn)
+	testRoundTrip(t, tlsProxy, httpTargetServer, testFn)
+
+	testRoundTrip(t, httpProxy, tlsTargetServer, testFn)
+	testRoundTrip(t, tlsProxy, tlsTargetServer, testFn)
+}
+
+// No X-Lantern-UID -> 404
+func TestDirectNoUID(t *testing.T) {
+	connectReq := "GET /%s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\n\r\n"
+	connectResp := "HTTP/1.1 404 Not Found\r\n"
+
+	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
+		var err error
+		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, validToken)
+		t.Log("\n" + req)
+		_, err = conn.Write([]byte(req))
+		if !assert.NoError(t, err, "should write CONNECT request") {
+			t.FailNow()
+		}
+
+		var buf [400]byte
+		_, err = conn.Read(buf[:])
+		if !assert.Contains(t, string(buf[:]), connectResp,
+			"should get 404 Not Found because no token was provided") {
+			t.FailNow()
+		}
+	}
+
+	testRoundTrip(t, httpProxy, httpTargetServer, testFn)
+	testRoundTrip(t, tlsProxy, httpTargetServer, testFn)
+
+	testRoundTrip(t, httpProxy, tlsTargetServer, testFn)
+	testRoundTrip(t, tlsProxy, tlsTargetServer, testFn)
+}
+
+// X-Lantern-Auth-Token + X-Lantern-UID -> Forward
+func TestDirectOK(t *testing.T) {
+	reqTempl := "GET /%s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-UID: %s\r\n\r\n"
+
+	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
+		req := fmt.Sprintf(reqTempl, targetURL.Path, targetURL.Host, validToken, clientUID)
+		t.Log("\n" + req)
+		_, err := conn.Write([]byte(req))
+		if !assert.NoError(t, err, "should write GET request") {
+			t.FailNow()
+		}
+
+		buf := [400]byte{}
+		_, err = conn.Read(buf[:])
+		assert.Contains(t, string(buf[:]), targetResponse, "should read tunneled response")
+
+	}
+
+	testRoundTrip(t, httpProxy, httpTargetServer, testFn)
+	testRoundTrip(t, tlsProxy, httpTargetServer, testFn)
+
+	// TODO
+	//testRoundTrip(t, httpProxy, tlsTargetServer, testFn)
+	//testRoundTrip(t, tlsProxy, tlsTargetServer, testFn)
 }
 
 func testRoundTrip(t *testing.T, proxy *Server, target *targetHandler, checkerFn func(conn net.Conn, proxy *Server, targetURL *url.URL)) {
@@ -215,19 +323,19 @@ func testRoundTrip(t *testing.T, proxy *Server, target *targetHandler, checkerFn
 
 	addr := proxy.listener.Addr().String()
 	if !proxy.tls {
-		fmt.Printf("client -> %s (using HTTP) -> %s (using %s)\n", addr, target.server.URL, "HTTPS")
 		conn, err = net.Dial("tcp", addr)
+		fmt.Printf("%s -> %s (via HTTP) -> %s\n", conn.LocalAddr().String(), addr, target.server.URL)
 		if !assert.NoError(t, err, "should dial proxy server") {
 			t.FailNow()
 		}
 	} else {
-		fmt.Printf("client -> %s (using HTTPS) -> %s (using %s)\n", addr, target.server.URL, "HTTPS")
 		var tlsConn *tls.Conn
 		x509cert := serverCertificate.X509()
 		tlsConn, err = tls.Dial("tcp", addr, &tls.Config{
 			CipherSuites:       preferredCipherSuites,
 			InsecureSkipVerify: true,
 		})
+		fmt.Printf("%s -> %s (via HTTPS) -> %s\n", tlsConn.LocalAddr().String(), addr, target.server.URL)
 		if !assert.NoError(t, err, "should dial proxy server") {
 			t.FailNow()
 		}

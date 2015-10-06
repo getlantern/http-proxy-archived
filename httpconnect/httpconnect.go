@@ -1,7 +1,6 @@
 package httpconnect
 
 import (
-	"crypto/tls"
 	"fmt"
 	"io"
 	"net"
@@ -115,21 +114,10 @@ func (f *HTTPConnectHandler) intercept(key []byte, atomicClient atomic.Value, w 
 		utils.RespondBadGateway(w, req, fmt.Sprintf("Unable to hijack connection: %s", err))
 		return
 	}
-	switch req.URL.Scheme {
-	case "", "https":
-		f.log.Errorf("HTTP CONNECT target host: USING TLS\n")
-		connOut, err = tls.Dial("tcp", req.Host, &tls.Config{})
-	case "http":
-		f.log.Errorf("HTTP CONNECT target host: USING HTTP\n")
-		connOut, err = net.Dial("tcp", req.Host)
-	default:
-		f.log.Errorf("HTTP CONNECT target host: Unknown URL Scheme\n")
-	}
+	connOut, err = net.Dial("tcp", req.Host)
 	if err != nil {
 		return
 	}
-
-	f.log.Errorf("HELLOOOOOOOOOOOOOOO\n")
 
 	// Pipe data through CONNECT tunnel
 	closeConns := func() {

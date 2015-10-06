@@ -32,7 +32,7 @@ func NewServer(token string) *Server {
 	// Handles Direct Proxying
 	forwardHandler, _ := forward.New(
 		nil,
-		forward.Logger(utils.NewTimeLogger(&stdWriter, utils.DEBUG)),
+		forward.Logger(utils.NewTimeLogger(&stdWriter, utils.ERROR)),
 	)
 
 	// Handles HTTP CONNECT

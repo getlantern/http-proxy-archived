@@ -61,27 +61,13 @@ func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	response, err := f.roundTripper.RoundTrip(reqClone)
 
-	// TMP
-	//f.log.Debugf("******* ORIGINAL :%s\n", req)
-	//f.log.Debugf("******* CLONE :%s\n", reqClone)
-
 	if err != nil {
 		f.log.Errorf("Error forwarding to %v, err: %v", req.URL, err)
 		f.errHandler.ServeHTTP(w, req, err)
 		return
 	}
-
-	if req.TLS != nil {
-		f.log.Infof("Round trip: %v, code: %v, duration: %v tls:version: %x, tls:resume:%t, tls:csuite:%x, tls:server:%v\n",
-			req.URL, response.StatusCode, time.Now().UTC().Sub(start),
-			req.TLS.Version,
-			req.TLS.DidResume,
-			req.TLS.CipherSuite,
-			req.TLS.ServerName)
-	} else {
-		f.log.Infof("Round trip: %v, code: %v, duration: %v\n",
-			req.URL, response.StatusCode, time.Now().UTC().Sub(start))
-	}
+	f.log.Infof("Round trip: %v, code: %v, duration: %v\n",
+		req.URL, response.StatusCode, time.Now().UTC().Sub(start))
 
 	respStr, _ := httputil.DumpResponse(response, true)
 	f.log.Debugf("Forward Middleware received response:\n%s", respStr)
@@ -90,6 +76,8 @@ func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(response.StatusCode)
 
 	n, _ := io.Copy(w, response.Body)
+
+	// TODO
 	f.log.Debugf("TODO: Byte counting: %v\n", n)
 	response.Body.Close()
 }
@@ -110,12 +98,7 @@ func (f *Forwarder) cloneRequest(req *http.Request, u *url.URL) *http.Request {
 	copyHeaders(outReq.Header, req.Header)
 
 	// Request URL
-	var scheme string
-	if req.TLS == nil {
-		scheme = "http"
-	} else {
-		scheme = "https"
-	}
+	scheme := "http"
 	outReq.URL = cloneURL(req.URL)
 	outReq.URL.Scheme = scheme
 	outReq.URL.Host = req.Host
