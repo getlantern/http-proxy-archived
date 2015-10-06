@@ -1,0 +1,36 @@
+version: 12
+cloudconfig: http://nothing.com
+cloudconfigca: ""
+addr: 127.0.0.1:8787
+role: client
+instanceid: "11111111111111111"
+cpuprofile: ""
+memprofile: ""
+uiaddr: 127.0.0.1:16823
+autoreport: true
+autolaunch: true
+stats:
+  reportingperiod: "0"
+  statshubaddr: nothing.nothing.com
+server:
+  unencrypted: false
+  country: ""
+  registerat: ""
+  portmap: 0
+  frontfqdns: {}
+  waddelladdr: ""
+client:
+  minqos: 0
+  dumpheaders: false
+  proxyall: false
+  frontedservers: []
+  chainedservers:
+    fallback-localhost:
+      addr: 127.0.0.1:1443
+      pipelined: true
+      cert: "-----BEGIN CERTIFICATE-----\nMIIC3jCCAcagAwIBAgIIFAkkbl/f3C4wDQYJKoZIhvcNAQELBQAwEjEQMA4GA1UE\nChMHTGFudGVybjAeFw0xNTA5MDExODQ2NTJaFw0yNTEwMDExODQ2NTJaMBIxEDAO\nBgNVBAoTB0xhbnRlcm4wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDb\nDIVpGCAFxZ00qvAd3bupkWro+hnpxGCZFnbdCGqqFPhToP4XnkexTack9oQEL4ud\nwcWwEQ5fhUYEiyOeAEzLrzBb7TQTZDlJbobbupBOh8dd0hqYRgnLft0IpaVNGnp0\nauA8XcC10Xpcv6hrYAW1D4lKFiezDnw45ythyEt2XCBTchubPuPvJOR2Fx2Cu08l\nxptBo7IQmR1B5hOfBLC/3h+jDv6h9bD+kR4mXs+Nx/TLuUnsvfk/EqM6wuX7DYlW\nwlSvkwYpna3Q4dgla7WHrDPo7GYKocUPruqnYjuczBjd6Zje95Pj9RbZHBlPBHSw\n6PUKa5VQ31D5U0+Ta7A1AgMBAAGjODA2MA4GA1UdDwEB/wQEAwICpDATBgNVHSUE\nDDAKBggrBgEFBQcDATAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IB\nAQAmGeGhbFW4sGtLbWEJ0RZmo6VxKS5IdGUo3XVma0s0OovhrbzwF6qKgYuCqK8c\nTIlcIwYFadklm6GOXknfnqPLpOByRtn7PzrkQVlt7EyTpW94TnIaGz4YmFy1LQ+u\nvQY7ccmRsj2OHwwFRBl8hO4R8v3UX3MGZ6KdpL7CcKuiLsFABcC92OuDGHLbAcNO\nenPgytVXSRMX8dLP3taQCMy55QvqL9PCdFhlCRYY0tuIZSG2asxweSZXyjZGiPCS\neOD7ZXHlsLfWYgqMa3fdTmwtRtINi2bgb1DHuB+G8HBYzvJqm4VFQei9MHVo8Fn/\nneb9B+Fg20iZP2wIEo0Jsaj3\n-----END
+        CERTIFICATE-----\n"
+      authtoken: "111"
+      weight: 1000000
+      qos: 10
+      trusted: true
