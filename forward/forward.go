@@ -62,7 +62,7 @@ func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	response, err := f.roundTripper.RoundTrip(reqClone)
 
 	if err != nil {
-		f.log.Errorf("Error forwarding to %v, err: %v", req.URL, err)
+		f.log.Errorf("Error forwarding to %v, error: %v", req.Host, err)
 		f.errHandler.ServeHTTP(w, req, err)
 		return
 	}

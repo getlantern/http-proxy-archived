@@ -171,7 +171,7 @@ func TestConnectOK(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-UID: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 200 OK\r\n"
 
-	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
+	testHTTP := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
 		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, validToken, clientUID)
 		t.Log("\n" + req)
 		_, err := conn.Write([]byte(req))
@@ -196,12 +196,42 @@ func TestConnectOK(t *testing.T) {
 		assert.Contains(t, string(buf[:]), targetResponse, "should read tunneled response")
 	}
 
-	testRoundTrip(t, httpProxy, httpTargetServer, testFn)
-	testRoundTrip(t, tlsProxy, httpTargetServer, testFn)
+	testTLS := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
+		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, validToken, clientUID)
+		t.Log("\n" + req)
+		_, err := conn.Write([]byte(req))
+		if !assert.NoError(t, err, "should write CONNECT request") {
+			t.FailNow()
+		}
 
-	// TODO
-	//testRoundTrip(t, httpProxy, tlsTargetServer, testFn)
-	//testRoundTrip(t, tlsProxy, tlsTargetServer, testFn)
+		var buf [400]byte
+		_, err = conn.Read(buf[:])
+		if !assert.Contains(t, string(buf[:]), connectResp,
+			"should get 200 OK") {
+			t.FailNow()
+		}
+
+		// HTTPS-Tunneled HTTPS
+		tunnConn := tls.Client(conn, &tls.Config{
+			InsecureSkipVerify: true,
+		})
+		tunnConn.Handshake()
+
+		_, err = tunnConn.Write([]byte(tunneledReq))
+		if !assert.NoError(t, err, "should write tunneled data") {
+			t.FailNow()
+		}
+
+		buf = [400]byte{}
+		_, err = tunnConn.Read(buf[:])
+		assert.Contains(t, string(buf[:]), targetResponse, "should read tunneled response")
+	}
+
+	testRoundTrip(t, httpProxy, httpTargetServer, testHTTP)
+	testRoundTrip(t, tlsProxy, httpTargetServer, testHTTP)
+
+	testRoundTrip(t, httpProxy, tlsTargetServer, testTLS)
+	testRoundTrip(t, tlsProxy, tlsTargetServer, testTLS)
 }
 
 // No X-Lantern-Auth-Token -> 404
@@ -294,8 +324,9 @@ func TestDirectNoUID(t *testing.T) {
 // X-Lantern-Auth-Token + X-Lantern-UID -> Forward
 func TestDirectOK(t *testing.T) {
 	reqTempl := "GET /%s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-UID: %s\r\n\r\n"
+	failResp := "HTTP/1.1 500 Internal Server Error\r\n"
 
-	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
+	testOk := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
 		req := fmt.Sprintf(reqTempl, targetURL.Path, targetURL.Host, validToken, clientUID)
 		t.Log("\n" + req)
 		_, err := conn.Write([]byte(req))
@@ -309,12 +340,29 @@ func TestDirectOK(t *testing.T) {
 
 	}
 
-	testRoundTrip(t, httpProxy, httpTargetServer, testFn)
-	testRoundTrip(t, tlsProxy, httpTargetServer, testFn)
+	testFail := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
+		req := fmt.Sprintf(reqTempl, targetURL.Path, targetURL.Host, validToken, clientUID)
+		t.Log("\n" + req)
+		_, err := conn.Write([]byte(req))
+		if !assert.NoError(t, err, "should write GET request") {
+			t.FailNow()
+		}
 
-	// TODO
-	//testRoundTrip(t, httpProxy, tlsTargetServer, testFn)
-	//testRoundTrip(t, tlsProxy, tlsTargetServer, testFn)
+		buf := [400]byte{}
+		_, err = conn.Read(buf[:])
+		t.Log("\n" + string(buf[:]))
+
+		assert.Contains(t, string(buf[:]), failResp, "should respond with 500 Internal Server Error")
+
+	}
+
+	testRoundTrip(t, httpProxy, httpTargetServer, testOk)
+	testRoundTrip(t, tlsProxy, httpTargetServer, testOk)
+
+	// HTTPS can't be tunneled using Direct Proxying, as redirections
+	// require a TLS handshake between the proxy and the target
+	testRoundTrip(t, httpProxy, tlsTargetServer, testFail)
+	testRoundTrip(t, tlsProxy, tlsTargetServer, testFail)
 }
 
 func testRoundTrip(t *testing.T, proxy *Server, target *targetHandler, checkerFn func(conn net.Conn, proxy *Server, targetURL *url.URL)) {
