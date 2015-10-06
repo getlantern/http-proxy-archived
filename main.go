@@ -36,14 +36,14 @@ func main() {
 	}
 	server := NewServer(*token, logLevel)
 	// Connect to Redis before initiating the server
-	if err = connectRedis(); err != nil {
+	if err = utils.ConnectRedis(); err != nil {
 		fmt.Printf("Error connecting to Redis: %v,\nWARNING: NOT REPORTING TO REDIS\n", err)
 		// panic(err)
 	}
 
 	// Start data collection
 	utils.ScanClientsSnapshot(
-		upsertRedisEntry, 2*time.Second,
+		utils.UpsertRedisEntry, 2*time.Second,
 	)
 	if *https {
 		err = server.ServeHTTPS(*addr, *keyfile, *certfile, nil)

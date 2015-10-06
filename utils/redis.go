@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"fmt"
@@ -7,8 +7,6 @@ import (
 	"sync/atomic"
 
 	"gopkg.in/redis.v3"
-
-	"./utils"
 )
 
 var (
@@ -16,7 +14,7 @@ var (
 )
 
 // connectRedis will connect to the database and make sure we can ping
-func connectRedis() error {
+func ConnectRedis() error {
 	redisAddr := os.Getenv("REDIS_PRODUCTION_URL")
 	if redisAddr == "" {
 		redisAddr = "127.0.0.1:6379"
@@ -30,14 +28,16 @@ func connectRedis() error {
 }
 
 // upsertRedisEntry must be thread-safe
-func upsertRedisEntry(key []byte, client *utils.Client) {
+func UpsertRedisEntry(key []byte, client *Client) {
 	// TODO: use "lastAccess" field to avoid updating the unchanged fields
-	if *debug {
-		fmt.Printf("%s  In: %v, Out: %v\n",
-			key,
-			atomic.LoadInt64(&client.BytesIn),
-			atomic.LoadInt64(&client.BytesOut))
-	}
+	/*
+		if *debug {
+			fmt.Printf("%s  In: %v, Out: %v\n",
+				key,
+				atomic.LoadInt64(&client.BytesIn),
+				atomic.LoadInt64(&client.BytesOut))
+		}
+	*/
 	var err error
 	// We are not supposed to be updating a user concurrently, since it's
 	// going to be assigned to one server only.  We are just being cautious
