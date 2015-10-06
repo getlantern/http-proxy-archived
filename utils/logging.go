@@ -12,6 +12,7 @@ const (
 	INFO
 	WARN
 	ERROR
+	QUIET
 )
 
 var (

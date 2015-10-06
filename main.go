@@ -6,7 +6,7 @@ import (
 	"os"
 	//"time"
 
-	//"./utils"
+	"./utils"
 )
 
 var (
@@ -28,7 +28,13 @@ func main() {
 		return
 	}
 
-	server := NewServer(*token)
+	var logLevel utils.LogLevel
+	if *debug {
+		logLevel = utils.DEBUG
+	} else {
+		logLevel = utils.ERROR
+	}
+	server := NewServer(*token, logLevel)
 	// Connect to Redis before initiating the server
 	if err = connectRedis(); err != nil {
 		fmt.Printf("Error connecting to Redis: %v,\nWARNING: NOT REPORTING TO REDIS\n", err)

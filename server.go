@@ -22,7 +22,7 @@ type Server struct {
 	tls                  bool
 }
 
-func NewServer(token string) *Server {
+func NewServer(token string, logLevel utils.LogLevel) *Server {
 	stdWriter := io.Writer(os.Stdout)
 
 	// The following middleware architecture can be seen as a chain of
@@ -32,24 +32,24 @@ func NewServer(token string) *Server {
 	// Handles Direct Proxying
 	forwardHandler, _ := forward.New(
 		nil,
-		forward.Logger(utils.NewTimeLogger(&stdWriter, utils.ERROR)),
+		forward.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 	)
 
 	// Handles HTTP CONNECT
 	connectHandler, _ := httpconnect.New(
 		forwardHandler,
-		httpconnect.Logger(utils.NewTimeLogger(&stdWriter, utils.ERROR)),
+		httpconnect.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 	)
 	// Identifies Lantern Pro users (currently NOOP)
 	lanternPro, _ := profilter.New(
 		connectHandler,
-		profilter.Logger(utils.NewTimeLogger(&stdWriter, utils.ERROR)),
+		profilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 	)
 	// Bounces back requests without the proper token
 	tokenFilter, _ := tokenfilter.New(
 		lanternPro,
 		tokenfilter.TokenSetter(token),
-		tokenfilter.Logger(utils.NewTimeLogger(&stdWriter, utils.ERROR)),
+		tokenfilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 	)
 
 	server := &Server{

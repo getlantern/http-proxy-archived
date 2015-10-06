@@ -16,6 +16,8 @@ import (
 
 	"github.com/getlantern/keyman"
 	"github.com/getlantern/testify/assert"
+
+	"./utils"
 )
 
 const (
@@ -413,7 +415,7 @@ type proxy struct {
 }
 
 func setUpNewHTTPServer() (*Server, error) {
-	s := NewServer(validToken)
+	s := NewServer(validToken, utils.QUIET)
 	var err error
 	ready := make(chan bool)
 	go func(err *error) {
@@ -426,7 +428,7 @@ func setUpNewHTTPServer() (*Server, error) {
 }
 
 func setUpNewHTTPSServer() (*Server, error) {
-	s := NewServer(validToken)
+	s := NewServer(validToken, utils.QUIET)
 	var err error
 	ready := make(chan bool)
 	go func(err *error) {
