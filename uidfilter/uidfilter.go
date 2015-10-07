@@ -9,6 +9,10 @@ import (
 	"../utils"
 )
 
+const (
+	uIDHeader = "X-Lantern-UID"
+)
+
 type UIDFilter struct {
 	log  utils.Logger
 	next http.Handler
@@ -41,7 +45,7 @@ func (f *UIDFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	reqStr, _ := httputil.DumpRequest(req, true)
 	f.log.Debugf("UIDFilter Middleware received request:\n%s", reqStr)
 
-	lanternUID := req.Header.Get(utils.UIDHeader)
+	lanternUID := req.Header.Get(uIDHeader)
 
 	// An UID must be provided always by the client.  Respond 404 otherwise.
 	if lanternUID == "" {
@@ -54,7 +58,7 @@ func (f *UIDFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	client := utils.GetClient(key)
 	context.Set(req, utils.ClientKey, client)
 
-	req.Header.Del(utils.UIDHeader)
+	req.Header.Del(uIDHeader)
 
 	f.next.ServeHTTP(w, req)
 }
