@@ -1,6 +1,7 @@
 package httpconnect
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -9,12 +10,15 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/gorilla/context"
+
 	"../utils"
 )
 
 type HTTPConnectHandler struct {
-	log  utils.Logger
-	next http.Handler
+	log        utils.Logger
+	errHandler utils.ErrorHandler
+	next       http.Handler
 }
 
 type optSetter func(f *HTTPConnectHandler) error
@@ -28,8 +32,9 @@ func Logger(l utils.Logger) optSetter {
 
 func New(next http.Handler, setters ...optSetter) (*HTTPConnectHandler, error) {
 	f := &HTTPConnectHandler{
-		log:  utils.NullLogger,
-		next: next,
+		log:        utils.NullLogger,
+		errHandler: utils.DefaultHandler,
+		next:       next,
 	}
 	for _, s := range setters {
 		if err := s(f); err != nil {
@@ -44,14 +49,6 @@ func (f *HTTPConnectHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	reqStr, _ := httputil.DumpRequest(req, true)
 	f.log.Debugf("HTTPConnectHandler Middleware received request:\n%s", reqStr)
 
-	lanternUID := req.Header.Get(utils.UIDHeader)
-
-	// A UID must be provided always by the client.  Respond 404 otherwise.
-	if lanternUID == "" {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
 	// If the request is not HTTP CONNECT, pass along to the next handler
 	if req.Method != "CONNECT" {
 		f.next.ServeHTTP(w, req)
@@ -60,11 +57,16 @@ func (f *HTTPConnectHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 	f.log.Debugf("Proxying CONNECT request\n")
 
-	key := []byte(lanternUID)
-	f.intercept(key, utils.GetClient(key), w, req)
+	val, ok := context.GetOk(req, utils.ClientKey)
+	if !ok {
+		f.log.Errorf("No client found in request context: the request should have been filtered")
+		f.errHandler.ServeHTTP(w, req, errors.New("Internal Error"))
+		return
+	}
+	f.intercept(val.(atomic.Value), w, req)
 }
 
-func (f *HTTPConnectHandler) intercept(key []byte, atomicClient atomic.Value, w http.ResponseWriter, req *http.Request) (err error) {
+func (f *HTTPConnectHandler) intercept(atomicClient atomic.Value, w http.ResponseWriter, req *http.Request) (err error) {
 	var clientConn net.Conn
 	var connOut net.Conn
 

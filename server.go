@@ -10,6 +10,7 @@ import (
 	"./httpconnect"
 	"./profilter"
 	"./tokenfilter"
+	"./uidfilter"
 	"./utils"
 )
 
@@ -17,9 +18,11 @@ type Server struct {
 	connectComponent     *httpconnect.HTTPConnectHandler
 	lanternProComponent  *profilter.LanternProFilter
 	tokenFilterComponent *tokenfilter.TokenFilter
+	uidFilterComponent   *uidfilter.UIDFilter
 	firstComponent       http.Handler
-	listener             net.Listener
-	tls                  bool
+
+	listener net.Listener
+	tls      bool
 }
 
 func NewServer(token string, logLevel utils.LogLevel) *Server {
@@ -45,18 +48,27 @@ func NewServer(token string, logLevel utils.LogLevel) *Server {
 		connectHandler,
 		profilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 	)
-	// Bounces back requests without the proper token
+	// Returns a 404 to requests without the proper token.  Removes the
+	// header before continuing.
 	tokenFilter, _ := tokenfilter.New(
 		lanternPro,
 		tokenfilter.TokenSetter(token),
 		tokenfilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
+	)
+	// Extracts the user ID and attaches the matching client to the request
+	// context.  Returns a 404 to requests without the UID.  Removes the
+	// header before continuing.
+	uidFilter, _ := uidfilter.New(
+		tokenFilter,
+		uidfilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 	)
 
 	server := &Server{
 		connectComponent:     connectHandler,
 		lanternProComponent:  lanternPro,
 		tokenFilterComponent: tokenFilter,
-		firstComponent:       tokenFilter,
+		uidFilterComponent:   uidFilter,
+		firstComponent:       uidFilter,
 	}
 	return server
 }

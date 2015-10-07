@@ -15,9 +15,9 @@ type Client struct {
 	BytesOut   int64
 }
 
-// Used for request contexts (attaching the client structure to the request)
 type Key int
 
+// Used for request contexts (attaching the client structure to the request)
 const ClientKey Key = 0
 
 var (

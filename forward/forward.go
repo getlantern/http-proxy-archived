@@ -1,12 +1,15 @@
 package forward
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"sync/atomic"
 	"time"
+
+	"github.com/gorilla/context"
 
 	"../utils"
 )
@@ -77,9 +80,13 @@ func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	n, _ := io.Copy(w, response.Body)
 
-	lanternUID := req.Header.Get(utils.UIDHeader)
-	key := []byte(lanternUID)
-	atomicClient := utils.GetClient(key)
+	val, ok := context.GetOk(req, utils.ClientKey)
+	if !ok {
+		f.log.Errorf("No client found in request context: the request should have been filtered")
+		f.errHandler.ServeHTTP(w, req, errors.New("Internal Error"))
+		return
+	}
+	atomicClient := val.(atomic.Value)
 	client := atomicClient.Load().(*utils.Client)
 	atomic.AddInt64(&client.BytesOut, int64(len(reqStr)))
 	atomic.AddInt64(&client.BytesIn, int64(len(respStr)))
