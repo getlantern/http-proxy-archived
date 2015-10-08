@@ -18,6 +18,7 @@ type Forwarder struct {
 	log          utils.Logger
 	errHandler   utils.ErrorHandler
 	roundTripper http.RoundTripper
+	rewriter     RequestRewriter
 	next         http.Handler
 }
 
@@ -26,6 +27,17 @@ type optSetter func(f *Forwarder) error
 func RoundTripper(r http.RoundTripper) optSetter {
 	return func(f *Forwarder) error {
 		f.roundTripper = r
+		return nil
+	}
+}
+
+type RequestRewriter interface {
+	Rewrite(r *http.Request)
+}
+
+func Rewriter(r RequestRewriter) optSetter {
+	return func(f *Forwarder) error {
+		f.rewriter = r
 		return nil
 	}
 }
@@ -49,6 +61,12 @@ func New(next http.Handler, setters ...optSetter) (*Forwarder, error) {
 			return nil, err
 		}
 	}
+	if f.rewriter == nil {
+		f.rewriter = &HeaderRewriter{
+			TrustForwardHeader: true,
+			Hostname:           "",
+		}
+	}
 	return f, nil
 }
 
@@ -56,14 +74,15 @@ func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	reqStr, _ := httputil.DumpRequest(req, true)
 	f.log.Debugf("Forward Middleware received request:\n%s", reqStr)
 
-	start := time.Now().UTC()
+	// Create a copy of the request suitable for our needs
 	reqClone := f.cloneRequest(req, req.URL)
-
+	f.rewriter.Rewrite(reqClone)
 	reqStr, _ = httputil.DumpRequestOut(reqClone, true)
 	f.log.Debugf("Forward Middleware forwards request:\n%s", reqStr)
 
+	// Forward the request and get a response
+	start := time.Now().UTC()
 	response, err := f.roundTripper.RoundTrip(reqClone)
-
 	if err != nil {
 		f.log.Errorf("Error forwarding to %v, error: %v", req.Host, err)
 		f.errHandler.ServeHTTP(w, req, err)
@@ -71,28 +90,16 @@ func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	f.log.Infof("Round trip: %v, code: %v, duration: %v\n",
 		req.URL, response.StatusCode, time.Now().UTC().Sub(start))
-
 	respStr, _ := httputil.DumpResponse(response, true)
 	f.log.Debugf("Forward Middleware received response:\n%s", respStr)
 
+	// Forward the response to the origin
 	copyHeaders(w.Header(), response.Header)
 	w.WriteHeader(response.StatusCode)
-
-	n, _ := io.Copy(w, response.Body)
-
-	val, ok := context.GetOk(req, utils.ClientKey)
-	if !ok {
-		f.log.Errorf("No client found in request context: the request should have been filtered")
-		f.errHandler.ServeHTTP(w, req, errors.New("Internal Error"))
-		return
-	}
-	atomicClient := val.(atomic.Value)
-	client := atomicClient.Load().(*utils.Client)
-	atomic.AddInt64(&client.BytesOut, int64(len(reqStr)))
-	atomic.AddInt64(&client.BytesIn, int64(len(respStr)))
-	f.log.Debugf("%v\n", n)
-
+	_, _ = io.Copy(w, response.Body)
 	response.Body.Close()
+
+	f.updateClientData(w, req, respStr, reqStr)
 }
 
 func (f *Forwarder) cloneRequest(req *http.Request, u *url.URL) *http.Request {
@@ -122,21 +129,16 @@ func (f *Forwarder) cloneRequest(req *http.Request, u *url.URL) *http.Request {
 	return outReq
 }
 
-// copyHeaders copies http headers from source to destination.  It does not
-// overide, but adds multiple headers
-func copyHeaders(dst, src http.Header) {
-	for k, vv := range src {
-		for _, v := range vv {
-			dst.Add(k, v)
-		}
+// updateClientData refreshes the request client with new transfer stats
+func (f *Forwarder) updateClientData(w http.ResponseWriter, req *http.Request, respStr, reqStr []byte) {
+	val, ok := context.GetOk(req, utils.ClientKey)
+	if !ok {
+		f.log.Errorf("No client found in request context: the request should have been filtered")
+		f.errHandler.ServeHTTP(w, req, errors.New("Internal Error"))
+		return
 	}
-}
-
-// cloneURL provides update safe copy by avoiding shallow copying User field
-func cloneURL(i *url.URL) *url.URL {
-	out := *i
-	if i.User != nil {
-		out.User = &(*i.User)
-	}
-	return &out
+	atomicClient := val.(atomic.Value)
+	client := atomicClient.Load().(*utils.Client)
+	atomic.AddInt64(&client.BytesOut, int64(len(reqStr)))
+	atomic.AddInt64(&client.BytesIn, int64(len(respStr)))
 }
