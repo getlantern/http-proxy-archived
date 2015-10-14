@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -78,18 +79,9 @@ func (s *Server) ServeHTTP(addr string, ready *chan bool) error {
 	if s.listener, err = net.Listen("tcp", addr); err != nil {
 		return err
 	}
-
-	// Set up server
-	proxy := http.HandlerFunc(
-		func(w http.ResponseWriter, req *http.Request) {
-			s.firstComponent.ServeHTTP(w, req)
-		})
-
-	if ready != nil {
-		*ready <- true
-	}
 	s.tls = false
-	return http.Serve(s.listener, proxy)
+	fmt.Printf("Listen http on %s\n", addr)
+	return s.doServe(ready)
 }
 
 func (s *Server) ServeHTTPS(addr, keyfile, certfile string, ready *chan bool) error {
@@ -97,6 +89,12 @@ func (s *Server) ServeHTTPS(addr, keyfile, certfile string, ready *chan bool) er
 	if s.listener, err = listenTLS(addr, keyfile, certfile); err != nil {
 		return err
 	}
+	s.tls = true
+	fmt.Printf("Listen http on %s\n", addr)
+	return s.doServe(ready)
+}
+
+func (s *Server) doServe(ready *chan bool) error {
 
 	// Set up server
 	proxy := http.HandlerFunc(
@@ -107,6 +105,5 @@ func (s *Server) ServeHTTPS(addr, keyfile, certfile string, ready *chan bool) er
 	if ready != nil {
 		*ready <- true
 	}
-	s.tls = true
 	return http.Serve(s.listener, proxy)
 }
