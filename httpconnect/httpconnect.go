@@ -46,8 +46,10 @@ func New(next http.Handler, setters ...optSetter) (*HTTPConnectHandler, error) {
 }
 
 func (f *HTTPConnectHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	reqStr, _ := httputil.DumpRequest(req, true)
-	f.log.Debugf("HTTPConnectHandler Middleware received request:\n%s", reqStr)
+	if f.log.IsLevel(utils.DEBUG) {
+		reqStr, _ := httputil.DumpRequest(req, true)
+		f.log.Debugf("HTTPConnectHandler Middleware received request:\n%s", reqStr)
+	}
 
 	// If the request is not HTTP CONNECT, pass along to the next handler
 	if req.Method != "CONNECT" {

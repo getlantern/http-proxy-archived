@@ -71,14 +71,19 @@ func New(next http.Handler, setters ...optSetter) (*Forwarder, error) {
 }
 
 func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	reqStr, _ := httputil.DumpRequest(req, true)
-	f.log.Debugf("Forward Middleware received request:\n%s", reqStr)
+	if f.log.IsLevel(utils.DEBUG) {
+		reqStr, _ := httputil.DumpRequest(req, true)
+		f.log.Debugf("Forward Middleware received request:\n%s", reqStr)
+	}
 
 	// Create a copy of the request suitable for our needs
 	reqClone := f.cloneRequest(req, req.URL)
 	f.rewriter.Rewrite(reqClone)
-	reqStr, _ = httputil.DumpRequestOut(reqClone, true)
-	f.log.Debugf("Forward Middleware forwards request:\n%s", reqStr)
+
+	if f.log.IsLevel(utils.DEBUG) {
+		reqStr, _ := httputil.DumpRequestOut(reqClone, true)
+		f.log.Debugf("Forward Middleware forwards request:\n%s", reqStr)
+	}
 
 	// Forward the request and get a response
 	start := time.Now().UTC()
@@ -90,8 +95,11 @@ func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	f.log.Infof("Round trip: %v, code: %v, duration: %v\n",
 		req.URL, response.StatusCode, time.Now().UTC().Sub(start))
-	respStr, _ := httputil.DumpResponse(response, true)
-	f.log.Debugf("Forward Middleware received response:\n%s", respStr)
+
+	if f.log.IsLevel(utils.DEBUG) {
+		respStr, _ := httputil.DumpResponse(response, true)
+		f.log.Debugf("Forward Middleware received response:\n%s", respStr)
+	}
 
 	// Forward the response to the origin
 	copyHeaders(w.Header(), response.Header)
@@ -99,7 +107,7 @@ func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	_, _ = io.Copy(w, response.Body)
 	response.Body.Close()
 
-	f.updateClientData(w, req, respStr, reqStr)
+	f.updateClientData(w, req, response)
 }
 
 func (f *Forwarder) cloneRequest(req *http.Request, u *url.URL) *http.Request {
@@ -130,7 +138,11 @@ func (f *Forwarder) cloneRequest(req *http.Request, u *url.URL) *http.Request {
 }
 
 // updateClientData refreshes the request client with new transfer stats
-func (f *Forwarder) updateClientData(w http.ResponseWriter, req *http.Request, respStr, reqStr []byte) {
+func (f *Forwarder) updateClientData(w http.ResponseWriter, req *http.Request, response *http.Response) {
+	// TODO: Temp, must do these measurements connection-based
+	reqStr, _ := httputil.DumpRequest(req, true)
+	respStr, _ := httputil.DumpResponse(response, true)
+
 	val, ok := context.GetOk(req, utils.ClientKey)
 	if !ok {
 		f.log.Errorf("No client found in request context: the request should have been filtered")

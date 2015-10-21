@@ -35,7 +35,7 @@ func NewServer(token string, logLevel utils.LogLevel) *Server {
 	// Handles Direct Proxying
 	forwardHandler, _ := forward.New(
 		nil,
-		forward.Logger(utils.NewTimeLogger(&stdWriter, utils.DEBUG)),
+		forward.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 	)
 
 	// Handles HTTP CONNECT
