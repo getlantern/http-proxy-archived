@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -65,18 +64,18 @@ func TestMain(m *testing.M) {
 	// Set up HTTP chained server
 	httpProxy, err = setUpNewHTTPServer()
 	if err != nil {
-		log.Println("Error starting proxy server")
+		fmt.Println("Error starting proxy server")
 		os.Exit(1)
 	}
-	log.Printf("Started HTTP proxy server at %s\n", httpProxy.listener.Addr().String())
+	fmt.Printf("Started HTTP proxy server at %s\n", httpProxy.listener.Addr().String())
 
 	// Set up HTTPS chained server
 	tlsProxy, err = setUpNewHTTPSServer()
 	if err != nil {
-		log.Println("Error starting proxy server")
+		fmt.Println("Error starting proxy server")
 		os.Exit(1)
 	}
-	log.Printf("Started HTTPS proxy server at %s\n", tlsProxy.listener.Addr().String())
+	fmt.Printf("Started HTTPS proxy server at %s\n", tlsProxy.listener.Addr().String())
 
 	os.Exit(m.Run())
 }
@@ -367,6 +366,10 @@ func TestDirectOK(t *testing.T) {
 	testRoundTrip(t, tlsProxy, tlsTargetServer, testFail)
 }
 
+func TestReportStats(t *testing.T) {
+	os.Setenv("REDIS_PRODUCTION_URL", "")
+}
+
 func testRoundTrip(t *testing.T, proxy *Server, target *targetHandler, checkerFn func(conn net.Conn, proxy *Server, targetURL *url.URL)) {
 	var conn net.Conn
 	var err error
@@ -392,7 +395,7 @@ func testRoundTrip(t *testing.T, proxy *Server, target *targetHandler, checkerFn
 		conn = tlsConn
 		if !tlsConn.ConnectionState().PeerCertificates[0].Equal(x509cert) {
 			if err := tlsConn.Close(); err != nil {
-				log.Printf("Error closing chained server connection: %s\n", err)
+				t.Logf("Error closing chained server connection: %s\n", err)
 			}
 			t.Fatal("Server's certificate didn't match expected")
 		}
@@ -462,10 +465,10 @@ func (m *targetHandler) Raw(msg string) {
 	m.writer = func(w http.ResponseWriter) {
 		conn, _, _ := w.(http.Hijacker).Hijack()
 		if _, err := conn.Write([]byte(msg)); err != nil {
-			log.Printf("Unable to write to connection: %v\n", err)
+			fmt.Printf("Unable to write to connection: %v\n", err)
 		}
 		if err := conn.Close(); err != nil {
-			log.Printf("Unable to close connection: %v\n", err)
+			fmt.Printf("Unable to close connection: %v\n", err)
 		}
 	}
 }
@@ -499,6 +502,10 @@ func newTargetHandler(msg string, tls bool) (string, *targetHandler) {
 	} else {
 		m.server = httptest.NewServer(&m)
 	}
-	log.Printf("Started target site at %v\n", m.server.URL)
+	fmt.Printf("Started target site at %v\n", m.server.URL)
 	return m.server.URL, &m
+}
+
+func newMockRedisServer() string {
+	return ""
 }

@@ -1,10 +1,12 @@
-package uidfilter
+package filters
 
 import (
 	"net/http"
 	"net/http/httputil"
 
 	"github.com/gorilla/context"
+
+	"github.com/getlantern/measured"
 
 	"../utils"
 )
@@ -18,27 +20,11 @@ type UIDFilter struct {
 	next http.Handler
 }
 
-type optSetter func(f *UIDFilter) error
-
-func Logger(l utils.Logger) optSetter {
-	return func(f *UIDFilter) error {
-		f.log = l
-		return nil
-	}
-}
-
-func New(next http.Handler, setters ...optSetter) (*UIDFilter, error) {
-	f := &UIDFilter{
-		log:  utils.NullLogger,
+func NewUIDFilter(next http.Handler, log utils.Logger) *UIDFilter {
+	return &UIDFilter{
+		log:  log,
 		next: next,
 	}
-	for _, s := range setters {
-		if err := s(f); err != nil {
-			return nil, err
-		}
-	}
-
-	return f, nil
 }
 
 func (f *UIDFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -55,8 +41,10 @@ func (f *UIDFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	// Get the client and attach it as request context
 	key := []byte(lanternUID)
-	client := utils.GetClient(key)
-	context.Set(req, utils.ClientKey, client)
+	c := context.Get(req, "conn")
+	if c != nil {
+		c.(*measured.MeasuredConn).ExtraTags["client"] = string(key)
+	}
 
 	req.Header.Del(uIDHeader)
 

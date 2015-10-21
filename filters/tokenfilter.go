@@ -1,4 +1,4 @@
-package tokenfilter
+package filters
 
 import (
 	"net/http"
@@ -17,35 +17,12 @@ type TokenFilter struct {
 	token string
 }
 
-type optSetter func(f *TokenFilter) error
-
-func TokenSetter(token string) optSetter {
-	return func(f *TokenFilter) error {
-		f.token = token
-		return nil
-	}
-}
-
-func Logger(l utils.Logger) optSetter {
-	return func(f *TokenFilter) error {
-		f.log = l
-		return nil
-	}
-}
-
-func New(next http.Handler, setters ...optSetter) (*TokenFilter, error) {
-	f := &TokenFilter{
-		log:   utils.NullLogger,
+func NewTokenFilter(next http.Handler, log utils.Logger, token string) *TokenFilter {
+	return &TokenFilter{
+		log:   log,
 		next:  next,
-		token: "",
+		token: token,
 	}
-	for _, s := range setters {
-		if err := s(f); err != nil {
-			return nil, err
-		}
-	}
-
-	return f, nil
 }
 
 func (f *TokenFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {

@@ -4,19 +4,21 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"time"
+
+	"github.com/getlantern/measured"
 
 	"./utils"
 )
 
 var (
-	help     = flag.Bool("help", false, "Get usage help")
-	keyfile  = flag.String("key", "", "Private key file name")
-	certfile = flag.String("cert", "", "Certificate file name")
-	https    = flag.Bool("https", false, "Use TLS for client to proxy communication")
-	addr     = flag.String("addr", ":8080", "Address to listen")
-	token    = flag.String("token", "", "Lantern token")
-	debug    = flag.Bool("debug", false, "Produce debug output")
+	help         = flag.Bool("help", false, "Get usage help")
+	keyfile      = flag.String("key", "", "Private key file name")
+	certfile     = flag.String("cert", "", "Certificate file name")
+	https        = flag.Bool("https", false, "Use TLS for client to proxy communication")
+	addr         = flag.String("addr", ":8080", "Address to listen")
+	token        = flag.String("token", "", "Lantern token")
+	debug        = flag.Bool("debug", false, "Produce debug output")
+	byteCounting = flag.Bool("byteCounting", false, "Counting bytes proxied by server")
 )
 
 func main() {
@@ -34,17 +36,20 @@ func main() {
 	} else {
 		logLevel = utils.ERROR
 	}
-	server := NewServer(*token, logLevel)
-	// Connect to Redis before initiating the server
-	if err = utils.ConnectRedis(); err != nil {
-		fmt.Printf("Error connecting to Redis: %v,\nWARNING: NOT REPORTING TO REDIS\n", err)
-		// panic(err)
+	if *byteCounting {
+		redisAddr := os.Getenv("REDIS_PRODUCTION_URL")
+		if redisAddr == "" {
+			redisAddr = "127.0.0.1:6379"
+		}
+		rp, err := NewRedisReporter(redisAddr)
+		if err != nil {
+			fmt.Printf("Error connect to redis: %v\n", err)
+		}
+		measured.AddReporter(rp)
+		measured.Start()
+		defer measured.Stop()
 	}
-
-	// Start data collection
-	utils.ScanClientsSnapshot(
-		utils.UpsertRedisEntry, 2*time.Second,
-	)
+	server := NewServer(*token, logLevel)
 	if *https {
 		err = server.ServeHTTPS(*addr, *keyfile, *certfile, nil)
 	} else {

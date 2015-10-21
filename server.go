@@ -6,20 +6,23 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 
+	"github.com/gorilla/context"
+
+	"github.com/getlantern/measured"
+
+	"./filters"
 	"./forward"
 	"./httpconnect"
-	"./profilter"
-	"./tokenfilter"
-	"./uidfilter"
 	"./utils"
 )
 
 type Server struct {
 	connectComponent     *httpconnect.HTTPConnectHandler
-	lanternProComponent  *profilter.LanternProFilter
-	tokenFilterComponent *tokenfilter.TokenFilter
-	uidFilterComponent   *uidfilter.UIDFilter
+	lanternProComponent  *filters.LanternProFilter
+	tokenFilterComponent *filters.TokenFilter
+	uidFilterComponent   *filters.UIDFilter
 	firstComponent       http.Handler
 
 	listener net.Listener
@@ -28,6 +31,7 @@ type Server struct {
 
 func NewServer(token string, logLevel utils.LogLevel) *Server {
 	stdWriter := io.Writer(os.Stdout)
+	logger := utils.NewTimeLogger(&stdWriter, logLevel)
 
 	// The following middleware architecture can be seen as a chain of
 	// filters that is run from last to first.
@@ -36,32 +40,29 @@ func NewServer(token string, logLevel utils.LogLevel) *Server {
 	// Handles Direct Proxying
 	forwardHandler, _ := forward.New(
 		nil,
-		forward.Logger(utils.NewTimeLogger(&stdWriter, utils.DEBUG)),
+		forward.Logger(logger),
 	)
 
 	// Handles HTTP CONNECT
 	connectHandler, _ := httpconnect.New(
 		forwardHandler,
-		httpconnect.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
+		httpconnect.Logger(logger),
 	)
 	// Identifies Lantern Pro users (currently NOOP)
-	lanternPro, _ := profilter.New(
-		connectHandler,
-		profilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
-	)
+	lanternPro := filters.NewProFilter(connectHandler, logger)
 	// Returns a 404 to requests without the proper token.  Removes the
 	// header before continuing.
-	tokenFilter, _ := tokenfilter.New(
+	tokenFilter := filters.NewTokenFilter(
 		lanternPro,
-		tokenfilter.TokenSetter(token),
-		tokenfilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
+		logger,
+		token,
 	)
 	// Extracts the user ID and attaches the matching client to the request
 	// context.  Returns a 404 to requests without the UID.  Removes the
 	// header before continuing.
-	uidFilter, _ := uidfilter.New(
+	uidFilter := filters.NewUIDFilter(
 		tokenFilter,
-		uidfilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
+		logger,
 	)
 
 	server := &Server{
@@ -95,15 +96,38 @@ func (s *Server) ServeHTTPS(addr, keyfile, certfile string, ready *chan bool) er
 }
 
 func (s *Server) doServe(ready *chan bool) error {
+	// A dirty trick to associate a connection with the http.Request it
+	// contains. In "net/http/server.go", handler will be called
+	// immediately after ConnState changed to StateActive, so it's safe to
+	// loop through all elements in a channel to find a match remote addr.
+	q := make(chan net.Conn, 10)
 
-	// Set up server
 	proxy := http.HandlerFunc(
 		func(w http.ResponseWriter, req *http.Request) {
+			for c := range q {
+				if c.RemoteAddr().String() == req.RemoteAddr {
+					context.Set(req, "conn", c)
+					break
+				} else {
+					q <- c
+				}
+			}
 			s.firstComponent.ServeHTTP(w, req)
 		})
 
 	if ready != nil {
 		*ready <- true
 	}
-	return http.Serve(s.listener, proxy)
+	hs := http.Server{Handler: proxy,
+		ConnState: func(c net.Conn, s http.ConnState) {
+			if s == http.StateActive {
+				select {
+				case q <- c:
+				default:
+					fmt.Print("Oops! the connection queue is full!\n")
+				}
+			}
+		},
+	}
+	return hs.Serve(measured.Listener(s.listener, 10*time.Second))
 }
