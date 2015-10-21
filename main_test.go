@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/getlantern/keyman"
+	"github.com/getlantern/measured"
 	"github.com/getlantern/testify/assert"
 
 	"./utils"
@@ -367,7 +368,12 @@ func TestDirectOK(t *testing.T) {
 }
 
 func TestReportStats(t *testing.T) {
-	os.Setenv("REDIS_PRODUCTION_URL", "")
+	measured.AddReporter(mockReporter{})
+	measured.Start()
+	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
+	}
+	testRoundTrip(t, httpProxy, httpTargetServer, testFn)
+	testRoundTrip(t, tlsProxy, httpTargetServer, testFn)
 }
 
 func testRoundTrip(t *testing.T, proxy *Server, target *targetHandler, checkerFn func(conn net.Conn, proxy *Server, targetURL *url.URL)) {
@@ -506,6 +512,14 @@ func newTargetHandler(msg string, tls bool) (string, *targetHandler) {
 	return m.server.URL, &m
 }
 
-func newMockRedisServer() string {
-	return ""
+type mockReporter struct{}
+
+func (r mockReporter) ReportError(*measured.Error) error {
+	return nil
+}
+func (r mockReporter) ReportLatency(*measured.Latency) error {
+	return nil
+}
+func (r mockReporter) ReportTraffic(*measured.Traffic) error {
+	return nil
 }

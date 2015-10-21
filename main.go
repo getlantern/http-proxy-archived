@@ -18,7 +18,7 @@ var (
 	addr         = flag.String("addr", ":8080", "Address to listen")
 	token        = flag.String("token", "", "Lantern token")
 	debug        = flag.Bool("debug", false, "Produce debug output")
-	byteCounting = flag.Bool("byteCounting", false, "Counting bytes proxied by server")
+	byteCounting = flag.Bool("byteCounting", false, "Counting bytes proxied by current server")
 )
 
 func main() {
@@ -36,19 +36,19 @@ func main() {
 	} else {
 		logLevel = utils.ERROR
 	}
-	if *byteCounting {
-		redisAddr := os.Getenv("REDIS_PRODUCTION_URL")
-		if redisAddr == "" {
-			redisAddr = "127.0.0.1:6379"
-		}
-		rp, err := NewRedisReporter(redisAddr)
-		if err != nil {
-			fmt.Printf("Error connect to redis: %v\n", err)
-		}
-		measured.AddReporter(rp)
-		measured.Start()
-		defer measured.Stop()
+
+	redisAddr := os.Getenv("REDIS_PRODUCTION_URL")
+	if redisAddr == "" {
+		redisAddr = "127.0.0.1:6379"
 	}
+	rp, err := utils.NewRedisReporter(redisAddr)
+	if err != nil {
+		fmt.Printf("Error connect to redis: %v\n", err)
+	}
+	measured.AddReporter(rp)
+	measured.Start()
+	defer measured.Stop()
+
 	server := NewServer(*token, logLevel)
 	if *https {
 		err = server.ServeHTTPS(*addr, *keyfile, *certfile, nil)

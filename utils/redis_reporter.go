@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"fmt"
@@ -27,21 +27,22 @@ func NewRedisReporter(redisAddr string) (measured.Reporter, error) {
 	return &redisReporter{rc}, nil
 }
 
-func (rp *redisReporter) Submit(s *measured.Stats) error {
-	if s.Type != "stats" {
-		return nil
-	}
-	key := s.Tags["client"]
+func (rp *redisReporter) ReportError(s *measured.Error) error {
+	return nil
+}
+func (rp *redisReporter) ReportLatency(s *measured.Latency) error {
+	return nil
+}
+func (rp *redisReporter) ReportTraffic(s *measured.Traffic) error {
+	key := s.ID
 	if key == "" {
 		panic("empty key is not allowed")
 	}
-	bytesIn := s.Fields["bytesIn"].(uint64)
-	bytesOut := s.Fields["bytesOut"].(uint64)
 	// TODO: use INCRBY instead, as user can connect to multiple chained server
 	// TODO: wrap two operations in transaction, or redis function
 	err := rp.rc.HMSet("client:"+string(key),
-		"bytesIn", strconv.FormatUint(bytesIn, 10),
-		"bytesOut", strconv.FormatUint(bytesOut, 10)).Err()
+		"bytesIn", strconv.FormatUint(s.BytesIn, 10),
+		"bytesOut", strconv.FormatUint(s.BytesOut, 10)).Err()
 	if err != nil {
 		return fmt.Errorf("Error setting Redis key: %v\n", err)
 	}
@@ -49,7 +50,7 @@ func (rp *redisReporter) Submit(s *measured.Stats) error {
 	// Redis stores scores as float64
 	err = rp.rc.ZAdd("client->bytes",
 		redis.Z{
-			float64(bytesIn + bytesOut),
+			float64(s.BytesIn + s.BytesOut),
 			key,
 		}).Err()
 	if err != nil {
