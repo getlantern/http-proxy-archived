@@ -1,10 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"os"
+	"time"
+
+	"github.com/getlantern/measured"
+	"github.com/gorilla/context"
 
 	"./forward"
 	"./httpconnect"
@@ -35,7 +40,7 @@ func NewServer(token string, logLevel utils.LogLevel) *Server {
 	// Handles Direct Proxying
 	forwardHandler, _ := forward.New(
 		nil,
-		forward.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
+		forward.Logger(utils.NewTimeLogger(&stdWriter, utils.DEBUG)),
 	)
 
 	// Handles HTTP CONNECT
@@ -78,18 +83,9 @@ func (s *Server) ServeHTTP(addr string, ready *chan bool) error {
 	if s.listener, err = net.Listen("tcp", addr); err != nil {
 		return err
 	}
-
-	// Set up server
-	proxy := http.HandlerFunc(
-		func(w http.ResponseWriter, req *http.Request) {
-			s.firstComponent.ServeHTTP(w, req)
-		})
-
-	if ready != nil {
-		*ready <- true
-	}
 	s.tls = false
-	return http.Serve(s.listener, proxy)
+	fmt.Printf("Listen http on %s\n", addr)
+	return s.doServe(ready)
 }
 
 func (s *Server) ServeHTTPS(addr, keyfile, certfile string, ready *chan bool) error {
@@ -97,16 +93,44 @@ func (s *Server) ServeHTTPS(addr, keyfile, certfile string, ready *chan bool) er
 	if s.listener, err = listenTLS(addr, keyfile, certfile); err != nil {
 		return err
 	}
+	s.tls = true
+	fmt.Printf("Listen http on %s\n", addr)
+	return s.doServe(ready)
+}
 
-	// Set up server
+func (s *Server) doServe(ready *chan bool) error {
+	// A dirty trick to associate a connection with the http.Request it
+	// contains. In "net/http/server.go", handler will be called
+	// immediately after ConnState changed to StateActive, so it's safe to
+	// loop through all elements in a channel to find a match remote addr.
+	q := make(chan net.Conn, 10)
+
 	proxy := http.HandlerFunc(
 		func(w http.ResponseWriter, req *http.Request) {
+			for c := range q {
+				if c.RemoteAddr().String() == req.RemoteAddr {
+					context.Set(req, "conn", c)
+					break
+				} else {
+					q <- c
+				}
+			}
 			s.firstComponent.ServeHTTP(w, req)
 		})
 
 	if ready != nil {
 		*ready <- true
 	}
-	s.tls = true
-	return http.Serve(s.listener, proxy)
+	hs := http.Server{Handler: proxy,
+		ConnState: func(c net.Conn, s http.ConnState) {
+			if s == http.StateActive {
+				select {
+				case q <- c:
+				default:
+					fmt.Print("Oops! the connection queue is full!\n")
+				}
+			}
+		},
+	}
+	return hs.Serve(measured.Listener(s.listener, 10*time.Second))
 }

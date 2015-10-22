@@ -1,15 +1,11 @@
 package forward
 
 import (
-	"errors"
 	"io"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"sync/atomic"
 	"time"
-
-	"github.com/gorilla/context"
 
 	"../utils"
 )
@@ -106,8 +102,6 @@ func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(response.StatusCode)
 	_, _ = io.Copy(w, response.Body)
 	response.Body.Close()
-
-	f.updateClientData(w, req, response)
 }
 
 func (f *Forwarder) cloneRequest(req *http.Request, u *url.URL) *http.Request {
@@ -135,22 +129,4 @@ func (f *Forwarder) cloneRequest(req *http.Request, u *url.URL) *http.Request {
 	outReq.URL.RawQuery = ""
 	// Do not pass client Host header unless optsetter PassHostHeader is set.
 	return outReq
-}
-
-// updateClientData refreshes the request client with new transfer stats
-func (f *Forwarder) updateClientData(w http.ResponseWriter, req *http.Request, response *http.Response) {
-	// TODO: Temp, must do these measurements connection-based
-	reqStr, _ := httputil.DumpRequest(req, true)
-	respStr, _ := httputil.DumpResponse(response, true)
-
-	val, ok := context.GetOk(req, utils.ClientKey)
-	if !ok {
-		f.log.Errorf("No client found in request context: the request should have been filtered")
-		f.errHandler.ServeHTTP(w, req, errors.New("Internal Error"))
-		return
-	}
-	atomicClient := val.(atomic.Value)
-	client := atomicClient.Load().(*utils.Client)
-	atomic.AddInt64(&client.BytesOut, int64(len(reqStr)))
-	atomic.AddInt64(&client.BytesIn, int64(len(respStr)))
 }

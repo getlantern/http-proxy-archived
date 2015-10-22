@@ -1,16 +1,12 @@
 package httpconnect
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"sync"
-	"sync/atomic"
-
-	"github.com/gorilla/context"
 
 	"../utils"
 )
@@ -59,16 +55,10 @@ func (f *HTTPConnectHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 
 	f.log.Debugf("Proxying CONNECT request\n")
 
-	val, ok := context.GetOk(req, utils.ClientKey)
-	if !ok {
-		f.log.Errorf("No client found in request context: the request should have been filtered")
-		f.errHandler.ServeHTTP(w, req, errors.New("Internal Error"))
-		return
-	}
-	f.intercept(val.(atomic.Value), w, req)
+	f.intercept(w, req)
 }
 
-func (f *HTTPConnectHandler) intercept(atomicClient atomic.Value, w http.ResponseWriter, req *http.Request) (err error) {
+func (f *HTTPConnectHandler) intercept(w http.ResponseWriter, req *http.Request) (err error) {
 	var clientConn net.Conn
 	var connOut net.Conn
 
@@ -97,19 +87,11 @@ func (f *HTTPConnectHandler) intercept(atomicClient atomic.Value, w http.Respons
 	}
 	var closeOnce sync.Once
 	go func() {
-		n, _ := io.Copy(connOut, clientConn)
-
-		client := atomicClient.Load().(*utils.Client)
-		atomic.AddInt64(&client.BytesOut, n)
-
+		_, _ = io.Copy(connOut, clientConn)
 		closeOnce.Do(closeConns)
 
 	}()
-	n, _ := io.Copy(clientConn, connOut)
-
-	client := atomicClient.Load().(*utils.Client)
-	atomic.AddInt64(&client.BytesIn, n)
-
+	_, _ = io.Copy(clientConn, connOut)
 	closeOnce.Do(closeConns)
 
 	return

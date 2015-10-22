@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/getlantern/measured"
+
 	"./utils"
 )
 
@@ -34,17 +36,20 @@ func main() {
 	} else {
 		logLevel = utils.ERROR
 	}
-	server := NewServer(*token, logLevel)
-	// Connect to Redis before initiating the server
-	if err = utils.ConnectRedis(); err != nil {
-		fmt.Printf("Error connecting to Redis: %v,\nWARNING: NOT REPORTING TO REDIS\n", err)
-		// panic(err)
+
+	redisAddr := os.Getenv("REDIS_PRODUCTION_URL")
+	if redisAddr == "" {
+		redisAddr = "127.0.0.1:6379"
+	}
+	rp, err := utils.NewRedisReporter(redisAddr)
+	if err != nil {
+		fmt.Printf("Error connect to redis: %v\n", err)
+	} else {
+		measured.Start(20*time.Second, rp)
+		defer measured.Stop()
 	}
 
-	// Start data collection
-	utils.ScanClientsSnapshot(
-		utils.UpsertRedisEntry, 2*time.Second,
-	)
+	server := NewServer(*token, logLevel)
 	if *https {
 		err = server.ServeHTTPS(*addr, *keyfile, *certfile, nil)
 	} else {

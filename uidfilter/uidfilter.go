@@ -6,6 +6,8 @@ import (
 
 	"github.com/gorilla/context"
 
+	"github.com/getlantern/measured"
+
 	"../utils"
 )
 
@@ -55,10 +57,11 @@ func (f *UIDFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Get the client and attach it as request context
+	// Attached the uid to connection to report stats to redis correctly
+	// "conn" in context is previously attached in server.go
 	key := []byte(lanternUID)
-	client := utils.GetClient(key)
-	context.Set(req, utils.ClientKey, client)
+	c := context.Get(req, "conn")
+	c.(*measured.Conn).ID = string(key)
 
 	req.Header.Del(uIDHeader)
 

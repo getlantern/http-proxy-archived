@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/getlantern/keyman"
+	"github.com/getlantern/measured"
 	"github.com/getlantern/testify/assert"
 
 	"./utils"
@@ -367,6 +368,38 @@ func TestDirectOK(t *testing.T) {
 	testRoundTrip(t, tlsProxy, tlsTargetServer, testFail)
 }
 
+func TestReportStats(t *testing.T) {
+	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-UID: %s\r\n\r\n"
+	connectResp := "HTTP/1.1 404 Not Found\r\n"
+	m := mockReporter{error: make(map[measured.Error]int)}
+	measured.Start(100*time.Millisecond, &m)
+	defer measured.Stop()
+	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
+		var err error
+		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, clientUID)
+		t.Log("\n" + req)
+		_, err = conn.Write([]byte(req))
+		if !assert.NoError(t, err, "should write CONNECT request") {
+			t.FailNow()
+		}
+
+		var buf [400]byte
+		_, err = conn.Read(buf[:])
+		if !assert.Contains(t, string(buf[:]), connectResp,
+			"should get 404 Not Found because no token was provided") {
+			t.FailNow()
+		}
+	}
+
+	testRoundTrip(t, httpProxy, httpTargetServer, testFn)
+	testRoundTrip(t, tlsProxy, httpTargetServer, testFn)
+	time.Sleep(100 * time.Millisecond)
+	assert.Equal(t, 1, len(m.error))
+	assert.Equal(t, 1, len(m.traffic))
+	t.Logf("%+v", m.error)
+	t.Logf("%+v", m.traffic[0])
+}
+
 func testRoundTrip(t *testing.T, proxy *Server, target *targetHandler, checkerFn func(conn net.Conn, proxy *Server, targetURL *url.URL)) {
 	var conn net.Conn
 	var err error
@@ -501,4 +534,27 @@ func newTargetHandler(msg string, tls bool) (string, *targetHandler) {
 	}
 	log.Printf("Started target site at %v\n", m.server.URL)
 	return m.server.URL, &m
+}
+
+type mockReporter struct {
+	error   map[measured.Error]int
+	latency []*measured.LatencyTracker
+	traffic []*measured.TrafficTracker
+}
+
+func (nr *mockReporter) ReportError(e map[*measured.Error]int) error {
+	for k, v := range e {
+		nr.error[*k] = nr.error[*k] + v
+	}
+	return nil
+}
+
+func (nr *mockReporter) ReportLatency(l []*measured.LatencyTracker) error {
+	nr.latency = append(nr.latency, l...)
+	return nil
+}
+
+func (nr *mockReporter) ReportTraffic(t []*measured.TrafficTracker) error {
+	nr.traffic = append(nr.traffic, t...)
+	return nil
 }
