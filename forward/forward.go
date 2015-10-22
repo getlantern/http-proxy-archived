@@ -67,14 +67,19 @@ func New(next http.Handler, setters ...optSetter) (*Forwarder, error) {
 }
 
 func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	reqStr, _ := httputil.DumpRequest(req, true)
-	f.log.Debugf("Forward Middleware received request:\n%s", reqStr)
+	if f.log.IsLevel(utils.DEBUG) {
+		reqStr, _ := httputil.DumpRequest(req, true)
+		f.log.Debugf("Forward Middleware received request:\n%s", reqStr)
+	}
 
 	// Create a copy of the request suitable for our needs
 	reqClone := f.cloneRequest(req, req.URL)
 	f.rewriter.Rewrite(reqClone)
-	reqStr, _ = httputil.DumpRequestOut(reqClone, true)
-	f.log.Debugf("Forward Middleware forwards request:\n%s", reqStr)
+
+	if f.log.IsLevel(utils.DEBUG) {
+		reqStr, _ := httputil.DumpRequestOut(reqClone, true)
+		f.log.Debugf("Forward Middleware forwards request:\n%s", reqStr)
+	}
 
 	// Forward the request and get a response
 	start := time.Now().UTC()
@@ -86,8 +91,11 @@ func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	f.log.Infof("Round trip: %v, code: %v, duration: %v\n",
 		req.URL, response.StatusCode, time.Now().UTC().Sub(start))
-	respStr, _ := httputil.DumpResponse(response, true)
-	f.log.Debugf("Forward Middleware received response:\n%s", respStr)
+
+	if f.log.IsLevel(utils.DEBUG) {
+		respStr, _ := httputil.DumpResponse(response, true)
+		f.log.Debugf("Forward Middleware received response:\n%s", respStr)
+	}
 
 	// Forward the response to the origin
 	copyHeaders(w.Header(), response.Header)

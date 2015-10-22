@@ -26,8 +26,10 @@ func NewTokenFilter(next http.Handler, log utils.Logger, token string) *TokenFil
 }
 
 func (f *TokenFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	reqStr, _ := httputil.DumpRequest(req, true)
-	f.log.Debugf("Token Filter Middleware received request:\n%s", reqStr)
+	if f.log.IsLevel(utils.DEBUG) {
+		reqStr, _ := httputil.DumpRequest(req, true)
+		f.log.Debugf("Token Filter Middleware received request:\n%s", reqStr)
+	}
 
 	token := req.Header.Get(tokenHeader)
 	if token == "" || token != f.token {

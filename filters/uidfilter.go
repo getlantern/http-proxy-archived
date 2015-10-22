@@ -28,8 +28,10 @@ func NewUIDFilter(next http.Handler, log utils.Logger) *UIDFilter {
 }
 
 func (f *UIDFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	reqStr, _ := httputil.DumpRequest(req, true)
-	f.log.Debugf("UIDFilter Middleware received request:\n%s", reqStr)
+	if f.log.IsLevel(utils.DEBUG) {
+		reqStr, _ := httputil.DumpRequest(req, true)
+		f.log.Debugf("UIDFilter Middleware received request:\n%s", reqStr)
+	}
 
 	lanternUID := req.Header.Get(uIDHeader)
 

@@ -30,6 +30,7 @@ type Logger interface {
 	Infof(format string, args ...interface{})
 	Warningf(format string, args ...interface{})
 	Errorf(format string, args ...interface{})
+	IsLevel(level LogLevel) bool
 }
 
 type NOPLogger struct{}
@@ -41,6 +42,10 @@ func (*NOPLogger) Infof(format string, args ...interface{}) {}
 func (*NOPLogger) Warningf(format string, args ...interface{}) {}
 
 func (*NOPLogger) Errorf(format string, args ...interface{}) {}
+
+func (l *NOPLogger) IsLevel(level LogLevel) bool {
+	return false
+}
 
 // TimeLogger logs to stdout with a timestamp
 type TimeLogger struct {
@@ -99,4 +104,18 @@ func (t *TimeLogger) write(w *io.Writer, prefix, str string) (n int, err error) 
 	return fmt.Fprintf(*w, "%s%s - %dm%ds %s", prefix,
 		ts.In(time.UTC).Format(logTimestampFormat),
 		mins, secs, str)
+}
+
+func (t *TimeLogger) IsLevel(level LogLevel) bool {
+	switch level {
+	case DEBUG:
+		return t.debugW != nil
+	case INFO:
+		return t.infoW != nil
+	case WARN:
+		return t.warnW != nil
+	case ERROR:
+		return t.errorW != nil
+	}
+	return false
 }
