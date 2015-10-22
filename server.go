@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sync/atomic"
 	"time"
 
 	"github.com/getlantern/measured"
@@ -28,6 +29,8 @@ type Server struct {
 
 	listener net.Listener
 	tls      bool
+
+	numConnections int64
 }
 
 func NewServer(token string, logLevel utils.LogLevel) *Server {
@@ -122,13 +125,18 @@ func (s *Server) doServe(ready *chan bool) error {
 		*ready <- true
 	}
 	hs := http.Server{Handler: proxy,
-		ConnState: func(c net.Conn, s http.ConnState) {
-			if s == http.StateActive {
+		ConnState: func(c net.Conn, state http.ConnState) {
+			switch state {
+			case http.StateNew:
+				atomic.AddInt64(&s.numConnections, 1)
+			case http.StateActive:
 				select {
 				case q <- c:
 				default:
 					fmt.Print("Oops! the connection queue is full!\n")
 				}
+			case http.StateClosed:
+				atomic.AddInt64(&s.numConnections, -1)
 			}
 		},
 	}
