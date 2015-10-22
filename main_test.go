@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -65,18 +66,18 @@ func TestMain(m *testing.M) {
 	// Set up HTTP chained server
 	httpProxy, err = setUpNewHTTPServer()
 	if err != nil {
-		fmt.Println("Error starting proxy server")
+		log.Println("Error starting proxy server")
 		os.Exit(1)
 	}
-	fmt.Printf("Started HTTP proxy server at %s\n", httpProxy.listener.Addr().String())
+	log.Printf("Started HTTP proxy server at %s\n", httpProxy.listener.Addr().String())
 
 	// Set up HTTPS chained server
 	tlsProxy, err = setUpNewHTTPSServer()
 	if err != nil {
-		fmt.Println("Error starting proxy server")
+		log.Println("Error starting proxy server")
 		os.Exit(1)
 	}
-	fmt.Printf("Started HTTPS proxy server at %s\n", tlsProxy.listener.Addr().String())
+	log.Printf("Started HTTPS proxy server at %s\n", tlsProxy.listener.Addr().String())
 
 	os.Exit(m.Run())
 }
@@ -424,7 +425,7 @@ func testRoundTrip(t *testing.T, proxy *Server, target *targetHandler, checkerFn
 		conn = tlsConn
 		if !tlsConn.ConnectionState().PeerCertificates[0].Equal(x509cert) {
 			if err := tlsConn.Close(); err != nil {
-				t.Logf("Error closing chained server connection: %s\n", err)
+				log.Printf("Error closing chained server connection: %s\n", err)
 			}
 			t.Fatal("Server's certificate didn't match expected")
 		}
@@ -494,10 +495,10 @@ func (m *targetHandler) Raw(msg string) {
 	m.writer = func(w http.ResponseWriter) {
 		conn, _, _ := w.(http.Hijacker).Hijack()
 		if _, err := conn.Write([]byte(msg)); err != nil {
-			fmt.Printf("Unable to write to connection: %v\n", err)
+			log.Printf("Unable to write to connection: %v\n", err)
 		}
 		if err := conn.Close(); err != nil {
-			fmt.Printf("Unable to close connection: %v\n", err)
+			log.Printf("Unable to close connection: %v\n", err)
 		}
 	}
 }
@@ -531,7 +532,7 @@ func newTargetHandler(msg string, tls bool) (string, *targetHandler) {
 	} else {
 		m.server = httptest.NewServer(&m)
 	}
-	fmt.Printf("Started target site at %v\n", m.server.URL)
+	log.Printf("Started target site at %v\n", m.server.URL)
 	return m.server.URL, &m
 }
 

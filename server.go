@@ -8,21 +8,22 @@ import (
 	"os"
 	"time"
 
+	"github.com/getlantern/measured"
 	"github.com/gorilla/context"
 
-	"github.com/getlantern/measured"
-
-	"./filters"
 	"./forward"
 	"./httpconnect"
+	"./profilter"
+	"./tokenfilter"
+	"./uidfilter"
 	"./utils"
 )
 
 type Server struct {
 	connectComponent     *httpconnect.HTTPConnectHandler
-	lanternProComponent  *filters.LanternProFilter
-	tokenFilterComponent *filters.TokenFilter
-	uidFilterComponent   *filters.UIDFilter
+	lanternProComponent  *profilter.LanternProFilter
+	tokenFilterComponent *tokenfilter.TokenFilter
+	uidFilterComponent   *uidfilter.UIDFilter
 	firstComponent       http.Handler
 
 	listener net.Listener
@@ -31,7 +32,6 @@ type Server struct {
 
 func NewServer(token string, logLevel utils.LogLevel) *Server {
 	stdWriter := io.Writer(os.Stdout)
-	logger := utils.NewTimeLogger(&stdWriter, logLevel)
 
 	// The following middleware architecture can be seen as a chain of
 	// filters that is run from last to first.
@@ -40,29 +40,32 @@ func NewServer(token string, logLevel utils.LogLevel) *Server {
 	// Handles Direct Proxying
 	forwardHandler, _ := forward.New(
 		nil,
-		forward.Logger(logger),
+		forward.Logger(utils.NewTimeLogger(&stdWriter, utils.DEBUG)),
 	)
 
 	// Handles HTTP CONNECT
 	connectHandler, _ := httpconnect.New(
 		forwardHandler,
-		httpconnect.Logger(logger),
+		httpconnect.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 	)
 	// Identifies Lantern Pro users (currently NOOP)
-	lanternPro := filters.NewProFilter(connectHandler, logger)
+	lanternPro, _ := profilter.New(
+		connectHandler,
+		profilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
+	)
 	// Returns a 404 to requests without the proper token.  Removes the
 	// header before continuing.
-	tokenFilter := filters.NewTokenFilter(
+	tokenFilter, _ := tokenfilter.New(
 		lanternPro,
-		logger,
-		token,
+		tokenfilter.TokenSetter(token),
+		tokenfilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 	)
 	// Extracts the user ID and attaches the matching client to the request
 	// context.  Returns a 404 to requests without the UID.  Removes the
 	// header before continuing.
-	uidFilter := filters.NewUIDFilter(
+	uidFilter, _ := uidfilter.New(
 		tokenFilter,
-		logger,
+		uidfilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 	)
 
 	server := &Server{

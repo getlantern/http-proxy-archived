@@ -1,7 +1,7 @@
 // Lantern Pro middleware will identify Pro users and forward their requests
 // immediately.  It will intercept non-Pro users and limit their total transfer
 
-package filters
+package profilter
 
 import (
 	"net/http"
@@ -21,12 +21,29 @@ type LanternProFilter struct {
 	proTokens *set.Set
 }
 
-func NewProFilter(next http.Handler, log utils.Logger) *LanternProFilter {
-	return &LanternProFilter{
-		log:       log,
+type optSetter func(f *LanternProFilter) error
+
+func Logger(l utils.Logger) optSetter {
+	return func(f *LanternProFilter) error {
+		f.log = l
+		return nil
+	}
+}
+
+func New(next http.Handler, setters ...optSetter) (*LanternProFilter, error) {
+	f := &LanternProFilter{
+		log:       utils.NullLogger,
 		next:      next,
 		proTokens: set.New(),
 	}
+
+	for _, s := range setters {
+		if err := s(f); err != nil {
+			return nil, err
+		}
+	}
+
+	return f, nil
 }
 
 func (f *LanternProFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {

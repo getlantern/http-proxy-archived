@@ -1,4 +1,4 @@
-package filters
+package uidfilter
 
 import (
 	"net/http"
@@ -20,11 +20,27 @@ type UIDFilter struct {
 	next http.Handler
 }
 
-func NewUIDFilter(next http.Handler, log utils.Logger) *UIDFilter {
-	return &UIDFilter{
-		log:  log,
+type optSetter func(f *UIDFilter) error
+
+func Logger(l utils.Logger) optSetter {
+	return func(f *UIDFilter) error {
+		f.log = l
+		return nil
+	}
+}
+
+func New(next http.Handler, setters ...optSetter) (*UIDFilter, error) {
+	f := &UIDFilter{
+		log:  utils.NullLogger,
 		next: next,
 	}
+	for _, s := range setters {
+		if err := s(f); err != nil {
+			return nil, err
+		}
+	}
+
+	return f, nil
 }
 
 func (f *UIDFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {

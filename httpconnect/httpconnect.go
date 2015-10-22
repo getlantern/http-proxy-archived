@@ -54,6 +54,7 @@ func (f *HTTPConnectHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 	}
 
 	f.log.Debugf("Proxying CONNECT request\n")
+
 	f.intercept(w, req)
 }
 
