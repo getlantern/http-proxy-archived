@@ -41,7 +41,8 @@ func (f *UIDFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Get the client and attach it as request context
+	// Attached the uid to connection to report stats to redis correctly
+	// "conn" in context is previously attached in server.go
 	key := []byte(lanternUID)
 	c := context.Get(req, "conn")
 	c.(*measured.Conn).ID = string(key)
