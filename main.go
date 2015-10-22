@@ -44,10 +44,10 @@ func main() {
 	rp, err := utils.NewRedisReporter(redisAddr)
 	if err != nil {
 		fmt.Printf("Error connect to redis: %v\n", err)
+	} else {
+		measured.Start(20*time.Second, rp)
+		defer measured.Stop()
 	}
-	measured.AddReporter(rp)
-	measured.Start(20 * time.Second)
-	defer measured.Stop()
 
 	server := NewServer(*token, logLevel)
 	if *https {

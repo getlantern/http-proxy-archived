@@ -371,8 +371,7 @@ func TestReportStats(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-UID: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 404 Not Found\r\n"
 	m := mockReporter{error: make(map[measured.Error]int)}
-	measured.AddReporter(&m)
-	measured.Start(100 * time.Millisecond)
+	measured.Start(100*time.Millisecond, &m)
 	defer measured.Stop()
 	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
 		var err error
