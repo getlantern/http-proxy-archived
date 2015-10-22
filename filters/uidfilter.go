@@ -42,9 +42,7 @@ func (f *UIDFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// Get the client and attach it as request context
 	key := []byte(lanternUID)
 	c := context.Get(req, "conn")
-	if c != nil {
-		c.(*measured.Conn).ID = string(key)
-	}
+	c.(*measured.Conn).ID = string(key)
 
 	req.Header.Del(uIDHeader)
 

@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/getlantern/measured"
 
@@ -11,14 +12,13 @@ import (
 )
 
 var (
-	help         = flag.Bool("help", false, "Get usage help")
-	keyfile      = flag.String("key", "", "Private key file name")
-	certfile     = flag.String("cert", "", "Certificate file name")
-	https        = flag.Bool("https", false, "Use TLS for client to proxy communication")
-	addr         = flag.String("addr", ":8080", "Address to listen")
-	token        = flag.String("token", "", "Lantern token")
-	debug        = flag.Bool("debug", false, "Produce debug output")
-	byteCounting = flag.Bool("byteCounting", false, "Counting bytes proxied by current server")
+	help     = flag.Bool("help", false, "Get usage help")
+	keyfile  = flag.String("key", "", "Private key file name")
+	certfile = flag.String("cert", "", "Certificate file name")
+	https    = flag.Bool("https", false, "Use TLS for client to proxy communication")
+	addr     = flag.String("addr", ":8080", "Address to listen")
+	token    = flag.String("token", "", "Lantern token")
+	debug    = flag.Bool("debug", false, "Produce debug output")
 )
 
 func main() {
@@ -46,7 +46,7 @@ func main() {
 		fmt.Printf("Error connect to redis: %v\n", err)
 	}
 	measured.AddReporter(rp)
-	measured.Start()
+	measured.Start(20 * time.Second)
 	defer measured.Stop()
 
 	server := NewServer(*token, logLevel)
