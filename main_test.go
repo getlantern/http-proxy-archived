@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	clientUID      = "1234-1234-1234-1234-1234-1234"
+	deviceId       = "1234-1234-1234-1234-1234-1234"
 	validToken     = "6o0dToK3n"
 	tunneledReq    = "GET / HTTP/1.1\r\n\r\n"
 	targetResponse = "Fight for a Free Internet!"
@@ -84,12 +84,12 @@ func TestMain(m *testing.M) {
 
 // No X-Lantern-Auth-Token -> 404
 func TestConnectNoToken(t *testing.T) {
-	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-UID: %s\r\n\r\n"
+	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Device-Id: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 404 Not Found\r\n"
 
 	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
 		var err error
-		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, clientUID)
+		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, deviceId)
 		t.Log("\n" + req)
 		_, err = conn.Write([]byte(req))
 		if !assert.NoError(t, err, "should write CONNECT request") {
@@ -113,12 +113,12 @@ func TestConnectNoToken(t *testing.T) {
 
 // Bad X-Lantern-Auth-Token -> 404
 func TestConnectBadToken(t *testing.T) {
-	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-UID: %s\r\n\r\n"
+	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-Device-Id: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 404 Not Found\r\n"
 
 	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
 		var err error
-		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, "B4dT0k3n", clientUID)
+		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, "B4dT0k3n", deviceId)
 		t.Log("\n" + req)
 		_, err = conn.Write([]byte(req))
 		if !assert.NoError(t, err, "should write CONNECT request") {
@@ -140,8 +140,8 @@ func TestConnectBadToken(t *testing.T) {
 	testRoundTrip(t, tlsProxy, tlsTargetServer, testFn)
 }
 
-// No X-Lantern-UID -> 404
-func TestConnectNoUID(t *testing.T) {
+// No X-Lantern-Device-Id -> 404
+func TestConnectNoDevice(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 404 Not Found\r\n"
 
@@ -169,13 +169,13 @@ func TestConnectNoUID(t *testing.T) {
 	testRoundTrip(t, tlsProxy, tlsTargetServer, testFn)
 }
 
-// X-Lantern-Auth-Token + X-Lantern-UID -> 200 OK <- Tunneled request -> 200 OK
+// X-Lantern-Auth-Token + X-Lantern-Device-Id -> 200 OK <- Tunneled request -> 200 OK
 func TestConnectOK(t *testing.T) {
-	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-UID: %s\r\n\r\n"
+	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-Device-Id: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 200 OK\r\n"
 
 	testHTTP := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
-		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, validToken, clientUID)
+		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, validToken, deviceId)
 		t.Log("\n" + req)
 		_, err := conn.Write([]byte(req))
 		if !assert.NoError(t, err, "should write CONNECT request") {
@@ -200,7 +200,7 @@ func TestConnectOK(t *testing.T) {
 	}
 
 	testTLS := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
-		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, validToken, clientUID)
+		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, validToken, deviceId)
 		t.Log("\n" + req)
 		_, err := conn.Write([]byte(req))
 		if !assert.NoError(t, err, "should write CONNECT request") {
@@ -239,12 +239,12 @@ func TestConnectOK(t *testing.T) {
 
 // No X-Lantern-Auth-Token -> 404
 func TestDirectNoToken(t *testing.T) {
-	connectReq := "GET /%s HTTP/1.1\r\nHost: %s\r\nX-Lantern-UID: %s\r\n\r\n"
+	connectReq := "GET /%s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Device-Id: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 404 Not Found\r\n"
 
 	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
 		var err error
-		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, clientUID)
+		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, deviceId)
 		t.Log("\n" + req)
 		_, err = conn.Write([]byte(req))
 		if !assert.NoError(t, err, "should write CONNECT request") {
@@ -268,12 +268,12 @@ func TestDirectNoToken(t *testing.T) {
 
 // Bad X-Lantern-Auth-Token -> 404
 func TestDirectBadToken(t *testing.T) {
-	connectReq := "GET /%s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-UID: %s\r\n\r\n"
+	connectReq := "GET /%s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-Device-Id: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 404 Not Found\r\n"
 
 	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
 		var err error
-		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, "B4dT0k3n", clientUID)
+		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, "B4dT0k3n", deviceId)
 		t.Log("\n" + req)
 		_, err = conn.Write([]byte(req))
 		if !assert.NoError(t, err, "should write CONNECT request") {
@@ -295,8 +295,8 @@ func TestDirectBadToken(t *testing.T) {
 	testRoundTrip(t, tlsProxy, tlsTargetServer, testFn)
 }
 
-// No X-Lantern-UID -> 404
-func TestDirectNoUID(t *testing.T) {
+// No X-Lantern-Device-Id -> 404
+func TestDirectNoDevice(t *testing.T) {
 	connectReq := "GET /%s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 404 Not Found\r\n"
 
@@ -324,13 +324,13 @@ func TestDirectNoUID(t *testing.T) {
 	testRoundTrip(t, tlsProxy, tlsTargetServer, testFn)
 }
 
-// X-Lantern-Auth-Token + X-Lantern-UID -> Forward
+// X-Lantern-Auth-Token + X-Lantern-Device-Id -> Forward
 func TestDirectOK(t *testing.T) {
-	reqTempl := "GET /%s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-UID: %s\r\n\r\n"
+	reqTempl := "GET /%s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-Device-Id: %s\r\n\r\n"
 	failResp := "HTTP/1.1 500 Internal Server Error\r\n"
 
 	testOk := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
-		req := fmt.Sprintf(reqTempl, targetURL.Path, targetURL.Host, validToken, clientUID)
+		req := fmt.Sprintf(reqTempl, targetURL.Path, targetURL.Host, validToken, deviceId)
 		t.Log("\n" + req)
 		_, err := conn.Write([]byte(req))
 		if !assert.NoError(t, err, "should write GET request") {
@@ -344,7 +344,7 @@ func TestDirectOK(t *testing.T) {
 	}
 
 	testFail := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
-		req := fmt.Sprintf(reqTempl, targetURL.Path, targetURL.Host, validToken, clientUID)
+		req := fmt.Sprintf(reqTempl, targetURL.Path, targetURL.Host, validToken, deviceId)
 		t.Log("\n" + req)
 		_, err := conn.Write([]byte(req))
 		if !assert.NoError(t, err, "should write GET request") {
@@ -369,14 +369,14 @@ func TestDirectOK(t *testing.T) {
 }
 
 func TestReportStats(t *testing.T) {
-	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-UID: %s\r\n\r\n"
+	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Device-Id: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 404 Not Found\r\n"
 	m := mockReporter{error: make(map[measured.Error]int)}
 	measured.Start(100*time.Millisecond, &m)
 	defer measured.Stop()
 	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
 		var err error
-		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, clientUID)
+		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, deviceId)
 		t.Log("\n" + req)
 		_, err = conn.Write([]byte(req))
 		if !assert.NoError(t, err, "should write CONNECT request") {

@@ -11,20 +11,20 @@ import (
 	"github.com/getlantern/measured"
 	"github.com/gorilla/context"
 
+	"./devicefilter"
 	"./forward"
 	"./httpconnect"
 	"./profilter"
 	"./tokenfilter"
-	"./uidfilter"
 	"./utils"
 )
 
 type Server struct {
-	connectComponent     *httpconnect.HTTPConnectHandler
-	lanternProComponent  *profilter.LanternProFilter
-	tokenFilterComponent *tokenfilter.TokenFilter
-	uidFilterComponent   *uidfilter.UIDFilter
-	firstComponent       http.Handler
+	connectComponent      *httpconnect.HTTPConnectHandler
+	lanternProComponent   *profilter.LanternProFilter
+	tokenFilterComponent  *tokenfilter.TokenFilter
+	deviceFilterComponent *devicefilter.DeviceFilter
+	firstComponent        http.Handler
 
 	listener net.Listener
 	tls      bool
@@ -40,7 +40,7 @@ func NewServer(token string, logLevel utils.LogLevel) *Server {
 	// Handles Direct Proxying
 	forwardHandler, _ := forward.New(
 		nil,
-		forward.Logger(utils.NewTimeLogger(&stdWriter, utils.DEBUG)),
+		forward.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 	)
 
 	// Handles HTTP CONNECT
@@ -63,17 +63,17 @@ func NewServer(token string, logLevel utils.LogLevel) *Server {
 	// Extracts the user ID and attaches the matching client to the request
 	// context.  Returns a 404 to requests without the UID.  Removes the
 	// header before continuing.
-	uidFilter, _ := uidfilter.New(
+	deviceFilter, _ := devicefilter.New(
 		tokenFilter,
-		uidfilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
+		devicefilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 	)
 
 	server := &Server{
-		connectComponent:     connectHandler,
-		lanternProComponent:  lanternPro,
-		tokenFilterComponent: tokenFilter,
-		uidFilterComponent:   uidFilter,
-		firstComponent:       uidFilter,
+		connectComponent:      connectHandler,
+		lanternProComponent:   lanternPro,
+		tokenFilterComponent:  tokenFilter,
+		deviceFilterComponent: deviceFilter,
+		firstComponent:        deviceFilter,
 	}
 	return server
 }

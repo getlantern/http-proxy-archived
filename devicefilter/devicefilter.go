@@ -1,4 +1,4 @@
-package uidfilter
+package devicefilter
 
 import (
 	"net/http"
@@ -12,25 +12,25 @@ import (
 )
 
 const (
-	uIDHeader = "X-Lantern-UID"
+	deviceIdHeader = "X-Lantern-Device-Id"
 )
 
-type UIDFilter struct {
+type DeviceFilter struct {
 	log  utils.Logger
 	next http.Handler
 }
 
-type optSetter func(f *UIDFilter) error
+type optSetter func(f *DeviceFilter) error
 
 func Logger(l utils.Logger) optSetter {
-	return func(f *UIDFilter) error {
+	return func(f *DeviceFilter) error {
 		f.log = l
 		return nil
 	}
 }
 
-func New(next http.Handler, setters ...optSetter) (*UIDFilter, error) {
-	f := &UIDFilter{
+func New(next http.Handler, setters ...optSetter) (*DeviceFilter, error) {
+	f := &DeviceFilter{
 		log:  utils.NullLogger,
 		next: next,
 	}
@@ -43,27 +43,27 @@ func New(next http.Handler, setters ...optSetter) (*UIDFilter, error) {
 	return f, nil
 }
 
-func (f *UIDFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (f *DeviceFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if f.log.IsLevel(utils.DEBUG) {
 		reqStr, _ := httputil.DumpRequest(req, true)
-		f.log.Debugf("UIDFilter Middleware received request:\n%s", reqStr)
+		f.log.Debugf("DeviceFilter Middleware received request:\n%s", reqStr)
 	}
 
-	lanternUID := req.Header.Get(uIDHeader)
+	lanternDeviceId := req.Header.Get(deviceIdHeader)
 
 	// An UID must be provided always by the client.  Respond 404 otherwise.
-	if lanternUID == "" {
+	if lanternDeviceId == "" {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
 	// Attached the uid to connection to report stats to redis correctly
 	// "conn" in context is previously attached in server.go
-	key := []byte(lanternUID)
+	key := []byte(lanternDeviceId)
 	c := context.Get(req, "conn")
 	c.(*measured.Conn).ID = string(key)
 
-	req.Header.Del(uIDHeader)
+	req.Header.Del(deviceIdHeader)
 
 	f.next.ServeHTTP(w, req)
 }
