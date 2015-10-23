@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -140,5 +141,36 @@ func (s *Server) doServe(ready *chan bool) error {
 			}
 		},
 	}
-	return hs.Serve(measured.Listener(s.listener, 10*time.Second))
+	listener := newStoppableListener(measured.Listener(s.listener, 10*time.Second))
+	return hs.Serve(listener)
+}
+
+type stoppableListener struct {
+	net.Listener
+	stop chan bool
+}
+
+func newStoppableListener(l net.Listener) *stoppableListener {
+	listener := &stoppableListener{
+		Listener: l,
+		stop:     make(chan bool),
+	}
+
+	return listener
+}
+
+func (sl *stoppableListener) Accept() (net.Conn, error) {
+	for {
+		select {
+		case <-sl.stop:
+			return nil, errors.New("Listener is not accepting new connections")
+		default:
+		}
+
+		return sl.Listener.Accept()
+	}
+}
+
+func (sl *stoppableListener) Stop() {
+	close(sl.stop)
 }
