@@ -1,9 +1,9 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net"
 	"net/http"
 	"os"
@@ -28,13 +28,15 @@ type Server struct {
 	deviceFilterComponent *devicefilter.DeviceFilter
 	firstComponent        http.Handler
 
-	listener net.Listener
-	tls      bool
+	httpServer http.Server
+	listener   *stoppableListener
+	tls        bool
 
-	numConnections int64
+	maxConns int64
+	numConns int64
 }
 
-func NewServer(token string, logLevel utils.LogLevel) *Server {
+func NewServer(token string, maxConns int64, logLevel utils.LogLevel) *Server {
 	stdWriter := io.Writer(os.Stdout)
 
 	// The following middleware architecture can be seen as a chain of
@@ -72,37 +74,41 @@ func NewServer(token string, logLevel utils.LogLevel) *Server {
 		devicefilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 	)
 
+	if maxConns == 0 {
+		maxConns = math.MaxInt64
+	}
 	server := &Server{
 		connectComponent:      connectHandler,
 		lanternProComponent:   lanternPro,
 		tokenFilterComponent:  tokenFilter,
 		deviceFilterComponent: deviceFilter,
 		firstComponent:        deviceFilter,
+		maxConns:              maxConns,
 	}
 	return server
 }
 
 func (s *Server) ServeHTTP(addr string, ready *chan bool) error {
-	var err error
-	if s.listener, err = net.Listen("tcp", addr); err != nil {
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
 		return err
 	}
 	s.tls = false
 	fmt.Printf("Listen http on %s\n", addr)
-	return s.doServe(ready)
+	return s.doServe(listener, ready)
 }
 
 func (s *Server) ServeHTTPS(addr, keyfile, certfile string, ready *chan bool) error {
-	var err error
-	if s.listener, err = listenTLS(addr, keyfile, certfile); err != nil {
+	listener, err := listenTLS(addr, keyfile, certfile)
+	if err != nil {
 		return err
 	}
 	s.tls = true
 	fmt.Printf("Listen http on %s\n", addr)
-	return s.doServe(ready)
+	return s.doServe(listener, ready)
 }
 
-func (s *Server) doServe(ready *chan bool) error {
+func (s *Server) doServe(listener net.Listener, ready *chan bool) error {
 	// A dirty trick to associate a connection with the http.Request it
 	// contains. In "net/http/server.go", handler will be called
 	// immediately after ConnState changed to StateActive, so it's safe to
@@ -125,11 +131,12 @@ func (s *Server) doServe(ready *chan bool) error {
 	if ready != nil {
 		*ready <- true
 	}
-	hs := http.Server{Handler: proxy,
+	s.listener = newStoppableListener(measured.Listener(listener, 10*time.Second))
+	s.httpServer = http.Server{Handler: proxy,
 		ConnState: func(c net.Conn, state http.ConnState) {
 			switch state {
 			case http.StateNew:
-				atomic.AddInt64(&s.numConnections, 1)
+				atomic.AddInt64(&s.numConns, 1)
 			case http.StateActive:
 				select {
 				case q <- c:
@@ -137,23 +144,32 @@ func (s *Server) doServe(ready *chan bool) error {
 					fmt.Print("Oops! the connection queue is full!\n")
 				}
 			case http.StateClosed:
-				atomic.AddInt64(&s.numConnections, -1)
+				atomic.AddInt64(&s.numConns, -1)
+			}
+
+			if atomic.LoadInt64(&s.numConns) >= s.maxConns {
+				s.listener.Stop()
+			} else if s.listener.IsStopped() {
+				s.listener.Restart()
 			}
 		},
 	}
-	listener := newStoppableListener(measured.Listener(s.listener, 10*time.Second))
-	return hs.Serve(listener)
+	return s.httpServer.Serve(s.listener)
 }
 
 type stoppableListener struct {
 	net.Listener
-	stop chan bool
+
+	stopped int32
+	stop    chan bool
+	restart chan bool
 }
 
 func newStoppableListener(l net.Listener) *stoppableListener {
 	listener := &stoppableListener{
 		Listener: l,
-		stop:     make(chan bool),
+		stop:     make(chan bool, 1),
+		restart:  make(chan bool),
 	}
 
 	return listener
@@ -163,7 +179,7 @@ func (sl *stoppableListener) Accept() (net.Conn, error) {
 	for {
 		select {
 		case <-sl.stop:
-			return nil, errors.New("Listener is not accepting new connections")
+			<-sl.restart
 		default:
 		}
 
@@ -171,6 +187,20 @@ func (sl *stoppableListener) Accept() (net.Conn, error) {
 	}
 }
 
+func (sl *stoppableListener) IsStopped() bool {
+	return atomic.LoadInt32(&sl.stopped) == 1
+}
+
 func (sl *stoppableListener) Stop() {
-	close(sl.stop)
+	if !sl.IsStopped() {
+		sl.stop <- true
+		atomic.StoreInt32(&sl.stopped, 1)
+	}
+}
+
+func (sl *stoppableListener) Restart() {
+	if sl.IsStopped() {
+		sl.restart <- true
+		atomic.StoreInt32(&sl.stopped, 0)
+	}
 }

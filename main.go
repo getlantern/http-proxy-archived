@@ -17,6 +17,7 @@ var (
 	certfile = flag.String("cert", "", "Certificate file name")
 	https    = flag.Bool("https", false, "Use TLS for client to proxy communication")
 	addr     = flag.String("addr", ":8080", "Address to listen")
+	maxConns = flag.Uint64("maxconns", 0, "Max number of simultaneous connections allowed connections")
 	token    = flag.String("token", "", "Lantern token")
 	debug    = flag.Bool("debug", false, "Produce debug output")
 )
@@ -43,13 +44,13 @@ func main() {
 	}
 	rp, err := utils.NewRedisReporter(redisAddr)
 	if err != nil {
-		fmt.Printf("Error connect to redis: %v\n", err)
+		fmt.Printf("Error connecting to redis: %v\n", err)
 	} else {
 		measured.Start(20*time.Second, rp)
 		defer measured.Stop()
 	}
 
-	server := NewServer(*token, logLevel)
+	server := NewServer(*token, int64(*maxConns), logLevel)
 	if *https {
 		err = server.ServeHTTPS(*addr, *keyfile, *certfile, nil)
 	} else {
