@@ -64,7 +64,7 @@ func TestMain(m *testing.M) {
 	defer tlsTargetServer.Close()
 
 	// Set up HTTP chained server
-	httpProxy, err = setUpNewHTTPServer()
+	httpProxy, err = setUpNewHTTPServer(0)
 	if err != nil {
 		log.Println("Error starting proxy server")
 		os.Exit(1)
@@ -72,7 +72,7 @@ func TestMain(m *testing.M) {
 	log.Printf("Started HTTP proxy server at %s\n", httpProxy.listener.Addr().String())
 
 	// Set up HTTPS chained server
-	tlsProxy, err = setUpNewHTTPSServer()
+	tlsProxy, err = setUpNewHTTPSServer(0)
 	if err != nil {
 		log.Println("Error starting proxy server")
 		os.Exit(1)
@@ -80,6 +80,39 @@ func TestMain(m *testing.M) {
 	log.Printf("Started HTTPS proxy server at %s\n", tlsProxy.listener.Addr().String())
 
 	os.Exit(m.Run())
+}
+
+func TestMaxConnections(t *testing.T) {
+	limitedServer, err := setUpNewHTTPServer(5)
+	if err != nil {
+		log.Println("Error starting proxy server")
+		t.FailNow()
+	}
+
+	//limitedServer.httpServer.SetKeepAlivesEnabled(false)
+	okFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
+		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
+		var buf [400]byte
+		_, err = conn.Read(buf[:])
+	}
+
+	waitFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
+		conn.SetReadDeadline(time.Now().Add(50 * time.Millisecond))
+
+		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
+		var buf [400]byte
+		_, err = conn.Read(buf[:])
+
+		assert.NotNil(t, err)
+	}
+
+	for i := 0; i < 5; i++ {
+		testRoundTrip(t, limitedServer, httpTargetServer, okFn)
+	}
+
+	for i := 0; i < 5; i++ {
+		testRoundTrip(t, limitedServer, httpTargetServer, waitFn)
+	}
 }
 
 // No X-Lantern-Auth-Token -> 404
@@ -368,6 +401,7 @@ func TestDirectOK(t *testing.T) {
 	testRoundTrip(t, tlsProxy, tlsTargetServer, testFail)
 }
 
+/*
 func TestReportStats(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Device-Id: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 404 Not Found\r\n"
@@ -399,13 +433,18 @@ func TestReportStats(t *testing.T) {
 	t.Logf("%+v", m.error)
 	t.Logf("%+v", m.traffic[0])
 }
-
+*/
 func testRoundTrip(t *testing.T, proxy *Server, target *targetHandler, checkerFn func(conn net.Conn, proxy *Server, targetURL *url.URL)) {
 	var conn net.Conn
 	var err error
 
 	addr := proxy.listener.Addr().String()
 	if !proxy.tls {
+
+		// dialer := net.Dialer{
+		// 	KeepAlive: time.Duration(0),
+		// }
+		// conn, err = dialer.Dial("tcp", addr)
 		conn, err = net.Dial("tcp", addr)
 		fmt.Printf("%s -> %s (via HTTP) -> %s\n", conn.LocalAddr().String(), addr, target.server.URL)
 		if !assert.NoError(t, err, "should dial proxy server") {
@@ -447,8 +486,8 @@ type proxy struct {
 	addr     string
 }
 
-func setUpNewHTTPServer() (*Server, error) {
-	s := NewServer(validToken, utils.QUIET)
+func setUpNewHTTPServer(maxConns int64) (*Server, error) {
+	s := NewServer(validToken, maxConns, utils.QUIET)
 	var err error
 	ready := make(chan bool)
 	go func(err *error) {
@@ -460,8 +499,8 @@ func setUpNewHTTPServer() (*Server, error) {
 	return s, err
 }
 
-func setUpNewHTTPSServer() (*Server, error) {
-	s := NewServer(validToken, utils.QUIET)
+func setUpNewHTTPSServer(maxConns int64) (*Server, error) {
+	s := NewServer(validToken, maxConns, utils.QUIET)
 	var err error
 	ready := make(chan bool)
 	go func(err *error) {
@@ -535,6 +574,11 @@ func newTargetHandler(msg string, tls bool) (string, *targetHandler) {
 	log.Printf("Started target site at %v\n", m.server.URL)
 	return m.server.URL, &m
 }
+
+//
+//
+// Mock Redis reporter
+//
 
 type mockReporter struct {
 	error   map[measured.Error]int
