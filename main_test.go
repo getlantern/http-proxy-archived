@@ -444,11 +444,6 @@ func testRoundTrip(t *testing.T, proxy *Server, target *targetHandler, checkerFn
 
 	addr := proxy.listener.Addr().String()
 	if !proxy.tls {
-
-		// dialer := net.Dialer{
-		// 	KeepAlive: time.Duration(0),
-		// }
-		// conn, err = dialer.Dial("tcp", addr)
 		conn, err = net.Dial("tcp", addr)
 		fmt.Printf("%s -> %s (via HTTP) -> %s\n", conn.LocalAddr().String(), addr, target.server.URL)
 		if !assert.NoError(t, err, "should dial proxy server") {
@@ -490,7 +485,7 @@ type proxy struct {
 	addr     string
 }
 
-func setUpNewHTTPServer(maxConns int64) (*Server, error) {
+func setUpNewHTTPServer(maxConns uint64) (*Server, error) {
 	s := NewServer(validToken, maxConns, utils.QUIET)
 	var err error
 	ready := make(chan bool)
@@ -503,7 +498,7 @@ func setUpNewHTTPServer(maxConns int64) (*Server, error) {
 	return s, err
 }
 
-func setUpNewHTTPSServer(maxConns int64) (*Server, error) {
+func setUpNewHTTPSServer(maxConns uint64) (*Server, error) {
 	s := NewServer(validToken, maxConns, utils.QUIET)
 	var err error
 	ready := make(chan bool)

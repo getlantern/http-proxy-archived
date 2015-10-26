@@ -50,7 +50,7 @@ func main() {
 		defer measured.Stop()
 	}
 
-	server := NewServer(*token, int64(*maxConns), logLevel)
+	server := NewServer(*token, *maxConns, logLevel)
 	if *https {
 		err = server.ServeHTTPS(*addr, *keyfile, *certfile, nil)
 	} else {

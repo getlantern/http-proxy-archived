@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"net/http/httputil"
 
-	"github.com/gorilla/context"
+	//	"github.com/gorilla/context"
 
-	"github.com/getlantern/measured"
+	//	"github.com/getlantern/measured"
 
 	"../utils"
 )
@@ -59,9 +59,9 @@ func (f *DeviceFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	// Attached the uid to connection to report stats to redis correctly
 	// "conn" in context is previously attached in server.go
-	key := []byte(lanternDeviceId)
-	c := context.Get(req, "conn")
-	c.(*measured.Conn).ID = string(key)
+	//	key := []byte(lanternDeviceId)
+	//	c := context.Get(req, "conn")
+	//	c.(*measured.Conn).ID = string(key)
 
 	req.Header.Del(deviceIdHeader)
 

@@ -7,7 +7,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"sync/atomic"
 	"time"
 
 	"github.com/getlantern/measured"
@@ -29,14 +28,14 @@ type Server struct {
 	firstComponent        http.Handler
 
 	httpServer http.Server
-	listener   *stoppableListener
+	listener   *limitedListener
 	tls        bool
 
-	maxConns int64
-	numConns int64
+	maxConns uint64
+	numConns uint64
 }
 
-func NewServer(token string, maxConns int64, logLevel utils.LogLevel) *Server {
+func NewServer(token string, maxConns uint64, logLevel utils.LogLevel) *Server {
 	stdWriter := io.Writer(os.Stdout)
 
 	// The following middleware architecture can be seen as a chain of
@@ -131,76 +130,26 @@ func (s *Server) doServe(listener net.Listener, ready *chan bool) error {
 	if ready != nil {
 		*ready <- true
 	}
-	s.listener = newStoppableListener(measured.Listener(listener, 10*time.Second))
+	s.listener = newLimitedListener(
+		measured.Listener(listener, 10*time.Second),
+		&s.numConns,
+	)
 	s.httpServer = http.Server{Handler: proxy,
 		ConnState: func(c net.Conn, state http.ConnState) {
-			switch state {
-			case http.StateNew:
-				atomic.AddInt64(&s.numConns, 1)
-			case http.StateActive:
+			if state == http.StateActive {
 				select {
 				case q <- c:
 				default:
 					fmt.Print("Oops! the connection queue is full!\n")
 				}
-			case http.StateClosed:
-				atomic.AddInt64(&s.numConns, -1)
 			}
 
-			if atomic.LoadInt64(&s.numConns) >= s.maxConns {
-				s.listener.Stop()
-			} else if s.listener.IsStopped() {
-				s.listener.Restart()
-			}
+			// if atomic.LoadInt64(&s.numConns) >= s.maxConns {
+			// 	s.listener.Stop()
+			// } else if s.listener.IsStopped() {
+			// 	s.listener.Restart()
+			// }
 		},
 	}
 	return s.httpServer.Serve(s.listener)
-}
-
-type stoppableListener struct {
-	net.Listener
-
-	stopped int32
-	stop    chan bool
-	restart chan bool
-}
-
-func newStoppableListener(l net.Listener) *stoppableListener {
-	listener := &stoppableListener{
-		Listener: l,
-		stop:     make(chan bool, 1),
-		restart:  make(chan bool),
-	}
-
-	return listener
-}
-
-func (sl *stoppableListener) Accept() (net.Conn, error) {
-	for {
-		select {
-		case <-sl.stop:
-			<-sl.restart
-		default:
-		}
-
-		return sl.Listener.Accept()
-	}
-}
-
-func (sl *stoppableListener) IsStopped() bool {
-	return atomic.LoadInt32(&sl.stopped) == 1
-}
-
-func (sl *stoppableListener) Stop() {
-	if !sl.IsStopped() {
-		sl.stop <- true
-		atomic.StoreInt32(&sl.stopped, 1)
-	}
-}
-
-func (sl *stoppableListener) Restart() {
-	if sl.IsStopped() {
-		sl.restart <- true
-		atomic.StoreInt32(&sl.stopped, 0)
-	}
 }
