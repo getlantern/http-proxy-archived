@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net"
 	"sync/atomic"
 )
@@ -30,15 +29,13 @@ func newLimitedListener(l net.Listener, numConns *uint64) *limitedListener {
 func (sl *limitedListener) Accept() (net.Conn, error) {
 	select {
 	case <-sl.stop:
-		fmt.Println("STOPPED")
 		<-sl.restart
 	default:
 	}
 
-	fmt.Println("ACCEPTING")
 	conn, err := sl.Listener.Accept()
 	atomic.AddUint64(sl.numConns, 1)
-	fmt.Println("Accepted connection number: ", atomic.LoadUint64(sl.numConns))
+
 	return &LimitedConn{
 		Conn:    conn,
 		counter: sl.numConns,
