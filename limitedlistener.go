@@ -68,16 +68,6 @@ type LimitedConn struct {
 	counter *uint64
 }
 
-/*
-func (mc *LimitedConn) Read(b []byte) (n int, err error) {
-	return mc.Conn.Read(b)
-}
-
-func (mc *LimitedConn) Write(b []byte) (n int, err error) {
-	return mc.Conn.Write(b)
-}
-*/
-
 func (c *LimitedConn) Close() (err error) {
 	// Substract 1 by adding the two-complement of -1
 	atomic.AddUint64(c.counter, ^uint64(0))

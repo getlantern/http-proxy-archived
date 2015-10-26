@@ -127,6 +127,8 @@ func TestMaxConnections(t *testing.T) {
 		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
 		var buf [400]byte
 		_, err = conn.Read(buf[:])
+
+		time.Sleep(time.Millisecond * 100)
 	}
 
 	waitFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
@@ -140,11 +142,11 @@ func TestMaxConnections(t *testing.T) {
 	}
 
 	for i := 0; i < 5; i++ {
-		testRoundTrip(t, limitedServer, httpTargetServer, okFn)
+		go testRoundTrip(t, limitedServer, httpTargetServer, okFn)
 	}
 
 	for i := 0; i < 5; i++ {
-		testRoundTrip(t, limitedServer, httpTargetServer, waitFn)
+		go testRoundTrip(t, limitedServer, httpTargetServer, waitFn)
 	}
 }
 

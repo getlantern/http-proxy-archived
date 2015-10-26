@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sync/atomic"
 	"time"
 
 	"github.com/getlantern/measured"
@@ -28,8 +29,9 @@ type Server struct {
 	firstComponent        http.Handler
 
 	httpServer http.Server
-	listener   *limitedListener
 	tls        bool
+
+	listener net.Listener
 
 	maxConns uint64
 	numConns uint64
@@ -130,10 +132,13 @@ func (s *Server) doServe(listener net.Listener, ready *chan bool) error {
 	if ready != nil {
 		*ready <- true
 	}
-	s.listener = newLimitedListener(
-		measured.Listener(listener, 10*time.Second),
-		&s.numConns,
-	)
+
+	limListener := newLimitedListener(listener, &s.numConns)
+
+	mListener := measured.Listener(limListener, 10*time.Second)
+
+	s.listener = mListener
+
 	s.httpServer = http.Server{Handler: proxy,
 		ConnState: func(c net.Conn, state http.ConnState) {
 			if state == http.StateActive {
@@ -144,11 +149,11 @@ func (s *Server) doServe(listener net.Listener, ready *chan bool) error {
 				}
 			}
 
-			// if atomic.LoadInt64(&s.numConns) >= s.maxConns {
-			// 	s.listener.Stop()
-			// } else if s.listener.IsStopped() {
-			// 	s.listener.Restart()
-			// }
+			if atomic.LoadUint64(&s.numConns) >= s.maxConns {
+				limListener.Stop()
+			} else if limListener.IsStopped() {
+				limListener.Restart()
+			}
 		},
 	}
 	return s.httpServer.Serve(s.listener)
