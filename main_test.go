@@ -82,6 +82,39 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+// Keep this one first to avoid measuring previous connections
+func TestReportStats(t *testing.T) {
+	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Device-Id: %s\r\n\r\n"
+	connectResp := "HTTP/1.1 404 Not Found\r\n"
+	m := mockReporter{error: make(map[measured.Error]int)}
+	measured.Start(100*time.Millisecond, &m)
+	defer measured.Stop()
+	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
+		var err error
+		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, deviceId)
+		t.Log("\n" + req)
+		_, err = conn.Write([]byte(req))
+		if !assert.NoError(t, err, "should write CONNECT request") {
+			t.FailNow()
+		}
+
+		var buf [400]byte
+		_, err = conn.Read(buf[:])
+		if !assert.Contains(t, string(buf[:]), connectResp,
+			"should get 404 Not Found because no token was provided") {
+			t.FailNow()
+		}
+	}
+
+	testRoundTrip(t, httpProxy, httpTargetServer, testFn)
+	testRoundTrip(t, tlsProxy, httpTargetServer, testFn)
+	time.Sleep(100 * time.Millisecond)
+	assert.Equal(t, 1, len(m.error))
+	assert.Equal(t, 1, len(m.traffic))
+	t.Logf("%+v", m.error)
+	t.Logf("%+v", m.traffic[0])
+}
+
 func TestMaxConnections(t *testing.T) {
 	limitedServer, err := setUpNewHTTPServer(5)
 	if err != nil {
@@ -401,39 +434,10 @@ func TestDirectOK(t *testing.T) {
 	testRoundTrip(t, tlsProxy, tlsTargetServer, testFail)
 }
 
-/*
-func TestReportStats(t *testing.T) {
-	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Device-Id: %s\r\n\r\n"
-	connectResp := "HTTP/1.1 404 Not Found\r\n"
-	m := mockReporter{error: make(map[measured.Error]int)}
-	measured.Start(100*time.Millisecond, &m)
-	defer measured.Stop()
-	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
-		var err error
-		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, deviceId)
-		t.Log("\n" + req)
-		_, err = conn.Write([]byte(req))
-		if !assert.NoError(t, err, "should write CONNECT request") {
-			t.FailNow()
-		}
+//
+// Auxiliary functions
+//
 
-		var buf [400]byte
-		_, err = conn.Read(buf[:])
-		if !assert.Contains(t, string(buf[:]), connectResp,
-			"should get 404 Not Found because no token was provided") {
-			t.FailNow()
-		}
-	}
-
-	testRoundTrip(t, httpProxy, httpTargetServer, testFn)
-	testRoundTrip(t, tlsProxy, httpTargetServer, testFn)
-	time.Sleep(100 * time.Millisecond)
-	assert.Equal(t, 1, len(m.error))
-	assert.Equal(t, 1, len(m.traffic))
-	t.Logf("%+v", m.error)
-	t.Logf("%+v", m.traffic[0])
-}
-*/
 func testRoundTrip(t *testing.T, proxy *Server, target *targetHandler, checkerFn func(conn net.Conn, proxy *Server, targetURL *url.URL)) {
 	var conn net.Conn
 	var err error
