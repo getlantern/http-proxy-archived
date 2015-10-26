@@ -135,17 +135,17 @@ func Dialer(d DialFunc, interval time.Duration) DialFunc {
 
 // Dialer wraps a dial function to measure various statistics
 func Listener(l net.Listener, interval time.Duration) net.Listener {
-	return &measuredListener{l, interval}
+	return &MeasuredListener{l, interval}
 }
 
-type measuredListener struct {
+type MeasuredListener struct {
 	net.Listener
 	interval time.Duration
 }
 
 // Accept wraps the same function of net.Listener to return a connection
 // which measures various statistics
-func (l *measuredListener) Accept() (c net.Conn, err error) {
+func (l *MeasuredListener) Accept() (c net.Conn, err error) {
 	c, err = l.Listener.Accept()
 	if err != nil {
 		return
