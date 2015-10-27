@@ -34,8 +34,12 @@ type Server struct {
 	idleCloseSecs uint64
 }
 
-func NewServer(token string, maxConns uint64, idleCloseSecs uint64, logLevel utils.LogLevel) *Server {
+func NewServer(token string, maxConns uint64, idleCloseSecs uint64, removeFilters bool, logLevel utils.LogLevel) *Server {
 	stdWriter := io.Writer(os.Stdout)
+
+	if maxConns == 0 {
+		maxConns = math.MaxInt64
+	}
 
 	// The following middleware architecture can be seen as a chain of
 	// filters that is run from last to first.
@@ -52,31 +56,35 @@ func NewServer(token string, maxConns uint64, idleCloseSecs uint64, logLevel uti
 		forwardHandler,
 		httpconnect.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 	)
-	// Identifies Lantern Pro users (currently NOOP)
-	lanternPro, _ := profilter.New(
-		connectHandler,
-		profilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
-	)
-	// Returns a 404 to requests without the proper token.  Removes the
-	// header before continuing.
-	tokenFilter, _ := tokenfilter.New(
-		lanternPro,
-		tokenfilter.TokenSetter(token),
-		tokenfilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
-	)
-	// Extracts the user ID and attaches the matching client to the request
-	// context.  Returns a 404 to requests without the UID.  Removes the
-	// header before continuing.
-	deviceFilter, _ := devicefilter.New(
-		tokenFilter,
-		devicefilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
-	)
 
-	if maxConns == 0 {
-		maxConns = math.MaxInt64
+	var firstHandler http.Handler
+	if removeFilters {
+		firstHandler = connectHandler
+	} else {
+		// Identifies Lantern Pro users (currently NOOP)
+		lanternPro, _ := profilter.New(
+			connectHandler,
+			profilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
+		)
+		// Returns a 404 to requests without the proper token.  Removes the
+		// header before continuing.
+		tokenFilter, _ := tokenfilter.New(
+			lanternPro,
+			tokenfilter.TokenSetter(token),
+			tokenfilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
+		)
+		// Extracts the user ID and attaches the matching client to the request
+		// context.  Returns a 404 to requests without the UID.  Removes the
+		// header before continuing.
+		deviceFilter, _ := devicefilter.New(
+			tokenFilter,
+			devicefilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
+		)
+		firstHandler = deviceFilter
 	}
+
 	server := &Server{
-		firstHandler:  deviceFilter,
+		firstHandler:  firstHandler,
 		maxConns:      maxConns,
 		idleCloseSecs: idleCloseSecs,
 	}
