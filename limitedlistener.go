@@ -42,7 +42,9 @@ func (sl *limitedListener) Accept() (net.Conn, error) {
 	atomic.AddUint64(sl.numConns, 1)
 
 	idleConn := idletiming.Conn(conn, sl.idleTimeout, func() {
-		conn.Close()
+		if conn != nil {
+			conn.Close()
+		}
 	})
 
 	return &LimitedConn{
