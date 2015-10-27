@@ -128,6 +128,8 @@ func TestMaxConnections(t *testing.T) {
 		var buf [400]byte
 		_, err = conn.Read(buf[:])
 
+		assert.Nil(t, err)
+
 		time.Sleep(time.Millisecond * 100)
 	}
 
@@ -145,8 +147,16 @@ func TestMaxConnections(t *testing.T) {
 		go testRoundTrip(t, limitedServer, httpTargetServer, okFn)
 	}
 
+	time.Sleep(time.Millisecond * 100)
+
 	for i := 0; i < 5; i++ {
 		go testRoundTrip(t, limitedServer, httpTargetServer, waitFn)
+	}
+
+	time.Sleep(time.Millisecond * 100)
+
+	for i := 0; i < 5; i++ {
+		go testRoundTrip(t, limitedServer, httpTargetServer, okFn)
 	}
 }
 
