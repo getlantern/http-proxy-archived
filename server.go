@@ -34,7 +34,7 @@ type Server struct {
 	idleCloseSecs uint64
 }
 
-func NewServer(token string, maxConns uint64, idleCloseSecs uint64, removeFilters bool, logLevel utils.LogLevel) *Server {
+func NewServer(token string, maxConns uint64, idleCloseSecs uint64, disableFilters bool, logLevel utils.LogLevel) *Server {
 	stdWriter := io.Writer(os.Stdout)
 
 	if maxConns == 0 {
@@ -58,7 +58,7 @@ func NewServer(token string, maxConns uint64, idleCloseSecs uint64, removeFilter
 	)
 
 	var firstHandler http.Handler
-	if removeFilters {
+	if disableFilters {
 		firstHandler = connectHandler
 	} else {
 		// Identifies Lantern Pro users (currently NOOP)
