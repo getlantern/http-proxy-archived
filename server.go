@@ -22,11 +22,7 @@ import (
 )
 
 type Server struct {
-	connectComponent      *httpconnect.HTTPConnectHandler
-	lanternProComponent   *profilter.LanternProFilter
-	tokenFilterComponent  *tokenfilter.TokenFilter
-	deviceFilterComponent *devicefilter.DeviceFilter
-	firstComponent        http.Handler
+	firstComponent http.Handler
 
 	httpServer http.Server
 	tls        bool
@@ -60,13 +56,16 @@ func NewServer(token string, maxConns uint64, logLevel utils.LogLevel) *Server {
 		connectHandler,
 		profilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 	)
-	// Returns a 404 to requests without the proper token.  Removes the
-	// header before continuing.
-	tokenFilter, _ := tokenfilter.New(
-		lanternPro,
-		tokenfilter.TokenSetter(token),
-		tokenfilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
-	)
+	var tokenFilter http.Handler = lanternPro
+	if token != "" {
+		// Returns a 404 to requests without the proper token.  Removes the
+		// header before continuing.
+		tokenFilter, _ = tokenfilter.New(
+			lanternPro,
+			tokenfilter.TokenSetter(token),
+			tokenfilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
+		)
+	}
 	// Extracts the user ID and attaches the matching client to the request
 	// context.  Returns a 404 to requests without the UID.  Removes the
 	// header before continuing.
@@ -79,12 +78,8 @@ func NewServer(token string, maxConns uint64, logLevel utils.LogLevel) *Server {
 		maxConns = math.MaxInt64
 	}
 	server := &Server{
-		connectComponent:      connectHandler,
-		lanternProComponent:   lanternPro,
-		tokenFilterComponent:  tokenFilter,
-		deviceFilterComponent: deviceFilter,
-		firstComponent:        deviceFilter,
-		maxConns:              maxConns,
+		firstComponent: deviceFilter,
+		maxConns:       maxConns,
 	}
 	return server
 }

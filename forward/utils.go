@@ -18,8 +18,28 @@ func cloneURL(i *url.URL) *url.URL {
 // overide, but adds multiple headers
 func copyHeaders(dst, src http.Header) {
 	for k, vv := range src {
-		for _, v := range vv {
-			dst.Add(k, v)
+		switch k {
+		// Skip hop-by-hop headers, ref section 13.5.1 of http://www.ietf.org/rfc/rfc2616.txt
+		case "Connection":
+			continue
+		case "Keep-Alive":
+			continue
+		case "Proxy-Authenticate":
+			continue
+		case "Proxy-Authorization":
+			continue
+		case "TE":
+			continue
+		case "Trailers":
+			continue
+		case "Transfer-Encoding":
+			continue
+		case "Upgrade":
+			continue
+		default:
+			for _, v := range vv {
+				dst.Add(k, v)
+			}
 		}
 	}
 }

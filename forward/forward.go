@@ -100,8 +100,10 @@ func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// Forward the response to the origin
 	copyHeaders(w.Header(), response.Header)
 	w.WriteHeader(response.StatusCode)
-	_, _ = io.Copy(w, response.Body)
-	response.Body.Close()
+	if response.Body != nil {
+		_, _ = io.Copy(w, response.Body)
+		response.Body.Close()
+	}
 }
 
 func (f *Forwarder) cloneRequest(req *http.Request, u *url.URL) *http.Request {

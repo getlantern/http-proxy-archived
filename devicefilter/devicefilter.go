@@ -51,8 +51,8 @@ func (f *DeviceFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	lanternDeviceId := req.Header.Get(deviceIdHeader)
 
-	// An UID must be provided always by the client.  Respond 404 otherwise.
 	if lanternDeviceId == "" {
+		f.log.Debugf("No %s header found, respond 404 not found to %s\n", deviceIdHeader, req.RemoteAddr)
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
