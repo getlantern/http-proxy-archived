@@ -12,14 +12,15 @@ import (
 )
 
 var (
-	help     = flag.Bool("help", false, "Get usage help")
-	keyfile  = flag.String("key", "", "Private key file name")
-	certfile = flag.String("cert", "", "Certificate file name")
-	https    = flag.Bool("https", false, "Use TLS for client to proxy communication")
-	addr     = flag.String("addr", ":8080", "Address to listen")
-	maxConns = flag.Uint64("maxconns", 0, "Max number of simultaneous connections allowed connections")
-	token    = flag.String("token", "", "Lantern token")
-	debug    = flag.Bool("debug", false, "Produce debug output")
+	help      = flag.Bool("help", false, "Get usage help")
+	keyfile   = flag.String("key", "", "Private key file name")
+	certfile  = flag.String("cert", "", "Certificate file name")
+	https     = flag.Bool("https", false, "Use TLS for client to proxy communication")
+	addr      = flag.String("addr", ":8080", "Address to listen")
+	maxConns  = flag.Uint64("maxconns", 0, "Max number of simultaneous connections allowed connections")
+	idleClose = flag.Uint64("idleclose", 0, "Time in seconds that an idle connection will be allowed before closing it")
+	token     = flag.String("token", "", "Lantern token")
+	debug     = flag.Bool("debug", false, "Produce debug output")
 )
 
 func main() {
@@ -50,7 +51,7 @@ func main() {
 		defer measured.Stop()
 	}
 
-	server := NewServer(*token, *maxConns, logLevel)
+	server := NewServer(*token, *maxConns, *idleClose, logLevel)
 	if *https {
 		err = server.ServeHTTPS(*addr, *keyfile, *certfile, nil)
 	} else {

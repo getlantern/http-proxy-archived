@@ -498,7 +498,7 @@ type proxy struct {
 }
 
 func setUpNewHTTPServer(maxConns uint64) (*Server, error) {
-	s := NewServer(validToken, maxConns, utils.QUIET)
+	s := NewServer(validToken, maxConns, 30, utils.QUIET)
 	var err error
 	ready := make(chan bool)
 	go func(err *error) {
@@ -511,7 +511,7 @@ func setUpNewHTTPServer(maxConns uint64) (*Server, error) {
 }
 
 func setUpNewHTTPSServer(maxConns uint64) (*Server, error) {
-	s := NewServer(validToken, maxConns, utils.QUIET)
+	s := NewServer(validToken, maxConns, 30, utils.QUIET)
 	var err error
 	ready := make(chan bool)
 	go func(err *error) {

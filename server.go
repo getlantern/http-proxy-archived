@@ -35,9 +35,11 @@ type Server struct {
 
 	maxConns uint64
 	numConns uint64
+
+	idleCloseSecs uint64
 }
 
-func NewServer(token string, maxConns uint64, logLevel utils.LogLevel) *Server {
+func NewServer(token string, maxConns uint64, idleCloseSecs uint64, logLevel utils.LogLevel) *Server {
 	stdWriter := io.Writer(os.Stdout)
 
 	// The following middleware architecture can be seen as a chain of
@@ -85,6 +87,7 @@ func NewServer(token string, maxConns uint64, logLevel utils.LogLevel) *Server {
 		deviceFilterComponent: deviceFilter,
 		firstComponent:        deviceFilter,
 		maxConns:              maxConns,
+		idleCloseSecs:         idleCloseSecs,
 	}
 	return server
 }
@@ -133,9 +136,9 @@ func (s *Server) doServe(listener net.Listener, ready *chan bool) error {
 		*ready <- true
 	}
 
-	limListener := newLimitedListener(listener, &s.numConns)
+	limListener := newLimitedListener(listener, &s.numConns, time.Duration(s.idleCloseSecs)*time.Second)
 
-	mListener := measured.Listener(limListener, 10*time.Second)
+	mListener := measured.Listener(limListener, 30*time.Second)
 
 	s.listener = mListener
 

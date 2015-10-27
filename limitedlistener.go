@@ -3,24 +3,29 @@ package main
 import (
 	"net"
 	"sync/atomic"
+	"time"
+
+	"github.com/getlantern/idletiming"
 )
 
 type limitedListener struct {
 	net.Listener
 
-	numConns *uint64
+	numConns    *uint64
+	idleTimeout time.Duration
 
 	stopped int32
 	stop    chan bool
 	restart chan bool
 }
 
-func newLimitedListener(l net.Listener, numConns *uint64) *limitedListener {
+func newLimitedListener(l net.Listener, numConns *uint64, idleTimeout time.Duration) *limitedListener {
 	listener := &limitedListener{
-		Listener: l,
-		stop:     make(chan bool, 1),
-		restart:  make(chan bool),
-		numConns: numConns,
+		Listener:    l,
+		stop:        make(chan bool, 1),
+		restart:     make(chan bool),
+		numConns:    numConns,
+		idleTimeout: idleTimeout,
 	}
 
 	return listener
@@ -36,8 +41,12 @@ func (sl *limitedListener) Accept() (net.Conn, error) {
 	conn, err := sl.Listener.Accept()
 	atomic.AddUint64(sl.numConns, 1)
 
+	idleConn := idletiming.Conn(conn, sl.idleTimeout, func() {
+		conn.Close()
+	})
+
 	return &LimitedConn{
-		Conn:    conn,
+		Conn:    idleConn,
 		counter: sl.numConns,
 	}, err
 }
