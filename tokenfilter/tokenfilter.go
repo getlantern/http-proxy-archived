@@ -55,7 +55,7 @@ func (f *TokenFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	token := req.Header.Get(tokenHeader)
-	if token == "" || token != f.token {
+	if f.token != "" && (token == "" || token != f.token) {
 		w.WriteHeader(http.StatusNotFound)
 	} else {
 		req.Header.Del(tokenHeader)

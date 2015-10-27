@@ -22,14 +22,9 @@ import (
 )
 
 type Server struct {
-	connectComponent      *httpconnect.HTTPConnectHandler
-	lanternProComponent   *profilter.LanternProFilter
-	tokenFilterComponent  *tokenfilter.TokenFilter
-	deviceFilterComponent *devicefilter.DeviceFilter
-	firstComponent        http.Handler
-
-	httpServer http.Server
-	tls        bool
+	firstHandler http.Handler
+	httpServer   http.Server
+	tls          bool
 
 	listener net.Listener
 
@@ -81,13 +76,9 @@ func NewServer(token string, maxConns uint64, idleCloseSecs uint64, logLevel uti
 		maxConns = math.MaxInt64
 	}
 	server := &Server{
-		connectComponent:      connectHandler,
-		lanternProComponent:   lanternPro,
-		tokenFilterComponent:  tokenFilter,
-		deviceFilterComponent: deviceFilter,
-		firstComponent:        deviceFilter,
-		maxConns:              maxConns,
-		idleCloseSecs:         idleCloseSecs,
+		firstHandler:  deviceFilter,
+		maxConns:      maxConns,
+		idleCloseSecs: idleCloseSecs,
 	}
 	return server
 }
@@ -129,7 +120,7 @@ func (s *Server) doServe(listener net.Listener, ready *chan bool) error {
 					q <- c
 				}
 			}
-			s.firstComponent.ServeHTTP(w, req)
+			s.firstHandler.ServeHTTP(w, req)
 		})
 
 	if ready != nil {
