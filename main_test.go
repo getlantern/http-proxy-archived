@@ -160,7 +160,7 @@ func TestMaxConnections(t *testing.T) {
 	}
 }
 
-func TestIdleConnections(t *testing.T) {
+func TestIdleClientConnections(t *testing.T) {
 	limitedServer, err := setupNewHTTPServer(0, 100*time.Millisecond)
 	if err != nil {
 		log.Println("Error starting proxy server")
@@ -189,6 +189,39 @@ func TestIdleConnections(t *testing.T) {
 
 	go testRoundTrip(t, limitedServer, httpTargetServer, okFn)
 	testRoundTrip(t, limitedServer, httpTargetServer, idleFn)
+}
+
+func TestIdleTargetConnections(t *testing.T) {
+	normalServer, err := setupNewHTTPServer(0, 30*time.Second)
+	if err != nil {
+		log.Println("Error starting proxy server")
+		t.FailNow()
+	}
+
+	impatientServer, err := setupNewHTTPServer(0, 2*time.Nanosecond)
+	if err != nil {
+		log.Println("Error starting proxy server")
+		t.FailNow()
+	}
+
+	okFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
+		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
+		var buf [400]byte
+		_, err := conn.Read(buf[:])
+
+		assert.Nil(t, err)
+	}
+
+	failFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
+		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
+		var buf [400]byte
+		_, err := conn.Read(buf[:])
+
+		assert.NotNil(t, err)
+	}
+
+	testRoundTrip(t, normalServer, httpTargetServer, okFn)
+	testRoundTrip(t, impatientServer, httpTargetServer, failFn)
 }
 
 // No X-Lantern-Auth-Token -> 404
