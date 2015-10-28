@@ -8,9 +8,9 @@ import (
 	"net/url"
 	"time"
 
-	"../utils"
-
 	"github.com/getlantern/idletiming"
+
+	"../utils"
 )
 
 type Forwarder struct {
@@ -93,7 +93,7 @@ func New(next http.Handler, setters ...optSetter) (*Forwarder, error) {
 			return
 		}
 
-		idleConn := idletiming.Conn(conn, 30, func() {
+		idleConn := idletiming.Conn(conn, f.idleTimeout, func() {
 			if conn != nil {
 				conn.Close()
 			}

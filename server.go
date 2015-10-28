@@ -56,6 +56,7 @@ func NewServer(token string, maxConns uint64, idleTimeout time.Duration, disable
 	connectHandler, _ := httpconnect.New(
 		forwardHandler,
 		httpconnect.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
+		httpconnect.IdleTimeoutSetter(idleTimeout),
 	)
 
 	var firstHandler http.Handler
