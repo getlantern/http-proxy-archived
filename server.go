@@ -31,10 +31,10 @@ type Server struct {
 	maxConns uint64
 	numConns uint64
 
-	idleCloseSecs uint64
+	idleTimeout time.Duration
 }
 
-func NewServer(token string, maxConns uint64, idleCloseSecs uint64, disableFilters bool, logLevel utils.LogLevel) *Server {
+func NewServer(token string, maxConns uint64, idleTimeout time.Duration, disableFilters bool, logLevel utils.LogLevel) *Server {
 	stdWriter := io.Writer(os.Stdout)
 
 	if maxConns == 0 {
@@ -49,6 +49,7 @@ func NewServer(token string, maxConns uint64, idleCloseSecs uint64, disableFilte
 	forwardHandler, _ := forward.New(
 		nil,
 		forward.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
+		forward.IdleTimeoutSetter(idleTimeout),
 	)
 
 	// Handles HTTP CONNECT
@@ -84,9 +85,9 @@ func NewServer(token string, maxConns uint64, idleCloseSecs uint64, disableFilte
 	}
 
 	server := &Server{
-		firstHandler:  firstHandler,
-		maxConns:      maxConns,
-		idleCloseSecs: idleCloseSecs,
+		firstHandler: firstHandler,
+		maxConns:     maxConns,
+		idleTimeout:  idleTimeout,
 	}
 	return server
 }
@@ -135,7 +136,7 @@ func (s *Server) doServe(listener net.Listener, ready *chan bool) error {
 		*ready <- true
 	}
 
-	limListener := newLimitedListener(listener, &s.numConns, time.Duration(s.idleCloseSecs)*time.Second)
+	limListener := newLimitedListener(listener, &s.numConns, s.idleTimeout)
 
 	mListener := measured.Listener(limListener, 30*time.Second)
 

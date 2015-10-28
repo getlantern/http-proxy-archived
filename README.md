@@ -16,7 +16,7 @@ Then run with:
 
 *Keep in mind that cURL doesn't support tunneling through an HTTPS proxy, so if you use the -https option you have to use other tools for testing*
 
-Without the header, it will respond `404 Not Found`. In order to avoid this and test it as a normal proxy, use the `-disableFilters`
+Without the header, it will respond `404 Not Found`. In order to avoid this and test it as a normal proxy, use the `-disableFilters` flag.
 
 Direct proxying:
 

@@ -2,12 +2,15 @@ package forward
 
 import (
 	"io"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"time"
 
 	"../utils"
+
+	"github.com/getlantern/idletiming"
 )
 
 type Forwarder struct {
@@ -16,6 +19,8 @@ type Forwarder struct {
 	roundTripper http.RoundTripper
 	rewriter     RequestRewriter
 	next         http.Handler
+
+	idleTimeout time.Duration
 }
 
 type optSetter func(f *Forwarder) error
@@ -45,12 +50,27 @@ func Logger(l utils.Logger) optSetter {
 	}
 }
 
+func IdleTimeoutSetter(i time.Duration) optSetter {
+	return func(f *Forwarder) error {
+		f.idleTimeout = i
+		return nil
+	}
+}
+
 func New(next http.Handler, setters ...optSetter) (*Forwarder, error) {
+	var dialerFunc func(string, string) (net.Conn, error)
+
+	var timeoutTransport http.RoundTripper = &http.Transport{
+		Proxy:               http.ProxyFromEnvironment,
+		Dial:                dialerFunc,
+		TLSHandshakeTimeout: 10 * time.Second,
+	}
 	f := &Forwarder{
 		log:          utils.NullLogger,
 		errHandler:   utils.DefaultHandler,
-		roundTripper: http.DefaultTransport,
+		roundTripper: timeoutTransport,
 		next:         next,
+		idleTimeout:  30,
 	}
 	for _, s := range setters {
 		if err := s(f); err != nil {
@@ -63,6 +83,24 @@ func New(next http.Handler, setters ...optSetter) (*Forwarder, error) {
 			Hostname:           "",
 		}
 	}
+
+	dialerFunc = func(network, addr string) (conn net.Conn, err error) {
+		conn, err = (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).Dial(network, addr)
+		if err != nil {
+			return
+		}
+
+		idleConn := idletiming.Conn(conn, 30, func() {
+			if conn != nil {
+				conn.Close()
+			}
+		})
+		return idleConn, err
+	}
+
 	return f, nil
 }
 
