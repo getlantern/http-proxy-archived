@@ -25,21 +25,13 @@ func copyHeaders(dst, src http.Header) {
 			// section 14.10 of rfc2616
 			// the slice is short typically, don't bother sort it to speed up lookup
 			extraHopByHopHeaders = vv
-			continue
 		case "Keep-Alive":
-			continue
 		case "Proxy-Authenticate":
-			continue
 		case "Proxy-Authorization":
-			continue
 		case "TE":
-			continue
 		case "Trailers":
-			continue
 		case "Transfer-Encoding":
-			continue
 		case "Upgrade":
-			continue
 		default:
 			if !contains(k, extraHopByHopHeaders) {
 				for _, v := range vv {
