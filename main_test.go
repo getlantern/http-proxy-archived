@@ -191,6 +191,9 @@ func TestIdleClientConnections(t *testing.T) {
 	testRoundTrip(t, limitedServer, httpTargetServer, idleFn)
 }
 
+// TODO: Since both client and target server idle timeouts are identical,
+// we are just testing the combined behavior.  We probably can do that by
+// creating a custom server that only sets one timeout at a time
 func TestIdleTargetConnections(t *testing.T) {
 	normalServer, err := setupNewHTTPServer(0, 30*time.Second)
 	if err != nil {
@@ -198,13 +201,13 @@ func TestIdleTargetConnections(t *testing.T) {
 		t.FailNow()
 	}
 
-	impatientServer, err := setupNewHTTPServer(0, 2*time.Nanosecond)
+	impatientServer, err := setupNewHTTPServer(0, 100*time.Millisecond)
 	if err != nil {
 		log.Println("Error starting proxy server")
 		t.FailNow()
 	}
 
-	okFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
+	okForwardFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
 		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
 		var buf [400]byte
 		_, err := conn.Read(buf[:])
@@ -212,16 +215,42 @@ func TestIdleTargetConnections(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
-	failFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
+	okConnectFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
+		conn.Write([]byte("CONNECT www.google.com HTTP/1.1\r\nHost: www.google.com\r\n\r\n"))
+		var buf [400]byte
+		_, err := conn.Read(buf[:])
+
+		assert.Nil(t, err)
+	}
+
+	failForwardFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
 		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
 		var buf [400]byte
+		conn.Read(buf[:])
+
+		time.Sleep(150 * time.Millisecond)
+		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
 		_, err := conn.Read(buf[:])
 
 		assert.NotNil(t, err)
 	}
 
-	testRoundTrip(t, normalServer, httpTargetServer, okFn)
-	testRoundTrip(t, impatientServer, httpTargetServer, failFn)
+	failConnectFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
+		conn.Write([]byte("CONNECT www.google.com HTTP/1.1\r\nHost: www.google.com\r\n\r\n"))
+		var buf [400]byte
+		conn.Read(buf[:])
+
+		time.Sleep(150 * time.Millisecond)
+		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
+		_, err := conn.Read(buf[:])
+
+		assert.NotNil(t, err)
+	}
+
+	testRoundTrip(t, normalServer, httpTargetServer, okForwardFn)
+	testRoundTrip(t, normalServer, httpTargetServer, okConnectFn)
+	testRoundTrip(t, impatientServer, httpTargetServer, failForwardFn)
+	testRoundTrip(t, impatientServer, httpTargetServer, failConnectFn)
 }
 
 // No X-Lantern-Auth-Token -> 404
