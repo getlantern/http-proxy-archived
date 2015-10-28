@@ -22,19 +22,24 @@ import (
 )
 
 type Server struct {
-	firstComponent http.Handler
-
-	httpServer http.Server
-	tls        bool
+	firstHandler http.Handler
+	httpServer   http.Server
+	tls          bool
 
 	listener net.Listener
 
 	maxConns uint64
 	numConns uint64
+
+	idleCloseSecs uint64
 }
 
-func NewServer(token string, maxConns uint64, logLevel utils.LogLevel) *Server {
+func NewServer(token string, maxConns uint64, idleCloseSecs uint64, disableFilters bool, logLevel utils.LogLevel) *Server {
 	stdWriter := io.Writer(os.Stdout)
+
+	if maxConns == 0 {
+		maxConns = math.MaxInt64
+	}
 
 	// The following middleware architecture can be seen as a chain of
 	// filters that is run from last to first.
@@ -51,35 +56,37 @@ func NewServer(token string, maxConns uint64, logLevel utils.LogLevel) *Server {
 		forwardHandler,
 		httpconnect.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 	)
-	// Identifies Lantern Pro users (currently NOOP)
-	lanternPro, _ := profilter.New(
-		connectHandler,
-		profilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
-	)
-	var tokenFilter http.Handler = lanternPro
-	if token != "" {
+
+	var firstHandler http.Handler
+	if disableFilters {
+		firstHandler = connectHandler
+	} else {
+		// Identifies Lantern Pro users (currently NOOP)
+		lanternPro, _ := profilter.New(
+			connectHandler,
+			profilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
+		)
 		// Returns a 404 to requests without the proper token.  Removes the
 		// header before continuing.
-		tokenFilter, _ = tokenfilter.New(
+		tokenFilter, _ := tokenfilter.New(
 			lanternPro,
 			tokenfilter.TokenSetter(token),
 			tokenfilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 		)
+		// Extracts the user ID and attaches the matching client to the request
+		// context.  Returns a 404 to requests without the UID.  Removes the
+		// header before continuing.
+		deviceFilter, _ := devicefilter.New(
+			tokenFilter,
+			devicefilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
+		)
+		firstHandler = deviceFilter
 	}
-	// Extracts the user ID and attaches the matching client to the request
-	// context.  Returns a 404 to requests without the UID.  Removes the
-	// header before continuing.
-	deviceFilter, _ := devicefilter.New(
-		tokenFilter,
-		devicefilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
-	)
 
-	if maxConns == 0 {
-		maxConns = math.MaxInt64
-	}
 	server := &Server{
-		firstComponent: deviceFilter,
-		maxConns:       maxConns,
+		firstHandler:  firstHandler,
+		maxConns:      maxConns,
+		idleCloseSecs: idleCloseSecs,
 	}
 	return server
 }
@@ -121,16 +128,16 @@ func (s *Server) doServe(listener net.Listener, ready *chan bool) error {
 					q <- c
 				}
 			}
-			s.firstComponent.ServeHTTP(w, req)
+			s.firstHandler.ServeHTTP(w, req)
 		})
 
 	if ready != nil {
 		*ready <- true
 	}
 
-	limListener := newLimitedListener(listener, &s.numConns)
+	limListener := newLimitedListener(listener, &s.numConns, time.Duration(s.idleCloseSecs)*time.Second)
 
-	mListener := measured.Listener(limListener, 10*time.Second)
+	mListener := measured.Listener(limListener, 30*time.Second)
 
 	s.listener = mListener
 
