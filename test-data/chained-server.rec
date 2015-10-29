@@ -1,0 +1,282 @@
+GET  HTTP/1.1
+--------------------
+HTTP/1.1 400 Bad Request
+
+====================
+
+GET / HTTP/1.1
+--------------------
+HTTP/1.1 400 Bad Request
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+Server: Apache/2.4.7 (Ubuntu)
+Date: <PLACEHOLDER>
+Content-Length: 0
+
+====================
+
+GET /index.html HTTP/1.1
+--------------------
+HTTP/1.1 400 Bad Request
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+Server: Apache/2.4.7 (Ubuntu)
+Date: <PLACEHOLDER>
+Content-Length: 0
+
+====================
+
+GET /not-existed HTTP/1.1
+--------------------
+HTTP/1.1 400 Bad Request
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+Server: Apache/2.4.7 (Ubuntu)
+Date: <PLACEHOLDER>
+Content-Length: 598
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>400 Bad Request</title>
+</head><body>
+<h1>Bad Request</h1>
+<p>Your browser sent a request that this server could not understand.<br />
+</p>
+<hr>
+<address><PLACEHOLDER></address>
+</body></html>%!(EXTRA string=, string=::, string=53680)<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL %!$(string= )s was not found on this server.</p>
+<hr>
+<address>Apache Server at %!$(string=::)s Port %!$(string=53680)s</address>
+</body></html>====================
+
+GET  HTTP/1.1
+--------------------
+HTTP/1.1 400 Bad Request
+
+====================
+
+GET / HTTP/1.1
+--------------------
+HTTP/1.1 400 Bad Request
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+Server: Apache/2.4.7 (Ubuntu)
+Date: <PLACEHOLDER>
+Content-Length: 602
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>400 Bad Request</title>
+</head><body>
+<h1>Bad Request</h1>
+<p>Your browser sent a request that this server could not understand.<br />
+</p>
+<hr>
+<address><PLACEHOLDER></address>
+</body></html>%!(EXTRA string=, string=::, string=53680)<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">
+<html><head>
+<title>403 Forbidden</title>
+</head><body>
+<h1>Forbidden</h1>
+<p>You don't have permission to access %!$(string= )s
+on this server.</p>
+<hr>
+<address>Apache Server at %!$(string=::)s Port %!$(string=53680)s</address>
+</body></html>====================
+
+GET /index.html HTTP/1.1
+--------------------
+HTTP/1.1 400 Bad Request
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+Server: Apache/2.4.7 (Ubuntu)
+Date: <PLACEHOLDER>
+Content-Length: 523
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>400 Bad Request</title>
+</head><body>
+<h1>Bad Request</h1>
+<p>Your browser sent a request that this server could not understand.<br />
+</p>
+<hr>
+<address><PLACEHOLDER></address>
+</body></html>%!(EXTRA string=, string=::, string=53680)<html><body><h1>It works!</h1>
+<p>This is the default web page for this server.</p>
+<p>The web server software is running but no content has been added, yet.</p>
+</body></html>%!(EXTRA string=, string=::, string=53680)====================
+
+GET //cgi-bin/php HTTP/1.1
+--------------------
+HTTP/1.1 400 Bad Request
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+Server: Apache/2.4.7 (Ubuntu)
+Date: <PLACEHOLDER>
+Content-Length: 598
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>400 Bad Request</title>
+</head><body>
+<h1>Bad Request</h1>
+<p>Your browser sent a request that this server could not understand.<br />
+</p>
+<hr>
+<address><PLACEHOLDER></address>
+</body></html>%!(EXTRA string=, string=::, string=53680)<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL %!$(string= )s was not found on this server.</p>
+<hr>
+<address>Apache Server at %!$(string=::)s Port %!$(string=53680)s</address>
+</body></html>====================
+
+GET //cgi-bin/php5 HTTP/1.1
+--------------------
+HTTP/1.1 400 Bad Request
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+Server: Apache/2.4.7 (Ubuntu)
+Date: <PLACEHOLDER>
+Content-Length: 598
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>400 Bad Request</title>
+</head><body>
+<h1>Bad Request</h1>
+<p>Your browser sent a request that this server could not understand.<br />
+</p>
+<hr>
+<address><PLACEHOLDER></address>
+</body></html>%!(EXTRA string=, string=::, string=53680)<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL %!$(string= )s was not found on this server.</p>
+<hr>
+<address>Apache Server at %!$(string=::)s Port %!$(string=53680)s</address>
+</body></html>====================
+
+GET //cgi-bin/php-cgi HTTP/1.1
+--------------------
+HTTP/1.1 400 Bad Request
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+Server: Apache/2.4.7 (Ubuntu)
+Date: <PLACEHOLDER>
+Content-Length: 598
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>400 Bad Request</title>
+</head><body>
+<h1>Bad Request</h1>
+<p>Your browser sent a request that this server could not understand.<br />
+</p>
+<hr>
+<address><PLACEHOLDER></address>
+</body></html>%!(EXTRA string=, string=::, string=53680)<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL %!$(string= )s was not found on this server.</p>
+<hr>
+<address>Apache Server at %!$(string=::)s Port %!$(string=53680)s</address>
+</body></html>====================
+
+GET //cgi-bin/php.cgi HTTP/1.1
+--------------------
+HTTP/1.1 400 Bad Request
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+Server: Apache/2.4.7 (Ubuntu)
+Date: <PLACEHOLDER>
+Content-Length: 598
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>400 Bad Request</title>
+</head><body>
+<h1>Bad Request</h1>
+<p>Your browser sent a request that this server could not understand.<br />
+</p>
+<hr>
+<address><PLACEHOLDER></address>
+</body></html>%!(EXTRA string=, string=::, string=53680)<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL %!$(string= )s was not found on this server.</p>
+<hr>
+<address>Apache Server at %!$(string=::)s Port %!$(string=53680)s</address>
+</body></html>====================
+
+GET //cgi-bin/php4 HTTP/1.1
+--------------------
+HTTP/1.1 400 Bad Request
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+Server: Apache/2.4.7 (Ubuntu)
+Date: <PLACEHOLDER>
+Content-Length: 598
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>400 Bad Request</title>
+</head><body>
+<h1>Bad Request</h1>
+<p>Your browser sent a request that this server could not understand.<br />
+</p>
+<hr>
+<address><PLACEHOLDER></address>
+</body></html>%!(EXTRA string=, string=::, string=53680)<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL %!$(string= )s was not found on this server.</p>
+<hr>
+<address>Apache Server at %!$(string=::)s Port %!$(string=53680)s</address>
+</body></html>====================
+
+GET /not-existed HTTP/1.1
+--------------------
+HTTP/1.1 400 Bad Request
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+Server: Apache/2.4.7 (Ubuntu)
+Date: <PLACEHOLDER>
+Content-Length: 598
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>400 Bad Request</title>
+</head><body>
+<h1>Bad Request</h1>
+<p>Your browser sent a request that this server could not understand.<br />
+</p>
+<hr>
+<address><PLACEHOLDER></address>
+</body></html>%!(EXTRA string=, string=::, string=53680)<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL %!$(string= )s was not found on this server.</p>
+<hr>
+<address>Apache Server at %!$(string=::)s Port %!$(string=53680)s</address>
+</body></html>====================
+

@@ -91,27 +91,27 @@ func NewServer(token string, maxConns uint64, idleCloseSecs uint64, disableFilte
 	return server
 }
 
-func (s *Server) ServeHTTP(addr string, ready *chan bool) error {
+func (s *Server) ServeHTTP(addr string, chListenOn *chan net.Addr) error {
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
 	}
 	s.tls = false
 	fmt.Printf("Listen http on %s\n", addr)
-	return s.doServe(listener, ready)
+	return s.doServe(listener, chListenOn)
 }
 
-func (s *Server) ServeHTTPS(addr, keyfile, certfile string, ready *chan bool) error {
+func (s *Server) ServeHTTPS(addr, keyfile, certfile string, chListenOn *chan net.Addr) error {
 	listener, err := listenTLS(addr, keyfile, certfile)
 	if err != nil {
 		return err
 	}
 	s.tls = true
 	fmt.Printf("Listen http on %s\n", addr)
-	return s.doServe(listener, ready)
+	return s.doServe(listener, chListenOn)
 }
 
-func (s *Server) doServe(listener net.Listener, ready *chan bool) error {
+func (s *Server) doServe(listener net.Listener, chListenOn *chan net.Addr) error {
 	// A dirty trick to associate a connection with the http.Request it
 	// contains. In "net/http/server.go", handler will be called
 	// immediately after ConnState changed to StateActive, so it's safe to
@@ -130,10 +130,6 @@ func (s *Server) doServe(listener net.Listener, ready *chan bool) error {
 			}
 			s.firstHandler.ServeHTTP(w, req)
 		})
-
-	if ready != nil {
-		*ready <- true
-	}
 
 	limListener := newLimitedListener(listener, &s.numConns, time.Duration(s.idleCloseSecs)*time.Second)
 
@@ -158,5 +154,10 @@ func (s *Server) doServe(listener net.Listener, ready *chan bool) error {
 			}
 		},
 	}
+
+	if chListenOn != nil {
+		*chListenOn <- s.listener.Addr()
+	}
+
 	return s.httpServer.Serve(s.listener)
 }

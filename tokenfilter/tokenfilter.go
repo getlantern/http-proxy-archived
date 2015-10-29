@@ -56,7 +56,7 @@ func (f *TokenFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	token := req.Header.Get(tokenHeader)
 	if f.token != "" && (token == "" || token != f.token) {
-		w.WriteHeader(http.StatusNotFound)
+		utils.MimicApache(w, req)
 	} else {
 		req.Header.Del(tokenHeader)
 		f.next.ServeHTTP(w, req)

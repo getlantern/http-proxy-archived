@@ -53,7 +53,7 @@ func (f *DeviceFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	// An UID must be provided always by the client.  Respond 404 otherwise.
 	if lanternDeviceId == "" {
-		w.WriteHeader(http.StatusNotFound)
+		utils.MimicApache(w, req)
 		return
 	}
 

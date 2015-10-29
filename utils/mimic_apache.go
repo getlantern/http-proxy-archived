@@ -15,9 +15,12 @@ type apacheMimic struct {
 }
 
 func MimicApache(w http.ResponseWriter, req *http.Request) {
-	fmt.Printf("%+v", req.URL)
 	m := apacheMimic{w, req}
 	path := req.URL.Path
+	w.Header().Set("Server", "Apache/2.4.7 (Ubuntu)")
+	if req.Header.Get("Host") == "" {
+		m.badRequest()
+	}
 	switch {
 	case len(path) == 0:
 		m.ok()
@@ -55,6 +58,13 @@ func (f *apacheMimic) options() {
 	f.w.Header().Set("Vary", "Accept-Encoding")
 	f.w.Header().Set("Content-Type", "text/html")
 	f.w.WriteHeader(http.StatusOK)
+}
+
+func (f *apacheMimic) badRequest() {
+	f.w.Header().Set("Connection", "close")
+	f.w.Header().Set("Content-Type", "text/html; charset=iso-8859-1")
+	f.w.WriteHeader(http.StatusBadRequest)
+	f.writeBody(BAD_REQUEST_BODY)
 }
 
 func (f *apacheMimic) forbidden() {
@@ -227,6 +237,17 @@ caused the error.</p>
 in the server error log.</p>
 <hr>
 <address>Apache Server at %1$s Port %2$s</address>
+</body></html>`
+
+const BAD_REQUEST_BODY = `<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>400 Bad Request</title>
+</head><body>
+<h1>Bad Request</h1>
+<p>Your browser sent a request that this server could not understand.<br />
+</p>
+<hr>
+<address><PLACEHOLDER></address>
 </body></html>`
 
 /*func getApacheLikeURI(req http.Request) string {
