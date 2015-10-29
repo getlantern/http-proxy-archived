@@ -39,6 +39,7 @@ func (rp *redisReporter) ReportTraffic(tt []*measured.TrafficTracker) error {
 			panic("empty key is not allowed")
 		}
 		tx := rp.redisClient.Multi()
+		defer tx.Close()
 
 		_, err := tx.Exec(func() error {
 			err := tx.HIncrBy("client:"+string(key), "bytesIn", int64(t.LastIn)).Err()
@@ -64,8 +65,6 @@ func (rp *redisReporter) ReportTraffic(tt []*measured.TrafficTracker) error {
 		if err != nil {
 			return fmt.Errorf("Error in MULTI command: %v\n", err)
 		}
-
-		tx.Close()
 	}
 	return nil
 }
