@@ -9,7 +9,7 @@ go get -t
 Then run with:
 
 ```
-./run-server.sh
+test/run-server.sh
 ```
 
 ## Test
@@ -25,7 +25,7 @@ You can either use the proxy as a regular HTTP proxy or with Lantern-specific ex
 Run the server as follows:
 
 ```
-./run-server.sh -disablefilters
+test/run-server.sh -disablefilters
 ```
 
 Test direct proxying with cURL:
@@ -47,7 +47,7 @@ curl -kpvx localhost:8080 https://www.google.com/humans.txt
 Run the server with:
 
 ```
-./run-server.sh -https -token=<your-token>
+test/run-server.sh -https -token=<your-token>
 ```
 
 You have two options to test it: the Lantern client or [checkfallbacks](https://github.com/getlantern/lantern/tree/valencia/src/github.com/getlantern/checkfallbacks).
