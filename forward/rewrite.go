@@ -14,19 +14,6 @@ const (
 	ContentLength    = "Content-Length"
 )
 
-// Hop-by-hop headers. These are removed when sent to the backend.
-// http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html
-var hopHeaders = []string{
-	"Connection",
-	"Keep-Alive",
-	"Proxy-Authenticate",
-	"Proxy-Authorization",
-	"Te",
-	"Trailers",
-	"Transfer-Encoding",
-	"Upgrade",
-}
-
 // Rewriter is responsible for removing hop-by-hop headers and setting forwarding headers
 type HeaderRewriter struct {
 	TrustForwardHeader bool
@@ -63,9 +50,4 @@ func (rw *HeaderRewriter) Rewrite(req *http.Request) {
 	if rw.Hostname != "" {
 		req.Header.Set(XForwardedServer, rw.Hostname)
 	}
-
-	// Remove hop-by-hop headers to the backend.  Especially important is
-	// "Connection" because we want a persistent connection, regardless
-	// of what the client sent to us.
-	removeHeaders(req.Header, hopHeaders...)
 }

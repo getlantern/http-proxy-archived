@@ -14,9 +14,9 @@ func cloneURL(i *url.URL) *url.URL {
 	return &out
 }
 
-// copyHeaders copies http headers from source to destination.  It does not
-// overide, but adds multiple headers
-func copyHeaders(dst, src http.Header) {
+// copyHeadersForForwarding will copy the headers but filter those that shouldn't be
+// forwarded
+func copyHeadersForForwarding(dst, src http.Header) {
 	var extraHopByHopHeaders []string
 	for k, vv := range src {
 		switch k {
@@ -39,13 +39,6 @@ func copyHeaders(dst, src http.Header) {
 				}
 			}
 		}
-	}
-}
-
-// removeHeaders removes the header with the given names from the headers map
-func removeHeaders(headers http.Header, names ...string) {
-	for _, h := range names {
-		headers.Del(h)
 	}
 }
 

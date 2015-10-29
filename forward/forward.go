@@ -136,7 +136,7 @@ func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Forward the response to the origin
-	copyHeaders(w.Header(), response.Header)
+	copyHeadersForForwarding(w.Header(), response.Header)
 	w.WriteHeader(response.StatusCode)
 	// It became nil in a Co-Advisor test though the doc says it will never be nil
 	if response.Body != nil {
@@ -158,7 +158,7 @@ func (f *Forwarder) cloneRequest(req *http.Request, u *url.URL) *http.Request {
 
 	// Request Header
 	outReq.Header = make(http.Header)
-	copyHeaders(outReq.Header, req.Header)
+	copyHeadersForForwarding(outReq.Header, req.Header)
 
 	// Request URL
 	scheme := "http"
