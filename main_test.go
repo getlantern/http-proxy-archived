@@ -85,7 +85,7 @@ func TestMain(m *testing.M) {
 // Keep this one first to avoid measuring previous connections
 func TestReportStats(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Device-Id: %s\r\n\r\n"
-	connectResp := "HTTP/1.1 404 Not Found\r\n"
+	connectResp := "HTTP/1.1 400 Bad Request\r\n"
 	m := mockReporter{error: make(map[measured.Error]int)}
 	measured.Start(100*time.Millisecond, &m)
 	defer measured.Stop()
@@ -101,7 +101,7 @@ func TestReportStats(t *testing.T) {
 		var buf [400]byte
 		_, err = conn.Read(buf[:])
 		if !assert.Contains(t, string(buf[:]), connectResp,
-			"should get 404 Not Found because no token was provided") {
+			"should mimic Apache because no token was provided") {
 			t.FailNow()
 		}
 	}
@@ -256,7 +256,7 @@ func TestIdleTargetConnections(t *testing.T) {
 // No X-Lantern-Auth-Token -> 404
 func TestConnectNoToken(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Device-Id: %s\r\n\r\n"
-	connectResp := "HTTP/1.1 404 Not Found\r\n"
+	connectResp := "HTTP/1.1 400 Bad Request\r\n"
 
 	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
 		var err error
@@ -270,7 +270,7 @@ func TestConnectNoToken(t *testing.T) {
 		var buf [400]byte
 		_, err = conn.Read(buf[:])
 		if !assert.Contains(t, string(buf[:]), connectResp,
-			"should get 404 Not Found because no token was provided") {
+			"should mimic Apache because no token was provided") {
 			t.FailNow()
 		}
 	}
@@ -285,7 +285,7 @@ func TestConnectNoToken(t *testing.T) {
 // Bad X-Lantern-Auth-Token -> 404
 func TestConnectBadToken(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-Device-Id: %s\r\n\r\n"
-	connectResp := "HTTP/1.1 404 Not Found\r\n"
+	connectResp := "HTTP/1.1 400 Bad Request\r\n"
 
 	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
 		var err error
@@ -299,7 +299,7 @@ func TestConnectBadToken(t *testing.T) {
 		var buf [400]byte
 		_, err = conn.Read(buf[:])
 		if !assert.Contains(t, string(buf[:]), connectResp,
-			"should get 404 Not Found because no token was provided") {
+			"should mimic Apache because no token was provided") {
 			t.FailNow()
 		}
 	}
@@ -314,7 +314,7 @@ func TestConnectBadToken(t *testing.T) {
 // No X-Lantern-Device-Id -> 404
 func TestConnectNoDevice(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\n\r\n"
-	connectResp := "HTTP/1.1 404 Not Found\r\n"
+	connectResp := "HTTP/1.1 400 Bad Request\r\n"
 
 	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
 		var err error
@@ -328,7 +328,7 @@ func TestConnectNoDevice(t *testing.T) {
 		var buf [400]byte
 		_, err = conn.Read(buf[:])
 		if !assert.Contains(t, string(buf[:]), connectResp,
-			"should get 404 Not Found because no token was provided") {
+			"should mimic Apache because no token was provided") {
 			t.FailNow()
 		}
 	}

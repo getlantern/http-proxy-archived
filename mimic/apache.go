@@ -47,6 +47,8 @@ func MimicApache(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	switch req.Method {
+	case "CONNECT":
+		m.writeError(badRequestHeader, badRequestBody)
 	case "GET", "POST":
 		switch path {
 		case "/", "/index.html":
@@ -92,37 +94,36 @@ func MimicApache(w http.ResponseWriter, req *http.Request) {
 }
 
 func (f *apacheMimic) ok(header *template.Template, body []byte) {
-	err := header.Execute(f.conn, f.collectVars())
+	var buf bytes.Buffer
+	err := header.Execute(&buf, f.collectVars())
 	if err != nil {
 		panic(fmt.Sprintf("execute template err: %s", err))
 	}
-	f.conn.Write(body)
-	f.conn.Close()
+	// ignore any errors writing back to connection
+	_, _ = buf.WriteTo(f.conn)
+	_, _ = f.conn.Write(body)
+	_ = f.conn.Close()
 }
 
 func (f *apacheMimic) writeError(header, body *template.Template) {
+	var headBuf bytes.Buffer
+	var bodyBuf bytes.Buffer
 	vars := f.collectVars()
-	if body == nil {
-		err := header.Execute(f.conn, vars)
+	if body != nil {
+		err := body.Execute(&bodyBuf, vars)
 		if err != nil {
-			panic("should execute template")
+			panic(fmt.Sprintf("execute template err: %s", err))
 		}
-		f.conn.Close()
-		return
+		vars.ContentLength = bodyBuf.Len()
 	}
-
-	var buf bytes.Buffer
-	err := body.Execute(&buf, vars)
+	err := header.Execute(&headBuf, vars)
 	if err != nil {
-		panic("should execute template")
+		panic(fmt.Sprintf("execute template err: %s", err))
 	}
-	vars.ContentLength = buf.Len()
-	err = header.Execute(f.conn, vars)
-	if err != nil {
-		panic("should execute template")
-	}
-	f.conn.Write(buf.Bytes())
-	f.conn.Close()
+	// ignore any errors writing back to connection
+	_, _ = headBuf.WriteTo(f.conn)
+	_, _ = bodyBuf.WriteTo(f.conn)
+	_ = f.conn.Close()
 }
 
 type vars struct {

@@ -73,6 +73,10 @@ var candidates = []entry{
 	{"PUT", "/index.html", true},
 	{"PUT", "/not-existed", true},
 
+	{"CONNECT", "/", true},
+	{"CONNECT", "/index.html", true},
+	{"CONNECT", "/not-existed", true},
+
 	{"INVALID", "/", true},
 	{"INVALID", "/index.html", true},
 	{"INVALID", "/not-existed", true},

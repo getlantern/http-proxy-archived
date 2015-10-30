@@ -1953,6 +1953,69 @@ Content-Type: text/html; charset=iso-8859-1
 </body></html>
 ====================
 
+CONNECT / HTTP/1.1
+--------------------
+HTTP/1.1 400 Bad Request
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Content-Length: <...>
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>400 Bad Request</title>
+</head><body>
+<h1>Bad Request</h1>
+<p>Your browser sent a request that this server could not understand.<br />
+</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+CONNECT /index.html HTTP/1.1
+--------------------
+HTTP/1.1 400 Bad Request
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Content-Length: <...>
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>400 Bad Request</title>
+</head><body>
+<h1>Bad Request</h1>
+<p>Your browser sent a request that this server could not understand.<br />
+</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+CONNECT /not-existed HTTP/1.1
+--------------------
+HTTP/1.1 400 Bad Request
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Content-Length: <...>
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>400 Bad Request</title>
+</head><body>
+<h1>Bad Request</h1>
+<p>Your browser sent a request that this server could not understand.<br />
+</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
 INVALID / HTTP/1.1
 --------------------
 HTTP/1.1 501 Not Implemented
