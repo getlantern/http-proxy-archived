@@ -57,6 +57,7 @@ func (f *TokenFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	token := req.Header.Get(tokenHeader)
 	if f.token != "" && (token == "" || token != f.token) {
+		f.log.Debugf("Token from %s doesn't match, mimicking apache\n", req.RemoteAddr)
 		mimic.MimicApache(w, req)
 	} else {
 		req.Header.Del(tokenHeader)

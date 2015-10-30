@@ -9,15 +9,16 @@ import (
 	"os/exec"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/getlantern/testify/assert"
 
 	"./utils"
 )
 
-const target = "test-data/apache-2.4.7-ubuntu14.04.raw"
-const template = "test-data/apache-2.4.7-ubuntu14.04.tpl"
-const current = "test-data/chained-server.raw"
+const target = "test/apache-2.4.7-ubuntu14.04.raw"
+const template = "test/apache-2.4.7-ubuntu14.04.tpl"
+const current = "test/chained-server.raw"
 
 type entry struct {
 	path           string
@@ -53,7 +54,7 @@ var candidates = []entry{
 }
 
 func TestMimicApache(t *testing.T) {
-	s := NewServer("anytoken", 100000, 30, false, utils.QUIET)
+	s := NewServer("anytoken", 100000, 30*time.Second, false, utils.DEBUG)
 	chListenOn := make(chan string)
 	go func() {
 		err := s.ServeHTTP(":0", &chListenOn)

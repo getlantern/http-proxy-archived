@@ -32,10 +32,10 @@ type Server struct {
 	maxConns uint64
 	numConns uint64
 
-	idleCloseSecs uint64
+	idleTimeout time.Duration
 }
 
-func NewServer(token string, maxConns uint64, idleCloseSecs uint64, disableFilters bool, logLevel utils.LogLevel) *Server {
+func NewServer(token string, maxConns uint64, idleTimeout time.Duration, disableFilters bool, logLevel utils.LogLevel) *Server {
 	stdWriter := io.Writer(os.Stdout)
 
 	if maxConns == 0 {
@@ -50,12 +50,14 @@ func NewServer(token string, maxConns uint64, idleCloseSecs uint64, disableFilte
 	forwardHandler, _ := forward.New(
 		nil,
 		forward.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
+		forward.IdleTimeoutSetter(idleTimeout),
 	)
 
 	// Handles HTTP CONNECT
 	connectHandler, _ := httpconnect.New(
 		forwardHandler,
 		httpconnect.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
+		httpconnect.IdleTimeoutSetter(idleTimeout),
 	)
 
 	var firstHandler http.Handler
@@ -85,9 +87,9 @@ func NewServer(token string, maxConns uint64, idleCloseSecs uint64, disableFilte
 	}
 
 	server := &Server{
-		firstHandler:  firstHandler,
-		maxConns:      maxConns,
-		idleCloseSecs: idleCloseSecs,
+		firstHandler: firstHandler,
+		maxConns:     maxConns,
+		idleTimeout:  idleTimeout,
 	}
 	return server
 }
@@ -132,10 +134,8 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 			s.firstHandler.ServeHTTP(w, req)
 		})
 
-	limListener := newLimitedListener(listener, &s.numConns, time.Duration(s.idleCloseSecs)*time.Second)
-
+	limListener := newLimitedListener(listener, &s.numConns, s.idleTimeout)
 	mListener := measured.Listener(limListener, 30*time.Second)
-
 	s.listener = mListener
 
 	s.httpServer = http.Server{Handler: proxy,
@@ -155,6 +155,7 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 			}
 		},
 	}
+
 	addr := s.listener.Addr().String()
 	host, port, err := net.SplitHostPort(addr)
 	if err != nil {

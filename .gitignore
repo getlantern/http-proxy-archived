@@ -28,3 +28,4 @@ _testmain.go
 chained-server
 /bin
 /pkg
+/test/chained-server.raw

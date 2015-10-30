@@ -52,7 +52,13 @@ func main() {
 		defer measured.Stop()
 	}
 
-	server := NewServer(*token, *maxConns, *idleClose, *disableFilters, logLevel)
+	server := NewServer(
+		*token,
+		*maxConns,
+		time.Duration(*idleClose)*time.Second,
+		*disableFilters,
+		logLevel,
+	)
 	if *https {
 		err = server.ServeHTTPS(*addr, *keyfile, *certfile, nil)
 	} else {

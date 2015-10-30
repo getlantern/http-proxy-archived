@@ -64,7 +64,7 @@ func TestMain(m *testing.M) {
 	defer tlsTargetServer.Close()
 
 	// Set up HTTP chained server
-	httpProxy, err = setupNewHTTPServer(0, 30)
+	httpProxy, err = setupNewHTTPServer(0, 30*time.Second)
 	if err != nil {
 		log.Println("Error starting proxy server")
 		os.Exit(1)
@@ -72,7 +72,7 @@ func TestMain(m *testing.M) {
 	log.Printf("Started HTTP proxy server at %s\n", httpProxy.listener.Addr().String())
 
 	// Set up HTTPS chained server
-	tlsProxy, err = setupNewHTTPSServer(0, 30)
+	tlsProxy, err = setupNewHTTPSServer(0, 30*time.Second)
 	if err != nil {
 		log.Println("Error starting proxy server")
 		os.Exit(1)
@@ -116,7 +116,7 @@ func TestReportStats(t *testing.T) {
 }
 
 func TestMaxConnections(t *testing.T) {
-	limitedServer, err := setupNewHTTPServer(5, 30)
+	limitedServer, err := setupNewHTTPServer(5, 30*time.Second)
 	if err != nil {
 		log.Println("Error starting proxy server")
 		t.FailNow()
@@ -160,15 +160,15 @@ func TestMaxConnections(t *testing.T) {
 	}
 }
 
-func TestIdleConnections(t *testing.T) {
-	limitedServer, err := setupNewHTTPServer(0, 1)
+func TestIdleClientConnections(t *testing.T) {
+	limitedServer, err := setupNewHTTPServer(0, 100*time.Millisecond)
 	if err != nil {
 		log.Println("Error starting proxy server")
 		t.FailNow()
 	}
 
 	okFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
-		time.Sleep(time.Millisecond * 900)
+		time.Sleep(time.Millisecond * 90)
 		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
 
 		var buf [400]byte
@@ -178,7 +178,7 @@ func TestIdleConnections(t *testing.T) {
 	}
 
 	idleFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
-		time.Sleep(time.Millisecond * 1100)
+		time.Sleep(time.Millisecond * 110)
 		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
 
 		var buf [400]byte
@@ -189,6 +189,68 @@ func TestIdleConnections(t *testing.T) {
 
 	go testRoundTrip(t, limitedServer, httpTargetServer, okFn)
 	testRoundTrip(t, limitedServer, httpTargetServer, idleFn)
+}
+
+// TODO: Since both client and target server idle timeouts are identical,
+// we are just testing the combined behavior.  We probably can do that by
+// creating a custom server that only sets one timeout at a time
+func TestIdleTargetConnections(t *testing.T) {
+	normalServer, err := setupNewHTTPServer(0, 30*time.Second)
+	if err != nil {
+		log.Println("Error starting proxy server")
+		t.FailNow()
+	}
+
+	impatientServer, err := setupNewHTTPServer(0, 100*time.Millisecond)
+	if err != nil {
+		log.Println("Error starting proxy server")
+		t.FailNow()
+	}
+
+	okForwardFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
+		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
+		var buf [400]byte
+		_, err := conn.Read(buf[:])
+
+		assert.Nil(t, err)
+	}
+
+	okConnectFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
+		conn.Write([]byte("CONNECT www.google.com HTTP/1.1\r\nHost: www.google.com\r\n\r\n"))
+		var buf [400]byte
+		_, err := conn.Read(buf[:])
+
+		assert.Nil(t, err)
+	}
+
+	failForwardFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
+		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
+		var buf [400]byte
+		conn.Read(buf[:])
+
+		time.Sleep(150 * time.Millisecond)
+		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
+		_, err := conn.Read(buf[:])
+
+		assert.NotNil(t, err)
+	}
+
+	failConnectFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
+		conn.Write([]byte("CONNECT www.google.com HTTP/1.1\r\nHost: www.google.com\r\n\r\n"))
+		var buf [400]byte
+		conn.Read(buf[:])
+
+		time.Sleep(150 * time.Millisecond)
+		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
+		_, err := conn.Read(buf[:])
+
+		assert.NotNil(t, err)
+	}
+
+	testRoundTrip(t, normalServer, httpTargetServer, okForwardFn)
+	testRoundTrip(t, normalServer, httpTargetServer, okConnectFn)
+	testRoundTrip(t, impatientServer, httpTargetServer, failForwardFn)
+	testRoundTrip(t, impatientServer, httpTargetServer, failConnectFn)
 }
 
 // No X-Lantern-Auth-Token -> 404
@@ -528,8 +590,8 @@ type proxy struct {
 	addr     string
 }
 
-func setupNewHTTPServer(maxConns, idleCloseSecs uint64) (*Server, error) {
-	s := NewServer(validToken, maxConns, idleCloseSecs, false, utils.QUIET)
+func setupNewHTTPServer(maxConns uint64, idleTimeout time.Duration) (*Server, error) {
+	s := NewServer(validToken, maxConns, idleTimeout, false, utils.QUIET)
 	var err error
 	chListenOn := make(chan string)
 	go func(err *error) {
@@ -541,8 +603,8 @@ func setupNewHTTPServer(maxConns, idleCloseSecs uint64) (*Server, error) {
 	return s, err
 }
 
-func setupNewHTTPSServer(maxConns, idleCloseSecs uint64) (*Server, error) {
-	s := NewServer(validToken, maxConns, idleCloseSecs, false, utils.QUIET)
+func setupNewHTTPSServer(maxConns uint64, idleTimeout time.Duration) (*Server, error) {
+	s := NewServer(validToken, maxConns, idleTimeout, false, utils.QUIET)
 	var err error
 	chListenOn := make(chan string)
 	go func(err *error) {
