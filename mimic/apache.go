@@ -1,3 +1,8 @@
+/*
+Package mimic mimics popular web servers to keep the server from being detected
+Currently it only mimics Apache web server.
+*/
+
 package mimic
 
 import (
@@ -23,8 +28,9 @@ var (
 	etag         = makeETag()
 )
 
-// MimicApache mimics the behaviour of an unconfigured Apache Web Server 2.4.7
+// MimicApache mimics the behaviour of an unconfigured Apache web server 2.4.7
 // (the one installed by 'apt-get install apache2') running on Ubuntu 14.04.
+// Set 'Host' and 'Port' before calling it.
 func MimicApache(w http.ResponseWriter, req *http.Request) {
 	conn, _, err := w.(http.Hijacker).Hijack()
 	if err != nil {
