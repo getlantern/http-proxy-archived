@@ -21,10 +21,12 @@ type apacheMimic struct {
 	path string
 }
 
+const timeFormat = "Mon, 02 Jan 2006 15:04:05 GMT"
+
 var (
 	Host         string
 	Port         string
-	lastModified = time.Now().Format("Fri, 22 Oct 2015 11:52:25 GMT")
+	lastModified = time.Now().Format(timeFormat)
 	etag         = makeETag()
 )
 
@@ -140,7 +142,7 @@ type vars struct {
 
 func (f *apacheMimic) collectVars() *vars {
 	return &vars{
-		Date:         time.Now().Format("Fri, 22 Oct 2015 11:52:25 GMT"),
+		Date:         time.Now().Format(timeFormat),
 		LastModified: lastModified,
 		ETag:         etag,
 		Path:         f.path,
@@ -276,7 +278,7 @@ var optionsHeaderWhenNotFound = template.Must(template.New("optionsHeaderWhenNot
 	"Date: {{.Date}}\r\n" +
 	"Server: Apache/2.4.7 (Ubuntu)\r\n" +
 	"Allow: POST,OPTIONS,GET,HEAD\r\n" +
-	"Content-Length: {{.ContentLength}}\r\n"))
+	"Content-Length: {{.ContentLength}}\r\n\r\n"))
 
 var methodNotAllowedHeader = template.Must(template.New("methodNotAllowedHeader").Parse("HTTP/1.1 405 Method Not Allowed\r\n" +
 	"Date: {{.Date}}\r\n" +
