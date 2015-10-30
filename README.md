@@ -1,4 +1,4 @@
-# Lantern Chained Server in Go
+# HTTP Proxy in Go
 
 ## Run
 
