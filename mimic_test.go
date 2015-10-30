@@ -50,6 +50,10 @@ var candidates = []entry{
 	{"GET", "//cgi-bin/php.cgi", true},
 	{"GET", "//cgi-bin/php4", true},
 
+	// multiple slashes
+	{"GET", "///cgi-bin/php4", true},
+	{"GET", "//cgi-bin//php4", true},
+
 	{"GET", "/not-existed", true},
 	{"GET", "/end-with-slash/", true},
 

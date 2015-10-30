@@ -1,7 +1,7 @@
 GET / HTTP/1.1
 --------------------
 HTTP/1.1 400 Bad Request
-Date: Fri, 30 Oct 2015 05:22:44 GMT
+Date: Fri, 30 Oct 2015 05:57:23 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Content-Length: 300
 Connection: close
@@ -22,7 +22,7 @@ Content-Type: text/html; charset=iso-8859-1
 GET /index.html HTTP/1.1
 --------------------
 HTTP/1.1 400 Bad Request
-Date: Fri, 30 Oct 2015 05:22:44 GMT
+Date: Fri, 30 Oct 2015 05:57:23 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Content-Length: 300
 Connection: close
@@ -43,7 +43,7 @@ Content-Type: text/html; charset=iso-8859-1
 GET / HTTP/1.1
 --------------------
 HTTP/1.1 200 OK
-Date: Fri, 30 Oct 2015 05:22:45 GMT
+Date: Fri, 30 Oct 2015 05:57:23 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Last-Modified: Thu, 29 Oct 2015 04:50:02 GMT
 ETag: "2cf6-523370b3a00ed"
@@ -435,7 +435,7 @@ Content-Type: text/html
 GET /index.html HTTP/1.1
 --------------------
 HTTP/1.1 200 OK
-Date: Fri, 30 Oct 2015 05:22:50 GMT
+Date: Fri, 30 Oct 2015 05:57:28 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Last-Modified: Thu, 29 Oct 2015 04:50:02 GMT
 ETag: "2cf6-523370b3a00ed"
@@ -827,7 +827,7 @@ Content-Type: text/html
 GET /icons/ubuntu-logo.png HTTP/1.1
 --------------------
 HTTP/1.1 200 OK
-Date: Fri, 30 Oct 2015 05:22:55 GMT
+Date: Fri, 30 Oct 2015 05:57:33 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Last-Modified: Fri, 24 Jul 2015 17:28:10 GMT
 ETag: "d4c-51ba253e93e80"
@@ -853,7 +853,7 @@ l!’dÜƒEÍ‹–17îú∆§N`öƒﬂYx8≈e`WÇΩVÔMª˜YŒj1∏ëG¿õ`+®`¯∑6ªû°uÁÅ£¬<ºL÷∫ùı‡{P
 GET //cgi-bin/php HTTP/1.1
 --------------------
 HTTP/1.1 404 Not Found
-Date: Fri, 30 Oct 2015 05:23:00 GMT
+Date: Fri, 30 Oct 2015 05:57:38 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Content-Length: 289
 Content-Type: text/html; charset=iso-8859-1
@@ -872,7 +872,7 @@ Content-Type: text/html; charset=iso-8859-1
 GET //cgi-bin/php5 HTTP/1.1
 --------------------
 HTTP/1.1 404 Not Found
-Date: Fri, 30 Oct 2015 05:23:05 GMT
+Date: Fri, 30 Oct 2015 05:57:44 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Content-Length: 290
 Content-Type: text/html; charset=iso-8859-1
@@ -891,7 +891,7 @@ Content-Type: text/html; charset=iso-8859-1
 GET //cgi-bin/php-cgi HTTP/1.1
 --------------------
 HTTP/1.1 404 Not Found
-Date: Fri, 30 Oct 2015 05:23:10 GMT
+Date: Fri, 30 Oct 2015 05:57:49 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Content-Length: 293
 Content-Type: text/html; charset=iso-8859-1
@@ -910,7 +910,7 @@ Content-Type: text/html; charset=iso-8859-1
 GET //cgi-bin/php.cgi HTTP/1.1
 --------------------
 HTTP/1.1 404 Not Found
-Date: Fri, 30 Oct 2015 05:23:15 GMT
+Date: Fri, 30 Oct 2015 05:57:54 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Content-Length: 293
 Content-Type: text/html; charset=iso-8859-1
@@ -929,7 +929,7 @@ Content-Type: text/html; charset=iso-8859-1
 GET //cgi-bin/php4 HTTP/1.1
 --------------------
 HTTP/1.1 404 Not Found
-Date: Fri, 30 Oct 2015 05:23:20 GMT
+Date: Fri, 30 Oct 2015 05:57:59 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Content-Length: 290
 Content-Type: text/html; charset=iso-8859-1
@@ -945,10 +945,48 @@ Content-Type: text/html; charset=iso-8859-1
 </body></html>
 ====================
 
+GET ///cgi-bin/php4 HTTP/1.1
+--------------------
+HTTP/1.1 404 Not Found
+Date: Fri, 30 Oct 2015 05:58:04 GMT
+Server: Apache/2.4.7 (Ubuntu)
+Content-Length: 290
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL /cgi-bin/php4 was not found on this server.</p>
+<hr>
+<address>Apache/2.4.7 (Ubuntu) Server at 128.199.100.121 Port 80</address>
+</body></html>
+====================
+
+GET //cgi-bin//php4 HTTP/1.1
+--------------------
+HTTP/1.1 404 Not Found
+Date: Fri, 30 Oct 2015 05:58:09 GMT
+Server: Apache/2.4.7 (Ubuntu)
+Content-Length: 291
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL /cgi-bin//php4 was not found on this server.</p>
+<hr>
+<address>Apache/2.4.7 (Ubuntu) Server at 128.199.100.121 Port 80</address>
+</body></html>
+====================
+
 GET /not-existed HTTP/1.1
 --------------------
 HTTP/1.1 404 Not Found
-Date: Fri, 30 Oct 2015 05:23:25 GMT
+Date: Fri, 30 Oct 2015 05:58:14 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Content-Length: 289
 Content-Type: text/html; charset=iso-8859-1
@@ -967,7 +1005,7 @@ Content-Type: text/html; charset=iso-8859-1
 GET /end-with-slash/ HTTP/1.1
 --------------------
 HTTP/1.1 404 Not Found
-Date: Fri, 30 Oct 2015 05:23:30 GMT
+Date: Fri, 30 Oct 2015 05:58:19 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Content-Length: 293
 Content-Type: text/html; charset=iso-8859-1
@@ -986,7 +1024,7 @@ Content-Type: text/html; charset=iso-8859-1
 HEAD / HTTP/1.1
 --------------------
 HTTP/1.1 200 OK
-Date: Fri, 30 Oct 2015 05:23:35 GMT
+Date: Fri, 30 Oct 2015 05:58:24 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Last-Modified: Thu, 29 Oct 2015 04:50:02 GMT
 ETag: "2cf6-523370b3a00ed"
@@ -1000,7 +1038,7 @@ Content-Type: text/html
 HEAD /index.html HTTP/1.1
 --------------------
 HTTP/1.1 200 OK
-Date: Fri, 30 Oct 2015 05:23:40 GMT
+Date: Fri, 30 Oct 2015 05:58:29 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Last-Modified: Thu, 29 Oct 2015 04:50:02 GMT
 ETag: "2cf6-523370b3a00ed"
@@ -1014,7 +1052,7 @@ Content-Type: text/html
 HEAD /not-existed HTTP/1.1
 --------------------
 HTTP/1.1 404 Not Found
-Date: Fri, 30 Oct 2015 05:23:45 GMT
+Date: Fri, 30 Oct 2015 05:58:34 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Content-Type: text/html; charset=iso-8859-1
 
@@ -1023,7 +1061,7 @@ Content-Type: text/html; charset=iso-8859-1
 POST / HTTP/1.1
 --------------------
 HTTP/1.1 200 OK
-Date: Fri, 30 Oct 2015 05:23:51 GMT
+Date: Fri, 30 Oct 2015 05:58:39 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Last-Modified: Thu, 29 Oct 2015 04:50:02 GMT
 ETag: "2cf6-523370b3a00ed"
@@ -1415,7 +1453,7 @@ Content-Type: text/html
 POST /index.html HTTP/1.1
 --------------------
 HTTP/1.1 200 OK
-Date: Fri, 30 Oct 2015 05:23:56 GMT
+Date: Fri, 30 Oct 2015 05:58:45 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Last-Modified: Thu, 29 Oct 2015 04:50:02 GMT
 ETag: "2cf6-523370b3a00ed"
@@ -1807,7 +1845,7 @@ Content-Type: text/html
 POST /not-existed HTTP/1.1
 --------------------
 HTTP/1.1 404 Not Found
-Date: Fri, 30 Oct 2015 05:24:01 GMT
+Date: Fri, 30 Oct 2015 05:58:50 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Content-Length: 289
 Content-Type: text/html; charset=iso-8859-1
@@ -1826,7 +1864,7 @@ Content-Type: text/html; charset=iso-8859-1
 OPTIONS / HTTP/1.1
 --------------------
 HTTP/1.1 200 OK
-Date: Fri, 30 Oct 2015 05:24:06 GMT
+Date: Fri, 30 Oct 2015 05:58:55 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Allow: POST,OPTIONS,GET,HEAD
 Content-Length: 0
@@ -1837,7 +1875,7 @@ Content-Type: text/html
 OPTIONS /index.html HTTP/1.1
 --------------------
 HTTP/1.1 200 OK
-Date: Fri, 30 Oct 2015 05:24:11 GMT
+Date: Fri, 30 Oct 2015 05:59:00 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Allow: POST,OPTIONS,GET,HEAD
 Content-Length: 0
@@ -1848,7 +1886,7 @@ Content-Type: text/html
 OPTIONS /not-existed HTTP/1.1
 --------------------
 HTTP/1.1 200 OK
-Date: Fri, 30 Oct 2015 05:24:16 GMT
+Date: Fri, 30 Oct 2015 05:59:05 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Allow: POST,OPTIONS,GET,HEAD
 Content-Length: 0
@@ -1858,7 +1896,7 @@ Content-Length: 0
 PUT / HTTP/1.1
 --------------------
 HTTP/1.1 405 Method Not Allowed
-Date: Fri, 30 Oct 2015 05:24:21 GMT
+Date: Fri, 30 Oct 2015 05:59:10 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Allow: POST,OPTIONS,GET,HEAD
 Content-Length: 311
@@ -1878,7 +1916,7 @@ Content-Type: text/html; charset=iso-8859-1
 PUT /index.html HTTP/1.1
 --------------------
 HTTP/1.1 405 Method Not Allowed
-Date: Fri, 30 Oct 2015 05:24:26 GMT
+Date: Fri, 30 Oct 2015 05:59:15 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Allow: POST,OPTIONS,GET,HEAD
 Content-Length: 311
@@ -1898,7 +1936,7 @@ Content-Type: text/html; charset=iso-8859-1
 PUT /not-existed HTTP/1.1
 --------------------
 HTTP/1.1 405 Method Not Allowed
-Date: Fri, 30 Oct 2015 05:24:32 GMT
+Date: Fri, 30 Oct 2015 05:59:20 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Allow: POST,OPTIONS,GET,HEAD
 Content-Length: 312
@@ -1918,7 +1956,7 @@ Content-Type: text/html; charset=iso-8859-1
 INVALID / HTTP/1.1
 --------------------
 HTTP/1.1 501 Not Implemented
-Date: Fri, 30 Oct 2015 05:24:37 GMT
+Date: Fri, 30 Oct 2015 05:59:25 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Allow: POST,OPTIONS,GET,HEAD
 Content-Length: 285
@@ -1940,7 +1978,7 @@ Content-Type: text/html; charset=iso-8859-1
 INVALID /index.html HTTP/1.1
 --------------------
 HTTP/1.1 501 Not Implemented
-Date: Fri, 30 Oct 2015 05:24:37 GMT
+Date: Fri, 30 Oct 2015 05:59:25 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Allow: POST,OPTIONS,GET,HEAD
 Content-Length: 285
@@ -1962,7 +2000,7 @@ Content-Type: text/html; charset=iso-8859-1
 INVALID /not-existed HTTP/1.1
 --------------------
 HTTP/1.1 501 Not Implemented
-Date: Fri, 30 Oct 2015 05:24:37 GMT
+Date: Fri, 30 Oct 2015 05:59:25 GMT
 Server: Apache/2.4.7 (Ubuntu)
 Allow: POST,OPTIONS,GET,HEAD
 Content-Length: 286

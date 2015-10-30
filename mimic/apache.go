@@ -32,13 +32,15 @@ func MimicApache(w http.ResponseWriter, req *http.Request) {
 	}
 	path := req.URL.Path
 	// remove extra leading slash
-	i := 0
-	for ; i < len(path) && path[i] == '/'; i++ {
+	if len(path) > 0 && path[0] == '/' {
+		i := 1
+		for ; i < len(path) && path[i] == '/'; i++ {
+		}
+		if i > 0 {
+			i--
+		}
+		path = path[i:]
 	}
-	if i > 0 {
-		i--
-	}
-	path = path[i:]
 	m := apacheMimic{conn, req, path}
 	if req.Host == "" {
 		m.writeError(badRequestHeader, badRequestBody)

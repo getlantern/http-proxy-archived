@@ -945,6 +945,44 @@ Content-Type: text/html; charset=iso-8859-1
 </body></html>
 ====================
 
+GET ///cgi-bin/php4 HTTP/1.1
+--------------------
+HTTP/1.1 404 Not Found
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Content-Length: <...>
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL /cgi-bin/php4 was not found on this server.</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+GET //cgi-bin//php4 HTTP/1.1
+--------------------
+HTTP/1.1 404 Not Found
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Content-Length: <...>
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL /cgi-bin//php4 was not found on this server.</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
 GET /not-existed HTTP/1.1
 --------------------
 HTTP/1.1 404 Not Found
