@@ -100,14 +100,6 @@ func (f *apacheMimic) ok(header *template.Template, body []byte) {
 	f.conn.Close()
 }
 
-func (f *apacheMimic) options() {
-	panic("not implemented")
-}
-
-func (f *apacheMimic) forbidden() {
-	panic("not implemented")
-}
-
 func (f *apacheMimic) writeError(header, body *template.Template) {
 	vars := f.collectVars()
 	if body == nil {
