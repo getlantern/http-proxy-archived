@@ -531,7 +531,7 @@ type proxy struct {
 func setupNewHTTPServer(maxConns, idleCloseSecs uint64) (*Server, error) {
 	s := NewServer(validToken, maxConns, idleCloseSecs, false, utils.QUIET)
 	var err error
-	chListenOn := make(chan net.Addr)
+	chListenOn := make(chan string)
 	go func(err *error) {
 		if *err = s.ServeHTTP("localhost:0", &chListenOn); err != nil {
 			fmt.Println("Unable to serve: %s", err)
@@ -544,7 +544,7 @@ func setupNewHTTPServer(maxConns, idleCloseSecs uint64) (*Server, error) {
 func setupNewHTTPSServer(maxConns, idleCloseSecs uint64) (*Server, error) {
 	s := NewServer(validToken, maxConns, idleCloseSecs, false, utils.QUIET)
 	var err error
-	chListenOn := make(chan net.Addr)
+	chListenOn := make(chan string)
 	go func(err *error) {
 		if *err = s.ServeHTTPS("localhost:0", "key.pem", "cert.pem", &chListenOn); err != nil {
 			fmt.Println("Unable to serve: %s", err)

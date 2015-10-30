@@ -16,6 +16,7 @@ import (
 	"./devicefilter"
 	"./forward"
 	"./httpconnect"
+	"./mimic"
 	"./profilter"
 	"./tokenfilter"
 	"./utils"
@@ -91,7 +92,7 @@ func NewServer(token string, maxConns uint64, idleCloseSecs uint64, disableFilte
 	return server
 }
 
-func (s *Server) ServeHTTP(addr string, chListenOn *chan net.Addr) error {
+func (s *Server) ServeHTTP(addr string, chListenOn *chan string) error {
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
@@ -101,7 +102,7 @@ func (s *Server) ServeHTTP(addr string, chListenOn *chan net.Addr) error {
 	return s.doServe(listener, chListenOn)
 }
 
-func (s *Server) ServeHTTPS(addr, keyfile, certfile string, chListenOn *chan net.Addr) error {
+func (s *Server) ServeHTTPS(addr, keyfile, certfile string, chListenOn *chan string) error {
 	listener, err := listenTLS(addr, keyfile, certfile)
 	if err != nil {
 		return err
@@ -111,7 +112,7 @@ func (s *Server) ServeHTTPS(addr, keyfile, certfile string, chListenOn *chan net
 	return s.doServe(listener, chListenOn)
 }
 
-func (s *Server) doServe(listener net.Listener, chListenOn *chan net.Addr) error {
+func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 	// A dirty trick to associate a connection with the http.Request it
 	// contains. In "net/http/server.go", handler will be called
 	// immediately after ConnState changed to StateActive, so it's safe to
@@ -154,9 +155,15 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan net.Addr) error
 			}
 		},
 	}
-
+	addr := s.listener.Addr().String()
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		panic("should not happen")
+	}
+	mimic.Host = host
+	mimic.Port = port
 	if chListenOn != nil {
-		*chListenOn <- s.listener.Addr()
+		*chListenOn <- addr
 	}
 
 	return s.httpServer.Serve(s.listener)

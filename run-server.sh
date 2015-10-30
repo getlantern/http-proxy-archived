@@ -1,2 +1,2 @@
 #!/usr/bin/env sh
-go run main.go server.go tls.go -addr=":8080" -token=111 $@
+go run main.go server.go tls.go limitedlistener.go -token=111 $@

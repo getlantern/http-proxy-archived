@@ -15,8 +15,9 @@ import (
 	"./utils"
 )
 
-const recorded = "test-data/apache-2.4.7-ubuntu14.04.rec"
-const fetched = "test-data/chained-server.rec"
+const target = "test-data/apache-2.4.7-ubuntu14.04.raw"
+const template = "test-data/apache-2.4.7-ubuntu14.04.tpl"
+const current = "test-data/chained-server.raw"
 
 type entry struct {
 	path           string
@@ -31,15 +32,14 @@ For rationale behind these tests, refer following:
 */
 var candidates = []entry{
 	// Without Host header, Apache will return 400
-	{"", false},
 	{"/", false},
 	{"/index.html", false},
-	{"/not-existed", true},
 
 	// 200 with default page
-	{"", true},
 	{"/", true},
 	{"/index.html", true},
+
+	{"/icons/ubuntu-logo.png", true},
 
 	// 404
 	{"//cgi-bin/php", true},
@@ -49,26 +49,27 @@ var candidates = []entry{
 	{"//cgi-bin/php4", true},
 
 	{"/not-existed", true},
+	{"/end-with-slash/", true},
 }
 
 func TestMimicApache(t *testing.T) {
 	s := NewServer("anytoken", 100000, 30, false, utils.QUIET)
-	chListenOn := make(chan net.Addr)
+	chListenOn := make(chan string)
 	go func() {
 		err := s.ServeHTTP(":0", &chListenOn)
 		assert.NoError(t, err, "should start chained server")
 	}()
-	addr := (<-chListenOn).String()
-	buf := request(t, addr)
-	ioutil.WriteFile(fetched, buf.Bytes(), os.ModePerm)
-	compare(t, buf, recorded)
+	buf := request(t, <-chListenOn)
+	ioutil.WriteFile(current, buf.Bytes(), os.ModePerm)
+	compare(t, normalize(buf), template)
 }
 
 func TestRealApache(t *testing.T) {
-	t.Skip("comment out this line when you want to record http traffic against real apache server")
+	t.Skip("comment out this line and run 'go test -run RealApache' when you want to record http traffic against real apache server")
 	addr := "128.199.100.121:80"
 	buf := request(t, addr)
-	ioutil.WriteFile(recorded, buf.Bytes(), os.ModePerm)
+	ioutil.WriteFile(target, buf.Bytes(), os.ModePerm)
+	ioutil.WriteFile(template, normalize(buf).Bytes(), os.ModePerm)
 }
 
 func compare(t *testing.T, buf *bytes.Buffer, file string) {
@@ -80,12 +81,8 @@ func compare(t *testing.T, buf *bytes.Buffer, file string) {
 			in.Close()
 		}()
 		b, err := c.CombinedOutput()
-		assert.NoError(t, err, "should run diff")
+		assert.NoError(t, err, "should not different from an real apache")
 		t.Log(string(b))
-		if "" != string(b) {
-			t.Error("should run diff")
-			t.Fail()
-		}
 	}
 }
 
@@ -109,19 +106,26 @@ func request(t *testing.T, addr string) *bytes.Buffer {
 			}
 		}
 	}
-	s := buf.String()
-	exps := []*regexp.Regexp{
+	return &buf
+}
+
+func normalize(in *bytes.Buffer) *bytes.Buffer {
+	s := in.String()
+	exps := []struct {
+		regexp *regexp.Regexp
+		with   string
+	}{
 		// Date: ... GMT
-		regexp.MustCompile(`[A-Z][a-z]{2}, \d{2} [A-Z][a-z]{2} \d{4} \d{2}:\d{2}:\d{2} GMT`),
-		// Last-Modified: ... CST
-		regexp.MustCompile(`\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{9} \+\d{4} CST`),
-		// ETag: "..."
-		regexp.MustCompile(`"\w{4}-\w{13}"`),
+		{regexp.MustCompile(`[A-Z][a-z]{2}, \d{2} [A-Z][a-z]{2} \d{4} \d{2}:\d{2}:\d{2} GMT`), "<GMT>"},
+		// ETag: "xxxx-xxxxxxxxxxxxx"
+		{regexp.MustCompile(`ETag: "\w{3,4}-\w{12,13}"`), `ETag: "<ETAG>"`},
 		// Apache/2.4.7 (Ubuntu) Server at 128.199.100.121 Port 80
-		regexp.MustCompile(`Apache\/\d\.\d\.\d+ \(Ubuntu\) Server at \d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3} Port \d{2,}`),
+		{regexp.MustCompile(`Apache\/\d\.\d\.\d+ \(Ubuntu\) Server at \S+ Port \d{2,}`), "Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port>"},
+		// Content-Length: 1243
+		{regexp.MustCompile(`Content-Length: \d+`), "Content-Length: <...>"},
 	}
 	for _, e := range exps {
-		s = e.ReplaceAllString(s, "<PLACEHOLDER>")
+		s = e.regexp.ReplaceAllString(s, e.with)
 	}
 	return bytes.NewBufferString(s)
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/getlantern/measured"
 
+	"../mimic"
 	"../utils"
 )
 
@@ -53,7 +54,7 @@ func (f *DeviceFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	// An UID must be provided always by the client.  Respond 404 otherwise.
 	if lanternDeviceId == "" {
-		utils.MimicApache(w, req)
+		mimic.MimicApache(w, req)
 		return
 	}
 

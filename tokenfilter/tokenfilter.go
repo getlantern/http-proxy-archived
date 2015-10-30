@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"../mimic"
 	"../utils"
 )
 
@@ -56,7 +57,7 @@ func (f *TokenFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	token := req.Header.Get(tokenHeader)
 	if f.token != "" && (token == "" || token != f.token) {
-		utils.MimicApache(w, req)
+		mimic.MimicApache(w, req)
 	} else {
 		req.Header.Del(tokenHeader)
 		f.next.ServeHTTP(w, req)
