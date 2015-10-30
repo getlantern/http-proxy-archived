@@ -21,6 +21,7 @@ const template = "test/apache-2.4.7-ubuntu14.04.tpl"
 const current = "test/chained-server.raw"
 
 type entry struct {
+	method         string
 	path           string
 	withHostHeader bool
 }
@@ -33,24 +34,44 @@ For rationale behind these tests, refer following:
 */
 var candidates = []entry{
 	// Without Host header, Apache will return 400
-	{"/", false},
-	{"/index.html", false},
+	{"GET", "/", false},
+	{"GET", "/index.html", false},
 
 	// 200 with default page
-	{"/", true},
-	{"/index.html", true},
+	{"GET", "/", true},
+	{"GET", "/index.html", true},
 
-	{"/icons/ubuntu-logo.png", true},
+	{"GET", "/icons/ubuntu-logo.png", true},
 
 	// 404
-	{"//cgi-bin/php", true},
-	{"//cgi-bin/php5", true},
-	{"//cgi-bin/php-cgi", true},
-	{"//cgi-bin/php.cgi", true},
-	{"//cgi-bin/php4", true},
+	{"GET", "//cgi-bin/php", true},
+	{"GET", "//cgi-bin/php5", true},
+	{"GET", "//cgi-bin/php-cgi", true},
+	{"GET", "//cgi-bin/php.cgi", true},
+	{"GET", "//cgi-bin/php4", true},
 
-	{"/not-existed", true},
-	{"/end-with-slash/", true},
+	{"GET", "/not-existed", true},
+	{"GET", "/end-with-slash/", true},
+
+	{"HEAD", "/", true},
+	{"HEAD", "/index.html", true},
+	{"HEAD", "/not-existed", true},
+
+	{"POST", "/", true},
+	{"POST", "/index.html", true},
+	{"POST", "/not-existed", true},
+
+	{"OPTIONS", "/", true},
+	{"OPTIONS", "/index.html", true},
+	{"OPTIONS", "/not-existed", true},
+
+	{"PUT", "/", true},
+	{"PUT", "/index.html", true},
+	{"PUT", "/not-existed", true},
+
+	{"INVALID", "/", true},
+	{"INVALID", "/index.html", true},
+	{"INVALID", "/not-existed", true},
 }
 
 func TestMimicApache(t *testing.T) {
@@ -93,7 +114,7 @@ func request(t *testing.T, addr string) *bytes.Buffer {
 		conn, err := net.Dial("tcp", addr)
 		if assert.NoError(t, err, "should connect") {
 			defer conn.Close()
-			req := "GET " + c.path + " HTTP/1.1\n"
+			req := c.method + " " + c.path + " HTTP/1.1\n"
 			buf.WriteString(req)
 			buf.WriteString("--------------------\n")
 			if c.withHostHeader {
