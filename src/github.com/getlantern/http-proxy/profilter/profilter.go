@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 
-	"../utils"
+  "github.com/getlantern/http-proxy/utils"
 	"github.com/Workiva/go-datastructures/set"
 )
 

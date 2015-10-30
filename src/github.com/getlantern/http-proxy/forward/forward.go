@@ -9,8 +9,7 @@ import (
 	"time"
 
 	"github.com/getlantern/idletiming"
-
-	"../utils"
+  "github.com/getlantern/http-proxy/utils"
 )
 
 type Forwarder struct {

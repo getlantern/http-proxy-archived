@@ -8,7 +8,7 @@ import (
 
 	"github.com/getlantern/measured"
 
-	"./utils"
+	"github.com/getlantern/http-proxy/utils"
 )
 
 var (

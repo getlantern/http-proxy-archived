@@ -13,12 +13,12 @@ import (
 	"github.com/getlantern/measured"
 	"github.com/gorilla/context"
 
-	"./devicefilter"
-	"./forward"
-	"./httpconnect"
-	"./profilter"
-	"./tokenfilter"
-	"./utils"
+	"github.com/getlantern/http-proxy/devicefilter"
+	"github.com/getlantern/http-proxy/forward"
+	"github.com/getlantern/http-proxy/httpconnect"
+	"github.com/getlantern/http-proxy/profilter"
+	"github.com/getlantern/http-proxy/tokenfilter"
+	"github.com/getlantern/http-proxy/utils"
 )
 
 type Server struct {

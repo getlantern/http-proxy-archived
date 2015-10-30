@@ -7,8 +7,7 @@ import (
 	"github.com/gorilla/context"
 
 	"github.com/getlantern/measured"
-
-	"../utils"
+  "github.com/getlantern/http-proxy/utils"
 )
 
 const (
