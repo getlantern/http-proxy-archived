@@ -109,7 +109,13 @@ func TestReportStats(t *testing.T) {
 	testRoundTrip(t, httpProxy, httpTargetServer, testFn)
 	testRoundTrip(t, tlsProxy, httpTargetServer, testFn)
 	time.Sleep(100 * time.Millisecond)
-	assert.Equal(t, 1, len(m.error))
+	if assert.Equal(t, 1, len(m.error)) {
+		assert.Equal(t, 2, m.error[measured.Error{
+			ID:    "1234-1234-1234-1234-1234-1234",
+			Error: "EOF",
+			Phase: "read",
+		}], "should report EOF error")
+	}
 	assert.Equal(t, 1, len(m.traffic))
 	t.Logf("%+v", m.error)
 	t.Logf("%+v", m.traffic[0])
@@ -140,7 +146,10 @@ func TestMaxConnections(t *testing.T) {
 		var buf [400]byte
 		_, err = conn.Read(buf[:])
 
-		assert.Error(t, err, "should time out")
+		if assert.Error(t, err) {
+			e, ok := err.(*net.OpError)
+			assert.True(t, ok && e.Timeout(), "should be a time out error")
+		}
 	}
 
 	for i := 0; i < 5; i++ {
@@ -232,7 +241,9 @@ func TestIdleTargetConnections(t *testing.T) {
 		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
 		_, err := conn.Read(buf[:])
 
-		assert.Error(t, err)
+		if assert.Error(t, err) {
+			assert.Equal(t, "EOF", err.Error())
+		}
 	}
 
 	failConnectFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
@@ -244,7 +255,9 @@ func TestIdleTargetConnections(t *testing.T) {
 		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
 		_, err := conn.Read(buf[:])
 
-		assert.Error(t, err)
+		if assert.Error(t, err) {
+			assert.Equal(t, "EOF", err.Error())
+		}
 	}
 
 	testRoundTrip(t, normalServer, httpTargetServer, okForwardFn)
