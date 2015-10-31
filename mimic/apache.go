@@ -38,16 +38,14 @@ func MimicApache(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		panic("fail to hijack, should not happen")
 	}
+	defer conn.Close()
 	path := req.URL.Path
 	// remove extra leading slash
 	if len(path) > 0 && path[0] == '/' {
 		i := 1
 		for ; i < len(path) && path[i] == '/'; i++ {
 		}
-		if i > 0 {
-			i--
-		}
-		path = path[i:]
+		path = path[i-1:]
 	}
 	m := apacheMimic{conn, req, path}
 	if req.Host == "" {
@@ -80,7 +78,7 @@ func MimicApache(w http.ResponseWriter, req *http.Request) {
 		case "/", "/index.html":
 			m.ok(optionsHeader, nil)
 		case "/icons/ubuntu-logo.png":
-			m.ok(optionsHeader, nil)
+			m.ok(optionsHeaderOfLogo, nil)
 		default:
 			m.writeError(optionsHeaderWhenNotFound, nil)
 		}
@@ -110,7 +108,6 @@ func (f *apacheMimic) ok(header *template.Template, body []byte) {
 	// ignore any errors writing back to connection
 	_, _ = buf.WriteTo(f.conn)
 	_, _ = f.conn.Write(body)
-	_ = f.conn.Close()
 }
 
 func (f *apacheMimic) writeError(header, body *template.Template) {
@@ -131,7 +128,6 @@ func (f *apacheMimic) writeError(header, body *template.Template) {
 	// ignore any errors writing back to connection
 	_, _ = headBuf.WriteTo(f.conn)
 	_, _ = bodyBuf.WriteTo(f.conn)
-	_ = f.conn.Close()
 }
 
 type vars struct {
@@ -156,12 +152,9 @@ func makeETag() string {
 	bytes := [17]byte{}
 	rand.Read(bytes[:])
 	for i, b := range bytes {
-		if i == 4 {
-			bytes[i] = '-'
-		} else {
-			bytes[i] = alphanum[b%byte(len(alphanum))]
-		}
+		bytes[i] = alphanum[b%byte(len(alphanum))]
 	}
+	bytes[4] = '-'
 	return string(bytes[:])
 }
 
@@ -279,6 +272,13 @@ var optionsHeaderWhenNotFound = template.Must(template.New("optionsHeaderWhenNot
 	"Server: Apache/2.4.7 (Ubuntu)\r\n" +
 	"Allow: POST,OPTIONS,GET,HEAD\r\n" +
 	"Content-Length: {{.ContentLength}}\r\n\r\n"))
+
+var optionsHeaderOfLogo = template.Must(template.New("optionsHeaderOfLogo").Parse("HTTP/1.1 200 OK\r\n" +
+	"Date: {{.Date}}\r\n" +
+	"Server: Apache/2.4.7 (Ubuntu)\r\n" +
+	"Allow: POST,OPTIONS,GET,HEAD\r\n" +
+	"Content-Length: {{.ContentLength}}\r\n" +
+	"Content-Type: image/png\r\n\r\n"))
 
 var methodNotAllowedHeader = template.Must(template.New("methodNotAllowedHeader").Parse("HTTP/1.1 405 Method Not Allowed\r\n" +
 	"Date: {{.Date}}\r\n" +

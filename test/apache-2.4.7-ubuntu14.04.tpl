@@ -1049,6 +1049,19 @@ Content-Type: text/html
 
 ====================
 
+HEAD /icons/ubuntu-logo.png HTTP/1.1
+--------------------
+HTTP/1.1 200 OK
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Last-Modified: <GMT>
+ETag: "<ETAG>"
+Accept-Ranges: bytes
+Content-Length: <...>
+Content-Type: image/png
+
+====================
+
 HEAD /not-existed HTTP/1.1
 --------------------
 HTTP/1.1 404 Not Found
@@ -1842,6 +1855,32 @@ Content-Type: text/html
 
 ====================
 
+POST /icons/ubuntu-logo.png HTTP/1.1
+--------------------
+HTTP/1.1 200 OK
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Last-Modified: <GMT>
+ETag: "<ETAG>"
+Accept-Ranges: bytes
+Content-Length: <...>
+Content-Type: image/png
+
+‰PNG
+
+   IHDR   w   c   ¡~Ÿ  IDATxí{”SÕÆÁbE¬Š$©b}?ZµVÑV+>˜$#ƒZDœ¢@TD¬PT(*ŒTXµ(* (-¥*âQœ™$Ì{˜÷ƒ™É<²ûíô.È:½7¹÷œ½Öï™œsçŞóåÇŞûœé@DIÇş¶Sr]¶a¹.Ç¤<§ı°<Ïeßòìßz\öÕynÛ¹nÛ3§mtËvY2µCÒ<ˆ7İv.Ä™ ‰ $IA®Ûñw~İ'};tRâÆ‰¼N:bL»Å€JË1?ÇÙí%îabç ?EÃEÃWH&C;wß9în½”¸1·ÛãçÑız¹Ñã@SÛí½¹kW%nÉq§Æİ(¨ÌuÙoWâF\§ıZnP@‰Ï²¹7QâJ‚.ø~4d+ DË©;û:~¦Äµ /C0¾Í—h÷^EE ï­gF.ïv|çKï~º×ìÄÉåXQìGş¼ïH3
+´¶Pİê·ÈÓ¿gí¥XšªÄ fÄSâ!ìŞá¿¦¶ÚJÒ³†õ+"_ÃißVœÙ³‹× Ûq«èa:\Ô¼?›- ‚û®6s÷”¸:xœi¡q ÅîÃÙ¾£M]‡}ÚJÜödö´£a|ÑËû‡Ó©lú=TõÖ´à¸¹óº €[?¡ÚÍ§Ê×&SéÔá´wèÅÁòM»¾¦pV6ã~³;€Yô %®FÔfÆİ©xâ ªÿdüMdÆXT®[ùÆTã^¹­•|·m~ì²êulÊ‹›—a?;ZkÙ½w^Q›Éªñxê½å4jÎİAzV1g¢ÄıØ&(qİ¶¥‡ÔıüU¿÷"–#iÁŸ«ßIV­é»¯ noîÊƒ]6Ïš­~ò{vRYö}²÷VóÃõÇÛRV\o†­Ï¡›?òJj)È!¶òYãŒµm5dÕšÜF¾Áçæ˜ˆÖØÿBÊŠ‹µázi‡Ãèk©}i|Û¼ƒÎ
+~Vşòx’1îÒ÷o\Cûf>Dû^ì´/,~¯«Gï”—ÓZ¤ÇÖ!¿¤ÖŠb­våëÁÏ=7ö –ÂÜ`™šæQÙ´‘T4ÎtT¿…*æ=Iõ/¥–ü¡h{ÅTúÌ]‡"ğó)(®ãY)gı€^†jo£‚ûûr9İšê^¸»äot»&eÅÍM9qÊÛ%ÓXUg„}ËàlZBUÌ@íõdd~ßÜ#H	Ì©:)#.ùçHM †_j¸Ôa'Yö½‡¶”ºãWÔZV@FVşÊcr¡A§ãñ”ËŸñ2Ô°a%¼QÑ‰=äâ/Š~¯_WÅK/™ënJqáıÊjùn?78¦êYı§ïGÕÏ\ñêÆ>æ™ce®ğ9í''»¸Z¼ÖŞb¹ÁÑ%
+&.¢Êş8<¾”ëšİöÌ¤77½{šLã4~û9éYÍò¹1‰?z“á¤M6Xşæ{“^\-´GF”NJŸ¯$¿wW0 Pôpfğ÷%“ë®IFı>6ùQıO:Iôë^™7÷¯Éÿæ:.Kó@à€ã¾jA6…ZK‰/¦1^ş’éÂˆÖ¯ç´½ôâÂ±p—ŞÃ³çÈÈØ‰Ÿ?âŠ`Ô'Ô›©¸ì†Ô3ô(2™’«“¿[v;&ê¾µËç`ºa·¶ŠÒŒƒğ1—Ã€ì™b?6‡óGş–òï¾œ|YçË„ w$ÿ›ëtL×{xNBgÖãrÍ»·ˆ¿;Rğ%¿¸ØÄHãXÄ4vÿÁÏ+×=JÀokİš…T»êÍ`P¢fÅ«T³ìIŒ¹öI/.ï³Ñ{xtu†©¥-…yä¹éçT8æİ™XQµğo¤gµÿ|CâzeI/®×m¿Æ¨ŠÆeˆ¾İà’ˆÇ:^š4}¿‘B­½¡FL*FÑ",_‹7u'·ÜÏqV¤ILÉSC‚.ÀâÇ‘'3(^°[Ô³Ò§‡ÇDXvwò2LÇp_·ÊL¨Kzqyã”Lc×¼„ôlÿ¦µ1—ÇU=cÇbÊ‘!Û©rÚ«­6NÉ¤ÛÁíğbõ—Ñpü¯ÚGz†	–Ô5y8J‘¨ı]«Ã3å¶êrÒ³ÖÒ|Î^Œ¸î4jÜ¾Œ>g™ëÖç¸Ï<&%ÄÅÃfI…âæ=EFÆ®BLº„:ÑÍôhÚ¹Iòº¶%)ÏÕN¢ñË8ó[ò÷‘5~ó©ôÌ=CåëSŒæé<*ËvGjåP¹lI…â&¤p†=@–¯‰õsÄ`ukËö­Îº¥”¸˜Tİí®³µ¼ˆ<7Ÿ,SöÜ(*y2Ë°«ærœRÃ^'1ÃC´æœo\W‚S.ûÑ›áèo–˜]¢q~2>ã`úDºöújñ›_ô,ª_¿œw)„ÍW47rı_ßåÇq|‰SN\†¶e_®:8ÙÙñÅAáÿóÉ¯¥ùmçkó¬yïĞK¤…Õğğ¡h)).E¼aJ~Ùâ ª·ŸãlEvòH2çÉ%ã„€¹“´¤÷SØCÆÙ”ê“ğ¡h©½Ën¹C]¾äßİç`®ÕöÏÈªUÎšëòŞ^öWÿÿ|à2Áùo80¥ÅåMÊhŒÂ¨ìÏvIpŒ´b<¾r.2Ş|Ã|åÆmë­‹›Ş­ŸÚYo˜z#ïaâ”º5‹Ä7ÑxûÇg5ßõR
+cÖºh·c­:6!4Ê"yQÇd_ÖyTøçtDş„TÇyË	/x/®ŞÛNá¬üÅ¿˜>2AH@WâzûöîŒÆù:ºËçE‹†/‡¹“]3ì¿Q§ÙèßÏŞTqÃmØÆZÙ¬[3KCÄ=/ç7àp‹Ë¾eÄ†uÓjËaîWu< ×dÚÀ¸çoÓlŞ½•wæ³SƒÇg3[4ßäe×Âa(ñè¢%È¯ä•ü72Â	é‰DäÎ=%®àäXœ`‡hçé… Ä•oÉH>×8ÎÂ¶òQ†áã³J\ùÌIœÇ—Ó]öå|–‡ú×31†=@ğÍC£·ÅZÔÿñà¸JıÓ¨8üKš\§íQD–¾à™kôDµy1)¤£*qã…çú´î—ãnˆó!h´(h lÅxú$ïüWÿ¨1Áÿ{Ÿ½T‹1VŞ˜ë¶ß£Õs `6ºÚùÈıW·+=]OÛri‡£ò9”¸
+%®W¡ÄU(qa½Àyª±“D\ØÑàSPÌW<âvÄ(q•¸
+%î‘Ìú‚ÑÀ®ÄMa§íp®7yÄ®ÄÕPâ*q•¸J\%.[ïÒLTè(Ôq˜Öô£ÀLğpY™EÂNùÛİ¥ï×¸üñà
+	†±`ª69. GKŠ{=èmÀ©B]‡ğyG/M¨ÓBX!ñV¾c¢Ì:ğ*hd@ègâï7‡Ôù(J÷Û	, ?€  ´€% «%qÃS#Ô}Gø¼³‰g]!Ô‰¸´ƒÉà(	qãq¿^ĞG‰{?ØV"ƒ2K@ÜğX>›AN¹F`7)®4Pz$‹»\:	e{‚¹:åoˆ£¸ËÂ\/”å'G{Bu$‰û¾‰ëêlã$î;®yh)ÏbwIq%–B,¨Po`"ŠËÀVŠ3áğâ*q‡
+õf'°¸·u††W‰ÛE¨·6ÅıPg‚7°Êzy	,î9B—"‹«ÄİR¯tJPqâ3&º¸$€¸›…º]Âˆ»&âv=Ìâ+#nkÈŸ%X·œ¯óy}Èç_'±¸„º½dÄİòÃî8O¨ºš˜Pí	ùÜ—àâ>#”9ß‚¸ÙBİËdÄı<ä‡ê8‹›.Ô›¥Sf]¨ë/ÁÅ'”¹Ú‚¸uÈˆ»XøEŸxˆë¨ãÄ¡SîB™kXÜ;D§Œqoê¾,#îÃÂ/ÄIÜ:!ÀÎ:åÆå–$°¸N¡Ì‹VâÖ‚‹³gUÜ@uÈ/ÚÀ#1WÜ0´uú”?N˜tq½‰ cŠÛøCÊ4€Ş×;Q|Ø"áo¬6Óâj¿œ
+Hàm¶—nÃÁxğšDcy´k A:	^» 	,²˜2ÊlÙ`ˆÖ¥‚yñ×`©Okíz§ÖöËÀ~p‘P÷BäB0Œ™ÚuÆ€ POÜ“„‰•5–$¯"4ìI`ƒÌõã î…Âr3cuê?%
+l!Õd†ÄEêÜĞ17”œÆ¤N`šÄßYx8Åe`W‚½VïM»÷YÎj1¸‘GÀ›`+¨`ø·6»¡uç£Â<¼LÖºõà{PüÀ>Ğº¨ÁâÛjAä>Ú¤p>Ø¢İo!ØÖ±Pàymæz>8Êà‹2=„,3K,¡Î ½ÍDğ6Ø*Á°
+ÌÒÚê'aêŸ¬k3µç*Õß¥õbËÁ\0Fj÷_UV…jŞš    IEND®B`‚====================
+
 POST /not-existed HTTP/1.1
 --------------------
 HTTP/1.1 404 Not Found
@@ -1880,6 +1919,17 @@ Server: Apache/2.4.7 (Ubuntu)
 Allow: POST,OPTIONS,GET,HEAD
 Content-Length: <...>
 Content-Type: text/html
+
+====================
+
+OPTIONS /icons/ubuntu-logo.png HTTP/1.1
+--------------------
+HTTP/1.1 200 OK
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Allow: POST,OPTIONS,GET,HEAD
+Content-Length: <...>
+Content-Type: image/png
 
 ====================
 
@@ -1933,6 +1983,26 @@ Content-Type: text/html; charset=iso-8859-1
 </body></html>
 ====================
 
+PUT /icons/ubuntu-logo.png HTTP/1.1
+--------------------
+HTTP/1.1 405 Method Not Allowed
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Allow: POST,OPTIONS,GET,HEAD
+Content-Length: <...>
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>405 Method Not Allowed</title>
+</head><body>
+<h1>Method Not Allowed</h1>
+<p>The requested method PUT is not allowed for the URL /icons/ubuntu-logo.png.</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
 PUT /not-existed HTTP/1.1
 --------------------
 HTTP/1.1 405 Method Not Allowed
@@ -1975,6 +2045,27 @@ Content-Type: text/html; charset=iso-8859-1
 ====================
 
 CONNECT /index.html HTTP/1.1
+--------------------
+HTTP/1.1 400 Bad Request
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Content-Length: <...>
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>400 Bad Request</title>
+</head><body>
+<h1>Bad Request</h1>
+<p>Your browser sent a request that this server could not understand.<br />
+</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+CONNECT /icons/ubuntu-logo.png HTTP/1.1
 --------------------
 HTTP/1.1 400 Bad Request
 Date: <GMT>

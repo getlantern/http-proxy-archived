@@ -59,22 +59,27 @@ var candidates = []entry{
 
 	{"HEAD", "/", true},
 	{"HEAD", "/index.html", true},
+	{"HEAD", "/icons/ubuntu-logo.png", true},
 	{"HEAD", "/not-existed", true},
 
 	{"POST", "/", true},
 	{"POST", "/index.html", true},
+	{"POST", "/icons/ubuntu-logo.png", true},
 	{"POST", "/not-existed", true},
 
 	{"OPTIONS", "/", true},
 	{"OPTIONS", "/index.html", true},
+	{"OPTIONS", "/icons/ubuntu-logo.png", true},
 	{"OPTIONS", "/not-existed", true},
 
 	{"PUT", "/", true},
 	{"PUT", "/index.html", true},
+	{"PUT", "/icons/ubuntu-logo.png", true},
 	{"PUT", "/not-existed", true},
 
 	{"CONNECT", "/", true},
 	{"CONNECT", "/index.html", true},
+	{"CONNECT", "/icons/ubuntu-logo.png", true},
 	{"CONNECT", "/not-existed", true},
 
 	{"INVALID", "/", true},
