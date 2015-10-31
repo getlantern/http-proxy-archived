@@ -128,7 +128,7 @@ func TestMaxConnections(t *testing.T) {
 		var buf [400]byte
 		_, err = conn.Read(buf[:])
 
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		time.Sleep(time.Millisecond * 100)
 	}
@@ -140,7 +140,7 @@ func TestMaxConnections(t *testing.T) {
 		var buf [400]byte
 		_, err = conn.Read(buf[:])
 
-		assert.NotNil(t, err)
+		assert.Error(t, err, "should time out")
 	}
 
 	for i := 0; i < 5; i++ {
@@ -174,7 +174,7 @@ func TestIdleClientConnections(t *testing.T) {
 		var buf [400]byte
 		_, err := conn.Read(buf[:])
 
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 	}
 
 	idleFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
@@ -184,7 +184,7 @@ func TestIdleClientConnections(t *testing.T) {
 		var buf [400]byte
 		_, err := conn.Read(buf[:])
 
-		assert.NotNil(t, err)
+		assert.Error(t, err)
 	}
 
 	go testRoundTrip(t, limitedServer, httpTargetServer, okFn)
@@ -212,7 +212,7 @@ func TestIdleTargetConnections(t *testing.T) {
 		var buf [400]byte
 		_, err := conn.Read(buf[:])
 
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 	}
 
 	okConnectFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
@@ -220,7 +220,7 @@ func TestIdleTargetConnections(t *testing.T) {
 		var buf [400]byte
 		_, err := conn.Read(buf[:])
 
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 	}
 
 	failForwardFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
@@ -232,7 +232,7 @@ func TestIdleTargetConnections(t *testing.T) {
 		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
 		_, err := conn.Read(buf[:])
 
-		assert.NotNil(t, err)
+		assert.Error(t, err)
 	}
 
 	failConnectFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
@@ -244,7 +244,7 @@ func TestIdleTargetConnections(t *testing.T) {
 		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
 		_, err := conn.Read(buf[:])
 
-		assert.NotNil(t, err)
+		assert.Error(t, err)
 	}
 
 	testRoundTrip(t, normalServer, httpTargetServer, okForwardFn)
