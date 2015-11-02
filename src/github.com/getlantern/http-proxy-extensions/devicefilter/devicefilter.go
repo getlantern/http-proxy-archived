@@ -7,7 +7,9 @@ import (
 	"github.com/gorilla/context"
 
 	"github.com/getlantern/measured"
-  "github.com/getlantern/http-proxy/utils"
+
+	"github.com/getlantern/http-proxy-extensions/mimic"
+	"github.com/getlantern/http-proxy/utils"
 )
 
 const (
@@ -51,8 +53,8 @@ func (f *DeviceFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	lanternDeviceId := req.Header.Get(deviceIdHeader)
 
 	if lanternDeviceId == "" {
-		f.log.Debugf("No %s header found, respond 404 not found to %s\n", deviceIdHeader, req.RemoteAddr)
-		w.WriteHeader(http.StatusNotFound)
+		f.log.Debugf("No %s header found from %s, mimicking apache\n", deviceIdHeader, req.RemoteAddr)
+		mimic.MimicApache(w, req)
 		return
 	}
 

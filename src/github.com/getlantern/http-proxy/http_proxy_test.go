@@ -85,7 +85,7 @@ func TestMain(m *testing.M) {
 // Keep this one first to avoid measuring previous connections
 func TestReportStats(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Device-Id: %s\r\n\r\n"
-	connectResp := "HTTP/1.1 404 Not Found\r\n"
+	connectResp := "HTTP/1.1 400 Bad Request\r\n"
 	m := mockReporter{error: make(map[measured.Error]int)}
 	measured.Start(100*time.Millisecond, &m)
 	defer measured.Stop()
@@ -101,21 +101,23 @@ func TestReportStats(t *testing.T) {
 		var buf [400]byte
 		_, err = conn.Read(buf[:])
 		if !assert.Contains(t, string(buf[:]), connectResp,
-			"should get 404 Not Found because no token was provided") {
+			"should mimic Apache because no token was provided") {
 			t.FailNow()
 		}
 	}
 
 	testRoundTrip(t, httpProxy, httpTargetServer, testFn)
 	testRoundTrip(t, tlsProxy, httpTargetServer, testFn)
-	time.Sleep(100 * time.Millisecond)
-	assert.Equal(t, 1, len(m.error))
+	time.Sleep(200 * time.Millisecond)
 	assert.Equal(t, 1, len(m.traffic))
-	t.Logf("%+v", m.error)
-	t.Logf("%+v", m.traffic[0])
+	if len(m.traffic) > 0 {
+		t.Logf("%+v", m.traffic[0])
+	}
 }
 
 func TestMaxConnections(t *testing.T) {
+	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-Device-Id: %s\r\n\r\n"
+
 	limitedServer, err := setupNewHTTPServer(5, 30*time.Second)
 	if err != nil {
 		log.Println("Error starting proxy server")
@@ -124,11 +126,12 @@ func TestMaxConnections(t *testing.T) {
 
 	//limitedServer.httpServer.SetKeepAlivesEnabled(false)
 	okFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
-		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
+		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, validToken, deviceId)
+		conn.Write([]byte(req))
 		var buf [400]byte
 		_, err = conn.Read(buf[:])
 
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		time.Sleep(time.Millisecond * 100)
 	}
@@ -136,11 +139,15 @@ func TestMaxConnections(t *testing.T) {
 	waitFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
 		conn.SetReadDeadline(time.Now().Add(50 * time.Millisecond))
 
-		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
+		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, validToken, deviceId)
+		conn.Write([]byte(req))
 		var buf [400]byte
 		_, err = conn.Read(buf[:])
 
-		assert.NotNil(t, err)
+		if assert.Error(t, err) {
+			e, ok := err.(*net.OpError)
+			assert.True(t, ok && e.Timeout(), "should be a time out error")
+		}
 	}
 
 	for i := 0; i < 5; i++ {
@@ -174,7 +181,7 @@ func TestIdleClientConnections(t *testing.T) {
 		var buf [400]byte
 		_, err := conn.Read(buf[:])
 
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 	}
 
 	idleFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
@@ -184,7 +191,7 @@ func TestIdleClientConnections(t *testing.T) {
 		var buf [400]byte
 		_, err := conn.Read(buf[:])
 
-		assert.NotNil(t, err)
+		assert.Error(t, err)
 	}
 
 	go testRoundTrip(t, limitedServer, httpTargetServer, okFn)
@@ -212,7 +219,7 @@ func TestIdleTargetConnections(t *testing.T) {
 		var buf [400]byte
 		_, err := conn.Read(buf[:])
 
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 	}
 
 	okConnectFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
@@ -220,11 +227,14 @@ func TestIdleTargetConnections(t *testing.T) {
 		var buf [400]byte
 		_, err := conn.Read(buf[:])
 
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 	}
 
 	failForwardFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
-		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
+		reqStr := "GET / HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-Device-Id: %s\r\n\r\n"
+		req := fmt.Sprintf(reqStr, targetURL.Host, validToken, deviceId)
+		t.Log("\n" + req)
+		conn.Write([]byte(req))
 		var buf [400]byte
 		conn.Read(buf[:])
 
@@ -232,11 +242,15 @@ func TestIdleTargetConnections(t *testing.T) {
 		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
 		_, err := conn.Read(buf[:])
 
-		assert.NotNil(t, err)
+		if assert.Error(t, err) {
+			assert.Equal(t, "EOF", err.Error())
+		}
 	}
 
 	failConnectFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
-		conn.Write([]byte("CONNECT www.google.com HTTP/1.1\r\nHost: www.google.com\r\n\r\n"))
+		reqStr := "CONNECT www.google.com HTTP/1.1\r\nHost: www.google.com\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-Device-Id: %s\r\n\r\n"
+		req := fmt.Sprintf(reqStr, validToken, deviceId)
+		conn.Write([]byte(req))
 		var buf [400]byte
 		conn.Read(buf[:])
 
@@ -244,7 +258,9 @@ func TestIdleTargetConnections(t *testing.T) {
 		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
 		_, err := conn.Read(buf[:])
 
-		assert.NotNil(t, err)
+		if assert.Error(t, err) {
+			assert.Equal(t, "EOF", err.Error())
+		}
 	}
 
 	testRoundTrip(t, normalServer, httpTargetServer, okForwardFn)
@@ -253,10 +269,10 @@ func TestIdleTargetConnections(t *testing.T) {
 	testRoundTrip(t, impatientServer, httpTargetServer, failConnectFn)
 }
 
-// No X-Lantern-Auth-Token -> 404
+// No X-Lantern-Auth-Token -> 400
 func TestConnectNoToken(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Device-Id: %s\r\n\r\n"
-	connectResp := "HTTP/1.1 404 Not Found\r\n"
+	connectResp := "HTTP/1.1 400 Bad Request\r\n"
 
 	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
 		var err error
@@ -270,7 +286,7 @@ func TestConnectNoToken(t *testing.T) {
 		var buf [400]byte
 		_, err = conn.Read(buf[:])
 		if !assert.Contains(t, string(buf[:]), connectResp,
-			"should get 404 Not Found because no token was provided") {
+			"should mimic Apache because no token was provided") {
 			t.FailNow()
 		}
 	}
@@ -282,10 +298,10 @@ func TestConnectNoToken(t *testing.T) {
 	testRoundTrip(t, tlsProxy, tlsTargetServer, testFn)
 }
 
-// Bad X-Lantern-Auth-Token -> 404
+// Bad X-Lantern-Auth-Token -> 400
 func TestConnectBadToken(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-Device-Id: %s\r\n\r\n"
-	connectResp := "HTTP/1.1 404 Not Found\r\n"
+	connectResp := "HTTP/1.1 400 Bad Request\r\n"
 
 	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
 		var err error
@@ -299,7 +315,7 @@ func TestConnectBadToken(t *testing.T) {
 		var buf [400]byte
 		_, err = conn.Read(buf[:])
 		if !assert.Contains(t, string(buf[:]), connectResp,
-			"should get 404 Not Found because no token was provided") {
+			"should mimic Apache because no token was provided") {
 			t.FailNow()
 		}
 	}
@@ -311,10 +327,10 @@ func TestConnectBadToken(t *testing.T) {
 	testRoundTrip(t, tlsProxy, tlsTargetServer, testFn)
 }
 
-// No X-Lantern-Device-Id -> 404
+// No X-Lantern-Device-Id -> 400
 func TestConnectNoDevice(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\n\r\n"
-	connectResp := "HTTP/1.1 404 Not Found\r\n"
+	connectResp := "HTTP/1.1 400 Bad Request\r\n"
 
 	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
 		var err error
@@ -328,7 +344,7 @@ func TestConnectNoDevice(t *testing.T) {
 		var buf [400]byte
 		_, err = conn.Read(buf[:])
 		if !assert.Contains(t, string(buf[:]), connectResp,
-			"should get 404 Not Found because no token was provided") {
+			"should mimic Apache because no token was provided") {
 			t.FailNow()
 		}
 	}
@@ -593,7 +609,7 @@ type proxy struct {
 func setupNewHTTPServer(maxConns uint64, idleTimeout time.Duration) (*Server, error) {
 	s := NewServer(validToken, maxConns, idleTimeout, false, utils.QUIET)
 	var err error
-	ready := make(chan bool)
+	ready := make(chan string)
 	go func(err *error) {
 		if *err = s.ServeHTTP("localhost:0", &ready); err != nil {
 			fmt.Println("Unable to serve: %s", err)
@@ -606,7 +622,7 @@ func setupNewHTTPServer(maxConns uint64, idleTimeout time.Duration) (*Server, er
 func setupNewHTTPSServer(maxConns uint64, idleTimeout time.Duration) (*Server, error) {
 	s := NewServer(validToken, maxConns, idleTimeout, false, utils.QUIET)
 	var err error
-	ready := make(chan bool)
+	ready := make(chan string)
 	go func(err *error) {
 		if *err = s.ServeHTTPS("localhost:0", "key.pem", "cert.pem", &ready); err != nil {
 			fmt.Println("Unable to serve: %s", err)

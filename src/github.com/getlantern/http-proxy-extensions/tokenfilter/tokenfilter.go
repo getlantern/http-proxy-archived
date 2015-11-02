@@ -4,7 +4,8 @@ import (
 	"net/http"
 	"net/http/httputil"
 
-  "github.com/getlantern/http-proxy/utils"
+	"github.com/getlantern/http-proxy-extensions/mimic"
+	"github.com/getlantern/http-proxy/utils"
 )
 
 const (
@@ -56,8 +57,8 @@ func (f *TokenFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	token := req.Header.Get(tokenHeader)
 	if f.token != "" && (token == "" || token != f.token) {
-		f.log.Debugf("Token doesn't match, respond 404 not found to %s\n", req.RemoteAddr)
-		w.WriteHeader(http.StatusNotFound)
+		f.log.Debugf("Token from %s doesn't match, mimicking apache\n", req.RemoteAddr)
+		mimic.MimicApache(w, req)
 	} else {
 		req.Header.Del(tokenHeader)
 		f.next.ServeHTTP(w, req)

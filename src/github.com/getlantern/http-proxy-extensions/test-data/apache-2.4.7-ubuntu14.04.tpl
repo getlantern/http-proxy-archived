@@ -1,0 +1,2175 @@
+GET / HTTP/1.1
+--------------------
+HTTP/1.1 400 Bad Request
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Content-Length: <...>
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>400 Bad Request</title>
+</head><body>
+<h1>Bad Request</h1>
+<p>Your browser sent a request that this server could not understand.<br />
+</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+GET /index.html HTTP/1.1
+--------------------
+HTTP/1.1 400 Bad Request
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Content-Length: <...>
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>400 Bad Request</title>
+</head><body>
+<h1>Bad Request</h1>
+<p>Your browser sent a request that this server could not understand.<br />
+</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+GET / HTTP/1.1
+--------------------
+HTTP/1.1 200 OK
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Last-Modified: <GMT>
+ETag: "<ETAG>"
+Accept-Ranges: bytes
+Content-Length: <...>
+Vary: Accept-Encoding
+Content-Type: text/html
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <!--
+    Modified from the Debian original for Ubuntu
+    Last updated: 2014-03-19
+    See: https://launchpad.net/bugs/1288690
+  -->
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Apache2 Ubuntu Default Page: It works</title>
+    <style type="text/css" media="screen">
+  * {
+    margin: 0px 0px 0px 0px;
+    padding: 0px 0px 0px 0px;
+  }
+
+  body, html {
+    padding: 3px 3px 3px 3px;
+
+    background-color: #D8DBE2;
+
+    font-family: Verdana, sans-serif;
+    font-size: 11pt;
+    text-align: center;
+  }
+
+  div.main_page {
+    position: relative;
+    display: table;
+
+    width: 800px;
+
+    margin-bottom: 3px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0px 0px 0px 0px;
+
+    border-width: 2px;
+    border-color: #212738;
+    border-style: solid;
+
+    background-color: #FFFFFF;
+
+    text-align: center;
+  }
+
+  div.page_header {
+    height: 99px;
+    width: 100%;
+
+    background-color: #F5F6F7;
+  }
+
+  div.page_header span {
+    margin: 15px 0px 0px 50px;
+
+    font-size: 180%;
+    font-weight: bold;
+  }
+
+  div.page_header img {
+    margin: 3px 0px 0px 40px;
+
+    border: 0px 0px 0px;
+  }
+
+  div.table_of_contents {
+    clear: left;
+
+    min-width: 200px;
+
+    margin: 3px 3px 3px 3px;
+
+    background-color: #FFFFFF;
+
+    text-align: left;
+  }
+
+  div.table_of_contents_item {
+    clear: left;
+
+    width: 100%;
+
+    margin: 4px 0px 0px 0px;
+
+    background-color: #FFFFFF;
+
+    color: #000000;
+    text-align: left;
+  }
+
+  div.table_of_contents_item a {
+    margin: 6px 0px 0px 6px;
+  }
+
+  div.content_section {
+    margin: 3px 3px 3px 3px;
+
+    background-color: #FFFFFF;
+
+    text-align: left;
+  }
+
+  div.content_section_text {
+    padding: 4px 8px 4px 8px;
+
+    color: #000000;
+    font-size: 100%;
+  }
+
+  div.content_section_text pre {
+    margin: 8px 0px 8px 0px;
+    padding: 8px 8px 8px 8px;
+
+    border-width: 1px;
+    border-style: dotted;
+    border-color: #000000;
+
+    background-color: #F5F6F7;
+
+    font-style: italic;
+  }
+
+  div.content_section_text p {
+    margin-bottom: 6px;
+  }
+
+  div.content_section_text ul, div.content_section_text li {
+    padding: 4px 8px 4px 16px;
+  }
+
+  div.section_header {
+    padding: 3px 6px 3px 6px;
+
+    background-color: #8E9CB2;
+
+    color: #FFFFFF;
+    font-weight: bold;
+    font-size: 112%;
+    text-align: center;
+  }
+
+  div.section_header_red {
+    background-color: #CD214F;
+  }
+
+  div.section_header_grey {
+    background-color: #9F9386;
+  }
+
+  .floating_element {
+    position: relative;
+    float: left;
+  }
+
+  div.table_of_contents_item a,
+  div.content_section_text a {
+    text-decoration: none;
+    font-weight: bold;
+  }
+
+  div.table_of_contents_item a:link,
+  div.table_of_contents_item a:visited,
+  div.table_of_contents_item a:active {
+    color: #000000;
+  }
+
+  div.table_of_contents_item a:hover {
+    background-color: #000000;
+
+    color: #FFFFFF;
+  }
+
+  div.content_section_text a:link,
+  div.content_section_text a:visited,
+   div.content_section_text a:active {
+    background-color: #DCDFE6;
+
+    color: #000000;
+  }
+
+  div.content_section_text a:hover {
+    background-color: #000000;
+
+    color: #DCDFE6;
+  }
+
+  div.validator {
+  }
+    </style>
+  </head>
+  <body>
+    <div class="main_page">
+      <div class="page_header floating_element">
+        <img src="/icons/ubuntu-logo.png" alt="Ubuntu Logo" class="floating_element"/>
+        <span class="floating_element">
+          Apache2 Ubuntu Default Page
+        </span>
+      </div>
+<!--      <div class="table_of_contents floating_element">
+        <div class="section_header section_header_grey">
+          TABLE OF CONTENTS
+        </div>
+        <div class="table_of_contents_item floating_element">
+          <a href="#about">About</a>
+        </div>
+        <div class="table_of_contents_item floating_element">
+          <a href="#changes">Changes</a>
+        </div>
+        <div class="table_of_contents_item floating_element">
+          <a href="#scope">Scope</a>
+        </div>
+        <div class="table_of_contents_item floating_element">
+          <a href="#files">Config files</a>
+        </div>
+      </div>
+-->
+      <div class="content_section floating_element">
+
+
+        <div class="section_header section_header_red">
+          <div id="about"></div>
+          It works!
+        </div>
+        <div class="content_section_text">
+          <p>
+                This is the default welcome page used to test the correct 
+                operation of the Apache2 server after installation on Ubuntu systems.
+                It is based on the equivalent page on Debian, from which the Ubuntu Apache
+                packaging is derived.
+                If you can read this page, it means that the Apache HTTP server installed at
+                this site is working properly. You should <b>replace this file</b> (located at
+                <tt>/var/www/html/index.html</tt>) before continuing to operate your HTTP server.
+          </p>
+
+
+          <p>
+                If you are a normal user of this web site and don't know what this page is
+                about, this probably means that the site is currently unavailable due to
+                maintenance.
+                If the problem persists, please contact the site's administrator.
+          </p>
+
+        </div>
+        <div class="section_header">
+          <div id="changes"></div>
+                Configuration Overview
+        </div>
+        <div class="content_section_text">
+          <p>
+                Ubuntu's Apache2 default configuration is different from the
+                upstream default configuration, and split into several files optimized for
+                interaction with Ubuntu tools. The configuration system is
+                <b>fully documented in
+                /usr/share/doc/apache2/README.Debian.gz</b>. Refer to this for the full
+                documentation. Documentation for the web server itself can be
+                found by accessing the <a href="/manual">manual</a> if the <tt>apache2-doc</tt>
+                package was installed on this server.
+
+          </p>
+          <p>
+                The configuration layout for an Apache2 web server installation on Ubuntu systems is as follows:
+          </p>
+          <pre>
+/etc/apache2/
+|-- apache2.conf
+|       `--  ports.conf
+|-- mods-enabled
+|       |-- *.load
+|       `-- *.conf
+|-- conf-enabled
+|       `-- *.conf
+|-- sites-enabled
+|       `-- *.conf
+          </pre>
+          <ul>
+                        <li>
+                           <tt>apache2.conf</tt> is the main configuration
+                           file. It puts the pieces together by including all remaining configuration
+                           files when starting up the web server.
+                        </li>
+
+                        <li>
+                           <tt>ports.conf</tt> is always included from the
+                           main configuration file. It is used to determine the listening ports for
+                           incoming connections, and this file can be customized anytime.
+                        </li>
+
+                        <li>
+                           Configuration files in the <tt>mods-enabled/</tt>,
+                           <tt>conf-enabled/</tt> and <tt>sites-enabled/</tt> directories contain
+                           particular configuration snippets which manage modules, global configuration
+                           fragments, or virtual host configurations, respectively.
+                        </li>
+
+                        <li>
+                           They are activated by symlinking available
+                           configuration files from their respective
+                           *-available/ counterparts. These should be managed
+                           by using our helpers
+                           <tt>
+                                <a href="http://manpages.debian.org/cgi-bin/man.cgi?query=a2enmod">a2enmod</a>,
+                                <a href="http://manpages.debian.org/cgi-bin/man.cgi?query=a2dismod">a2dismod</a>,
+                           </tt>
+                           <tt>
+                                <a href="http://manpages.debian.org/cgi-bin/man.cgi?query=a2ensite">a2ensite</a>,
+                                <a href="http://manpages.debian.org/cgi-bin/man.cgi?query=a2dissite">a2dissite</a>,
+                            </tt>
+                                and
+                           <tt>
+                                <a href="http://manpages.debian.org/cgi-bin/man.cgi?query=a2enconf">a2enconf</a>,
+                                <a href="http://manpages.debian.org/cgi-bin/man.cgi?query=a2disconf">a2disconf</a>
+                           </tt>. See their respective man pages for detailed information.
+                        </li>
+
+                        <li>
+                           The binary is called apache2. Due to the use of
+                           environment variables, in the default configuration, apache2 needs to be
+                           started/stopped with <tt>/etc/init.d/apache2</tt> or <tt>apache2ctl</tt>.
+                           <b>Calling <tt>/usr/bin/apache2</tt> directly will not work</b> with the
+                           default configuration.
+                        </li>
+          </ul>
+        </div>
+
+        <div class="section_header">
+            <div id="docroot"></div>
+                Document Roots
+        </div>
+
+        <div class="content_section_text">
+            <p>
+                By default, Ubuntu does not allow access through the web browser to
+                <em>any</em> file apart of those located in <tt>/var/www</tt>,
+                <a href="http://httpd.apache.org/docs/2.4/mod/mod_userdir.html">public_html</a>
+                directories (when enabled) and <tt>/usr/share</tt> (for web
+                applications). If your site is using a web document root
+                located elsewhere (such as in <tt>/srv</tt>) you may need to whitelist your
+                document root directory in <tt>/etc/apache2/apache2.conf</tt>.
+            </p>
+            <p>
+                The default Ubuntu document root is <tt>/var/www/html</tt>. You
+                can make your own virtual hosts under /var/www. This is different
+                to previous releases which provides better security out of the box.
+            </p>
+        </div>
+
+        <div class="section_header">
+          <div id="bugs"></div>
+                Reporting Problems
+        </div>
+        <div class="content_section_text">
+          <p>
+                Please use the <tt>ubuntu-bug</tt> tool to report bugs in the
+                Apache2 package with Ubuntu. However, check <a
+                href="https://bugs.launchpad.net/ubuntu/+source/apache2">existing
+                bug reports</a> before reporting a new bug.
+          </p>
+          <p>
+                Please report bugs specific to modules (such as PHP and others)
+                to respective packages, not to the web server itself.
+          </p>
+        </div>
+
+
+
+
+      </div>
+    </div>
+    <div class="validator">
+    <p>
+      <a href="http://validator.w3.org/check?uri=referer"><img src="http://www.w3.org/Icons/valid-xhtml10" alt="Valid XHTML 1.0 Transitional" height="31" width="88" /></a>
+    </p>
+    </div>
+  </body>
+</html>
+
+====================
+
+GET /index.html HTTP/1.1
+--------------------
+HTTP/1.1 200 OK
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Last-Modified: <GMT>
+ETag: "<ETAG>"
+Accept-Ranges: bytes
+Content-Length: <...>
+Vary: Accept-Encoding
+Content-Type: text/html
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <!--
+    Modified from the Debian original for Ubuntu
+    Last updated: 2014-03-19
+    See: https://launchpad.net/bugs/1288690
+  -->
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Apache2 Ubuntu Default Page: It works</title>
+    <style type="text/css" media="screen">
+  * {
+    margin: 0px 0px 0px 0px;
+    padding: 0px 0px 0px 0px;
+  }
+
+  body, html {
+    padding: 3px 3px 3px 3px;
+
+    background-color: #D8DBE2;
+
+    font-family: Verdana, sans-serif;
+    font-size: 11pt;
+    text-align: center;
+  }
+
+  div.main_page {
+    position: relative;
+    display: table;
+
+    width: 800px;
+
+    margin-bottom: 3px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0px 0px 0px 0px;
+
+    border-width: 2px;
+    border-color: #212738;
+    border-style: solid;
+
+    background-color: #FFFFFF;
+
+    text-align: center;
+  }
+
+  div.page_header {
+    height: 99px;
+    width: 100%;
+
+    background-color: #F5F6F7;
+  }
+
+  div.page_header span {
+    margin: 15px 0px 0px 50px;
+
+    font-size: 180%;
+    font-weight: bold;
+  }
+
+  div.page_header img {
+    margin: 3px 0px 0px 40px;
+
+    border: 0px 0px 0px;
+  }
+
+  div.table_of_contents {
+    clear: left;
+
+    min-width: 200px;
+
+    margin: 3px 3px 3px 3px;
+
+    background-color: #FFFFFF;
+
+    text-align: left;
+  }
+
+  div.table_of_contents_item {
+    clear: left;
+
+    width: 100%;
+
+    margin: 4px 0px 0px 0px;
+
+    background-color: #FFFFFF;
+
+    color: #000000;
+    text-align: left;
+  }
+
+  div.table_of_contents_item a {
+    margin: 6px 0px 0px 6px;
+  }
+
+  div.content_section {
+    margin: 3px 3px 3px 3px;
+
+    background-color: #FFFFFF;
+
+    text-align: left;
+  }
+
+  div.content_section_text {
+    padding: 4px 8px 4px 8px;
+
+    color: #000000;
+    font-size: 100%;
+  }
+
+  div.content_section_text pre {
+    margin: 8px 0px 8px 0px;
+    padding: 8px 8px 8px 8px;
+
+    border-width: 1px;
+    border-style: dotted;
+    border-color: #000000;
+
+    background-color: #F5F6F7;
+
+    font-style: italic;
+  }
+
+  div.content_section_text p {
+    margin-bottom: 6px;
+  }
+
+  div.content_section_text ul, div.content_section_text li {
+    padding: 4px 8px 4px 16px;
+  }
+
+  div.section_header {
+    padding: 3px 6px 3px 6px;
+
+    background-color: #8E9CB2;
+
+    color: #FFFFFF;
+    font-weight: bold;
+    font-size: 112%;
+    text-align: center;
+  }
+
+  div.section_header_red {
+    background-color: #CD214F;
+  }
+
+  div.section_header_grey {
+    background-color: #9F9386;
+  }
+
+  .floating_element {
+    position: relative;
+    float: left;
+  }
+
+  div.table_of_contents_item a,
+  div.content_section_text a {
+    text-decoration: none;
+    font-weight: bold;
+  }
+
+  div.table_of_contents_item a:link,
+  div.table_of_contents_item a:visited,
+  div.table_of_contents_item a:active {
+    color: #000000;
+  }
+
+  div.table_of_contents_item a:hover {
+    background-color: #000000;
+
+    color: #FFFFFF;
+  }
+
+  div.content_section_text a:link,
+  div.content_section_text a:visited,
+   div.content_section_text a:active {
+    background-color: #DCDFE6;
+
+    color: #000000;
+  }
+
+  div.content_section_text a:hover {
+    background-color: #000000;
+
+    color: #DCDFE6;
+  }
+
+  div.validator {
+  }
+    </style>
+  </head>
+  <body>
+    <div class="main_page">
+      <div class="page_header floating_element">
+        <img src="/icons/ubuntu-logo.png" alt="Ubuntu Logo" class="floating_element"/>
+        <span class="floating_element">
+          Apache2 Ubuntu Default Page
+        </span>
+      </div>
+<!--      <div class="table_of_contents floating_element">
+        <div class="section_header section_header_grey">
+          TABLE OF CONTENTS
+        </div>
+        <div class="table_of_contents_item floating_element">
+          <a href="#about">About</a>
+        </div>
+        <div class="table_of_contents_item floating_element">
+          <a href="#changes">Changes</a>
+        </div>
+        <div class="table_of_contents_item floating_element">
+          <a href="#scope">Scope</a>
+        </div>
+        <div class="table_of_contents_item floating_element">
+          <a href="#files">Config files</a>
+        </div>
+      </div>
+-->
+      <div class="content_section floating_element">
+
+
+        <div class="section_header section_header_red">
+          <div id="about"></div>
+          It works!
+        </div>
+        <div class="content_section_text">
+          <p>
+                This is the default welcome page used to test the correct 
+                operation of the Apache2 server after installation on Ubuntu systems.
+                It is based on the equivalent page on Debian, from which the Ubuntu Apache
+                packaging is derived.
+                If you can read this page, it means that the Apache HTTP server installed at
+                this site is working properly. You should <b>replace this file</b> (located at
+                <tt>/var/www/html/index.html</tt>) before continuing to operate your HTTP server.
+          </p>
+
+
+          <p>
+                If you are a normal user of this web site and don't know what this page is
+                about, this probably means that the site is currently unavailable due to
+                maintenance.
+                If the problem persists, please contact the site's administrator.
+          </p>
+
+        </div>
+        <div class="section_header">
+          <div id="changes"></div>
+                Configuration Overview
+        </div>
+        <div class="content_section_text">
+          <p>
+                Ubuntu's Apache2 default configuration is different from the
+                upstream default configuration, and split into several files optimized for
+                interaction with Ubuntu tools. The configuration system is
+                <b>fully documented in
+                /usr/share/doc/apache2/README.Debian.gz</b>. Refer to this for the full
+                documentation. Documentation for the web server itself can be
+                found by accessing the <a href="/manual">manual</a> if the <tt>apache2-doc</tt>
+                package was installed on this server.
+
+          </p>
+          <p>
+                The configuration layout for an Apache2 web server installation on Ubuntu systems is as follows:
+          </p>
+          <pre>
+/etc/apache2/
+|-- apache2.conf
+|       `--  ports.conf
+|-- mods-enabled
+|       |-- *.load
+|       `-- *.conf
+|-- conf-enabled
+|       `-- *.conf
+|-- sites-enabled
+|       `-- *.conf
+          </pre>
+          <ul>
+                        <li>
+                           <tt>apache2.conf</tt> is the main configuration
+                           file. It puts the pieces together by including all remaining configuration
+                           files when starting up the web server.
+                        </li>
+
+                        <li>
+                           <tt>ports.conf</tt> is always included from the
+                           main configuration file. It is used to determine the listening ports for
+                           incoming connections, and this file can be customized anytime.
+                        </li>
+
+                        <li>
+                           Configuration files in the <tt>mods-enabled/</tt>,
+                           <tt>conf-enabled/</tt> and <tt>sites-enabled/</tt> directories contain
+                           particular configuration snippets which manage modules, global configuration
+                           fragments, or virtual host configurations, respectively.
+                        </li>
+
+                        <li>
+                           They are activated by symlinking available
+                           configuration files from their respective
+                           *-available/ counterparts. These should be managed
+                           by using our helpers
+                           <tt>
+                                <a href="http://manpages.debian.org/cgi-bin/man.cgi?query=a2enmod">a2enmod</a>,
+                                <a href="http://manpages.debian.org/cgi-bin/man.cgi?query=a2dismod">a2dismod</a>,
+                           </tt>
+                           <tt>
+                                <a href="http://manpages.debian.org/cgi-bin/man.cgi?query=a2ensite">a2ensite</a>,
+                                <a href="http://manpages.debian.org/cgi-bin/man.cgi?query=a2dissite">a2dissite</a>,
+                            </tt>
+                                and
+                           <tt>
+                                <a href="http://manpages.debian.org/cgi-bin/man.cgi?query=a2enconf">a2enconf</a>,
+                                <a href="http://manpages.debian.org/cgi-bin/man.cgi?query=a2disconf">a2disconf</a>
+                           </tt>. See their respective man pages for detailed information.
+                        </li>
+
+                        <li>
+                           The binary is called apache2. Due to the use of
+                           environment variables, in the default configuration, apache2 needs to be
+                           started/stopped with <tt>/etc/init.d/apache2</tt> or <tt>apache2ctl</tt>.
+                           <b>Calling <tt>/usr/bin/apache2</tt> directly will not work</b> with the
+                           default configuration.
+                        </li>
+          </ul>
+        </div>
+
+        <div class="section_header">
+            <div id="docroot"></div>
+                Document Roots
+        </div>
+
+        <div class="content_section_text">
+            <p>
+                By default, Ubuntu does not allow access through the web browser to
+                <em>any</em> file apart of those located in <tt>/var/www</tt>,
+                <a href="http://httpd.apache.org/docs/2.4/mod/mod_userdir.html">public_html</a>
+                directories (when enabled) and <tt>/usr/share</tt> (for web
+                applications). If your site is using a web document root
+                located elsewhere (such as in <tt>/srv</tt>) you may need to whitelist your
+                document root directory in <tt>/etc/apache2/apache2.conf</tt>.
+            </p>
+            <p>
+                The default Ubuntu document root is <tt>/var/www/html</tt>. You
+                can make your own virtual hosts under /var/www. This is different
+                to previous releases which provides better security out of the box.
+            </p>
+        </div>
+
+        <div class="section_header">
+          <div id="bugs"></div>
+                Reporting Problems
+        </div>
+        <div class="content_section_text">
+          <p>
+                Please use the <tt>ubuntu-bug</tt> tool to report bugs in the
+                Apache2 package with Ubuntu. However, check <a
+                href="https://bugs.launchpad.net/ubuntu/+source/apache2">existing
+                bug reports</a> before reporting a new bug.
+          </p>
+          <p>
+                Please report bugs specific to modules (such as PHP and others)
+                to respective packages, not to the web server itself.
+          </p>
+        </div>
+
+
+
+
+      </div>
+    </div>
+    <div class="validator">
+    <p>
+      <a href="http://validator.w3.org/check?uri=referer"><img src="http://www.w3.org/Icons/valid-xhtml10" alt="Valid XHTML 1.0 Transitional" height="31" width="88" /></a>
+    </p>
+    </div>
+  </body>
+</html>
+
+====================
+
+GET /icons/ubuntu-logo.png HTTP/1.1
+--------------------
+HTTP/1.1 200 OK
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Last-Modified: <GMT>
+ETag: "<ETAG>"
+Accept-Ranges: bytes
+Content-Length: <...>
+Content-Type: image/png
+
+âPNG
+
+   IHDR   w   c   °~ü  IDATxÌù{îS’∆¡bE¨ä$©b}?ZµV—V+>ò$#ÉZDú¢@TD¨PT(*åTXµ(* (-•*‚Qúô$Ã{ò˜Éô…<≤˚ÌÙ.»:Ω7π˜êêêúΩ÷ÔèôúsÁﬁÛÂû«ﬁ˚úÈ@DI«û˛∂Sr]∂aπ.«§<ß˝∞<œeﬂÚÅÏﬂz\ˆ’yn€πn€3ßmtûÀvY2µC“<à7›v.ƒô†â $IAÆ€Òw~›'};tR‚∆âºN:bLª≈ÄJèÀ1?«ŸÌ%ÓabÁ†?E√èE√WH&C;wﬂ9ÓnΩî∏1∑€„Á—˝zπ—„@Sû€ûÌΩπkW%n…qßùÅ∆›(®ÃuŸoW‚FÅ\ß˝ZnP@âœ≤π7Q‚JÇ.¯~4d+†DÀ©;˚:~¶ƒµ /C0æÕéóh˜^EEè Ô≠gF.Ôv|ÁKÔ~∫◊Ïƒ…ÂXQÏG˛ºÔH3
+¥∂P›Í∑»”øgÅÌ•Xöù™ƒç fƒS‚!Ïﬁ·ø¶∂⁄J“≥Üı+"_√iﬂVúŸ≥ã◊ è€q´Ëa:\‘º?õ-†Ç˚Æ6sù˜î∏:xúi°q ≈Óé√Ÿæ£M]á}⁄J‹ˆdˆ¥£a|—À˚á”©l˙=Tı÷¥‡∏πÛ∫†Äç[?°⁄Õß ◊&SÈ‘·¥wË≈¡ÚMªæ¶pV6„~≥;ÄYÙ %ÆF‘f∆›©x‚ ™ˇd¸Md∆XTÆ[˘∆T„^π≠ï|∑ùm~Ï≤Íul ãõóa?;ZkŸΩw^Qõ…™ÒxÍΩÂ4jŒ›AzV1g¢ƒ˝ÿ&(q›∂•á‘˝¸Uø˜"ñ#i¡ü´ﬂùIV≠ÈªØ noÓ É]6œö≠~Ú{vRYˆ}≤˜VÛ√ı«€RV\oÜ≠œ°õ?ÚJj)»!∂ÚY„åµm5d’ö‹Fæ¡ÁêÊòà÷ÿˇB äãµ·ziá√Ëk©}i|€ºÉŒ
+~V˛Úxí1Ó“˜o\C˚f>D˚^Ï¥/ç,~Ø´GÔîó”Z§«÷!ø§÷äb≠vÂÎ¡œ=7ˆ†ñ¬‹`ôöÊQŸ¥ëT4ŒtTèøÖ*Ê=Iı/•ñ¸°h{≈T˙Ã]á"Û)(Æ„Y)g˝Ä^Üjo£Ç˚˚r9û›öÍ^∏éª‰otª&e≈ÕM9q €%”XUgÑ}À‡lêZBUÃû@Ìçıdd~ﬂ‹#H	Ã©:)#.˘ÁHM†Ü_j∏‘a'YˆΩá∂î∫„W‘ZV@FV˛ cr°Aß„ÒîÀüÒ2ç‘∞a%ºQ—â=‰‚/ä~Ø_W≈K/ôÎnJq·˝ j˘n?78¶ÍY˝ßÔG’œ\ÒÍ∆>ÊôceÆ9Ì''ª∏Zº÷ﬁbπ¡—%
+&.Å¢ ˛ç8<æîÎö›ˆÃ§77Ω{öL„4~˚9ÈYÕÚπ1â?zì·§M6X˛Ê{ì^\-¥GFîNJüØ$øwW0 PÙpf˜%ìÎÆIF˝>6˘Q˝O:IÙÎ^ô7˜Ø…ˇÊ:.KÛ@‡Ä„æjA6ÖZKâ/¶1^˛íÈ¬à÷ØÁ¥ΩûÙ‚¬±póﬁ√≥Á»»ÿâü?‚ä`‘'‘õç©∏ÏÜ‘3Ù(2ôí´ìø[v;&ÍæµÀÁê`∫a∑∂ä“åÉ1ó√ÄÏôb?6áÛG˛ñÚÔæú|YÁÀÑ w$ˇõÎtL◊{xNBg÷„rÕª∑àø;R%ø∏ÿƒH„Xƒ4vˇ¡œ+◊=J¿ok›öÖTªÍÕ`P¢f≈´T≥ÏéIåπˆçI/.Ô≥—{xtuÜ©•-Öy‰πÈÁT8Ê›ôXQµo§gµˇ|C‚zéeI/Æ◊mø∆®ä∆eàæ›‡íà«:^ö4}øëB≠Ω°FLè*F—",_ã7u'∑‹œqV§IL…SCÇ.¿‚«ë'3(^∞[‘≥“ßá«DXvwÚ2L«p_∑ L®Kzqy„îLc◊ºÑÙlˇ¶µ1ó«U=c«b ë!€ù©r⁄´≠6N…§€¡Ìbıó—p¸Ø⁄GzÜ	ñ‘5y8Jë®ê˝]´ç√3Â∂Ír“≥÷“|Œ^åé∏Ó4j‹æÅå>gôÎ÷Á∏œ<&%ƒ≈√fIÖ‚Ê=EF∆ÆBL∫Ñ:—ÕÙh⁄πIÚ∫∂%)œ’N¢ÒÀ8Û[Ú˜êë5~Û©ÙÃ=CÂÎSåÊÈ<*èÀvGjÂPπlIÖ‚&§pÜ=@ñØâısƒç`ukÀˆ≠Œ∫•î∏òT›ÌÆ≥µºà<7ü,Sˆ‹(*y2À∞´ÊrúR√^'1√C¥Êúo\WÇèS.˚—õ·ËÅoñò]è¢q~2>„`˙ÅD∫ˆ˙jéÒõ_Ù,™_øúw)ÑÕW47r˝_ﬂêÂ«q|âSN\Ü∂eçù_Æ:8ŸŸÒ≈A·ˇÛ…Ø•˘mÁkÛ¨yÔ–K§Ö’°h)).èEºaJ~Ÿ‚†™∑ü„lEvÚH2Á…è%„ÑÄπì¥§˜SÿC∆ŸîÍì°h©ΩÀnπC]æ‰ﬂ›Á`Æ’ˆœ»™UŒöÎÚﬁ^ˆWˇˇ|‡2¡˘o80•≈ÂM hå¬®ÏœvIpå¥b<ær.2ﬁ|√|Â∆mÎ≠ãõﬁ≠ü⁄Yoòz#Ôa‚îù∫5ãƒ7—x˚«g5ﬂıR
+c÷∫h∑c≠:6!4 "yQç«d_÷yT¯ÁtDè˛ÑTù«yÀ	/Åx/Æﬁ€N·¨¸≈øò>2AH@W‚z˚ˆÓå∆˘:∫ÀÁEãÜ/áπì]3ÏøQßŸËêﬂœﬁTq√mÿ∆ZŸ¨[3KùCƒ=/Á7‡pãÀæeƒÜu”jÀûaÓWu<†◊d⁄¿∏Áo”lﬁΩïwÊ≥SÉ«g3[4ﬂ‰eè◊¬a(ÒË¢%é»Øé‰ï¸72¬	ÈâDù‰Œ=%Æ‡‰Xú`áhÁÈÖ†ƒïo…H>◊8Œ¬∂ÚQÜ·„≥J\˘ÃIú«ó”]ùˆÂ|ñá˙◊31Ü=@ÕC£∑≈Z‘ˇÒ‡∏J˝”®8¸Kö\ßÌQDñæ‡ôkÙDµy1û)§£*q„ÖÁ˙¥Óó„nàÛ!h¥(h l≈x˙$Ô¸Wˇ®1¡ˇ{üΩÅTûã1VﬁòÎ∂ﬂ£ç’s `6∫⁄˘»˝W∑+=]O€riá£Ú9î∏
+%ÆW°ƒU(qaΩ¿y™±ìD\ÿ—‡SPÃWçù<‚vƒ(qï∏
+%ÓëÃ˙Ç—¿ÆƒMaßÌpÆ7yƒùÆƒ’P‚*qï∏J\%.[Ô“LTË(‘qò÷Ù£¿LpYôE¬N˘€›•Ô◊∏¸Ò‡
+ê	ÜÅ±`™69. GKä{=Ëm¿©B]áyG/M®”ÅBX!ÒVæc¢Ã:*hd@Ëg‚Ô7á‘˘(J˜€	, ?Ä †¥Ä%†´%q√S#‘}G¯º≥âg]!‘âù∏¥É…‡(	q„qø^–Gâ{?ÿVÅ"É2K@‹X>õAùNπF`7)Æ4Pz$ãª\:	e{Çπ:Âoà£∏À¬\/îÂ'G{Bu$â˚æâÎéÍl„$Ó;Æyh)œbwIq%ñB,®Po`"äÀ¿Vä3·‚*qá
+ıf'∞∏∑uÜÜWâ€E®∑6Å≈˝ùPgÇ7∞ êzy	,Ó9Bùó"ã´ƒ›RØtJPq‚3&∫∏$Ä∏õÖ∫]¬àª&é‚v=Ã‚+#nk»ü%X∑úØÛy}»Á_'±∏Ñ∫Ωdƒ›Ú√Ó8O®∫öòPÌ	˘‹ó‡‚>#î9ﬂÇ∏ŸB›Àdƒ˝<‰áÍ8ãõ.‘õ•Sf]®Î/¡≈'îπ⁄Ç∏u»àªX¯EüxàÎ®„ƒ°SÓBôkX‹;DßåqoÍæ,#Ó√¬/ƒI‹:!¿Œ:Â∆Âñ$∞∏N°ÃãV‚÷Çã≥gU‹@u»/⁄¿#1W‹ù0¥u˙î?NòtqΩâ†cä€¯C 4Äﬁ◊;Q|ÿ"·o¨6”‚jøú
+H‡m∂ón√¡xöDcy¥kç A:	^ª 	,≤ò2 lŸ`à÷•èÇyÒ◊`©OkÌzß÷ˆÀ¿~pëP˜Bù‰ÅB0åô⁄u∆Ä†PO‹ìÑâï5ñ$ØÅ"4ÏI`ÉÃı„ ÓÖ¬r3cuÍ?%
+l!’dÜƒEÍ‹–17îú∆§N`öƒﬂYx8≈e`WÇΩVÔMª˜YŒj1∏ëG¿õ`+®`¯∑6ªû°uÁÅ£¬<ºL÷∫ùı‡{P¸¿>–∫®¡‚€jA‰>⁄§p>ÿ¢›o!ÿ÷±P‡ymÊz>8 ‡ã2=Ñ,3K,°Œ ΩÕD6ÿ*¡∞
+Ã“⁄Í'aÍü¨k3µÁ*’ﬂ•ıbÀ¡\0Fj˜_UVÖjﬁö    IENDÆB`Ç====================
+
+GET //cgi-bin/php HTTP/1.1
+--------------------
+HTTP/1.1 404 Not Found
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Content-Length: <...>
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL /cgi-bin/php was not found on this server.</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+GET //cgi-bin/php5 HTTP/1.1
+--------------------
+HTTP/1.1 404 Not Found
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Content-Length: <...>
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL /cgi-bin/php5 was not found on this server.</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+GET //cgi-bin/php-cgi HTTP/1.1
+--------------------
+HTTP/1.1 404 Not Found
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Content-Length: <...>
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL /cgi-bin/php-cgi was not found on this server.</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+GET //cgi-bin/php.cgi HTTP/1.1
+--------------------
+HTTP/1.1 404 Not Found
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Content-Length: <...>
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL /cgi-bin/php.cgi was not found on this server.</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+GET //cgi-bin/php4 HTTP/1.1
+--------------------
+HTTP/1.1 404 Not Found
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Content-Length: <...>
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL /cgi-bin/php4 was not found on this server.</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+GET ///cgi-bin/php4 HTTP/1.1
+--------------------
+HTTP/1.1 404 Not Found
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Content-Length: <...>
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL /cgi-bin/php4 was not found on this server.</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+GET //cgi-bin//php4 HTTP/1.1
+--------------------
+HTTP/1.1 404 Not Found
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Content-Length: <...>
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL /cgi-bin//php4 was not found on this server.</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+GET /not-existed HTTP/1.1
+--------------------
+HTTP/1.1 404 Not Found
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Content-Length: <...>
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL /not-existed was not found on this server.</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+GET /end-with-slash/ HTTP/1.1
+--------------------
+HTTP/1.1 404 Not Found
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Content-Length: <...>
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL /end-with-slash/ was not found on this server.</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+HEAD / HTTP/1.1
+--------------------
+HTTP/1.1 200 OK
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Last-Modified: <GMT>
+ETag: "<ETAG>"
+Accept-Ranges: bytes
+Content-Length: <...>
+Vary: Accept-Encoding
+Content-Type: text/html
+
+====================
+
+HEAD /index.html HTTP/1.1
+--------------------
+HTTP/1.1 200 OK
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Last-Modified: <GMT>
+ETag: "<ETAG>"
+Accept-Ranges: bytes
+Content-Length: <...>
+Vary: Accept-Encoding
+Content-Type: text/html
+
+====================
+
+HEAD /icons/ubuntu-logo.png HTTP/1.1
+--------------------
+HTTP/1.1 200 OK
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Last-Modified: <GMT>
+ETag: "<ETAG>"
+Accept-Ranges: bytes
+Content-Length: <...>
+Content-Type: image/png
+
+====================
+
+HEAD /not-existed HTTP/1.1
+--------------------
+HTTP/1.1 404 Not Found
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Content-Type: text/html; charset=iso-8859-1
+
+====================
+
+POST / HTTP/1.1
+--------------------
+HTTP/1.1 200 OK
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Last-Modified: <GMT>
+ETag: "<ETAG>"
+Accept-Ranges: bytes
+Content-Length: <...>
+Vary: Accept-Encoding
+Content-Type: text/html
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <!--
+    Modified from the Debian original for Ubuntu
+    Last updated: 2014-03-19
+    See: https://launchpad.net/bugs/1288690
+  -->
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Apache2 Ubuntu Default Page: It works</title>
+    <style type="text/css" media="screen">
+  * {
+    margin: 0px 0px 0px 0px;
+    padding: 0px 0px 0px 0px;
+  }
+
+  body, html {
+    padding: 3px 3px 3px 3px;
+
+    background-color: #D8DBE2;
+
+    font-family: Verdana, sans-serif;
+    font-size: 11pt;
+    text-align: center;
+  }
+
+  div.main_page {
+    position: relative;
+    display: table;
+
+    width: 800px;
+
+    margin-bottom: 3px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0px 0px 0px 0px;
+
+    border-width: 2px;
+    border-color: #212738;
+    border-style: solid;
+
+    background-color: #FFFFFF;
+
+    text-align: center;
+  }
+
+  div.page_header {
+    height: 99px;
+    width: 100%;
+
+    background-color: #F5F6F7;
+  }
+
+  div.page_header span {
+    margin: 15px 0px 0px 50px;
+
+    font-size: 180%;
+    font-weight: bold;
+  }
+
+  div.page_header img {
+    margin: 3px 0px 0px 40px;
+
+    border: 0px 0px 0px;
+  }
+
+  div.table_of_contents {
+    clear: left;
+
+    min-width: 200px;
+
+    margin: 3px 3px 3px 3px;
+
+    background-color: #FFFFFF;
+
+    text-align: left;
+  }
+
+  div.table_of_contents_item {
+    clear: left;
+
+    width: 100%;
+
+    margin: 4px 0px 0px 0px;
+
+    background-color: #FFFFFF;
+
+    color: #000000;
+    text-align: left;
+  }
+
+  div.table_of_contents_item a {
+    margin: 6px 0px 0px 6px;
+  }
+
+  div.content_section {
+    margin: 3px 3px 3px 3px;
+
+    background-color: #FFFFFF;
+
+    text-align: left;
+  }
+
+  div.content_section_text {
+    padding: 4px 8px 4px 8px;
+
+    color: #000000;
+    font-size: 100%;
+  }
+
+  div.content_section_text pre {
+    margin: 8px 0px 8px 0px;
+    padding: 8px 8px 8px 8px;
+
+    border-width: 1px;
+    border-style: dotted;
+    border-color: #000000;
+
+    background-color: #F5F6F7;
+
+    font-style: italic;
+  }
+
+  div.content_section_text p {
+    margin-bottom: 6px;
+  }
+
+  div.content_section_text ul, div.content_section_text li {
+    padding: 4px 8px 4px 16px;
+  }
+
+  div.section_header {
+    padding: 3px 6px 3px 6px;
+
+    background-color: #8E9CB2;
+
+    color: #FFFFFF;
+    font-weight: bold;
+    font-size: 112%;
+    text-align: center;
+  }
+
+  div.section_header_red {
+    background-color: #CD214F;
+  }
+
+  div.section_header_grey {
+    background-color: #9F9386;
+  }
+
+  .floating_element {
+    position: relative;
+    float: left;
+  }
+
+  div.table_of_contents_item a,
+  div.content_section_text a {
+    text-decoration: none;
+    font-weight: bold;
+  }
+
+  div.table_of_contents_item a:link,
+  div.table_of_contents_item a:visited,
+  div.table_of_contents_item a:active {
+    color: #000000;
+  }
+
+  div.table_of_contents_item a:hover {
+    background-color: #000000;
+
+    color: #FFFFFF;
+  }
+
+  div.content_section_text a:link,
+  div.content_section_text a:visited,
+   div.content_section_text a:active {
+    background-color: #DCDFE6;
+
+    color: #000000;
+  }
+
+  div.content_section_text a:hover {
+    background-color: #000000;
+
+    color: #DCDFE6;
+  }
+
+  div.validator {
+  }
+    </style>
+  </head>
+  <body>
+    <div class="main_page">
+      <div class="page_header floating_element">
+        <img src="/icons/ubuntu-logo.png" alt="Ubuntu Logo" class="floating_element"/>
+        <span class="floating_element">
+          Apache2 Ubuntu Default Page
+        </span>
+      </div>
+<!--      <div class="table_of_contents floating_element">
+        <div class="section_header section_header_grey">
+          TABLE OF CONTENTS
+        </div>
+        <div class="table_of_contents_item floating_element">
+          <a href="#about">About</a>
+        </div>
+        <div class="table_of_contents_item floating_element">
+          <a href="#changes">Changes</a>
+        </div>
+        <div class="table_of_contents_item floating_element">
+          <a href="#scope">Scope</a>
+        </div>
+        <div class="table_of_contents_item floating_element">
+          <a href="#files">Config files</a>
+        </div>
+      </div>
+-->
+      <div class="content_section floating_element">
+
+
+        <div class="section_header section_header_red">
+          <div id="about"></div>
+          It works!
+        </div>
+        <div class="content_section_text">
+          <p>
+                This is the default welcome page used to test the correct 
+                operation of the Apache2 server after installation on Ubuntu systems.
+                It is based on the equivalent page on Debian, from which the Ubuntu Apache
+                packaging is derived.
+                If you can read this page, it means that the Apache HTTP server installed at
+                this site is working properly. You should <b>replace this file</b> (located at
+                <tt>/var/www/html/index.html</tt>) before continuing to operate your HTTP server.
+          </p>
+
+
+          <p>
+                If you are a normal user of this web site and don't know what this page is
+                about, this probably means that the site is currently unavailable due to
+                maintenance.
+                If the problem persists, please contact the site's administrator.
+          </p>
+
+        </div>
+        <div class="section_header">
+          <div id="changes"></div>
+                Configuration Overview
+        </div>
+        <div class="content_section_text">
+          <p>
+                Ubuntu's Apache2 default configuration is different from the
+                upstream default configuration, and split into several files optimized for
+                interaction with Ubuntu tools. The configuration system is
+                <b>fully documented in
+                /usr/share/doc/apache2/README.Debian.gz</b>. Refer to this for the full
+                documentation. Documentation for the web server itself can be
+                found by accessing the <a href="/manual">manual</a> if the <tt>apache2-doc</tt>
+                package was installed on this server.
+
+          </p>
+          <p>
+                The configuration layout for an Apache2 web server installation on Ubuntu systems is as follows:
+          </p>
+          <pre>
+/etc/apache2/
+|-- apache2.conf
+|       `--  ports.conf
+|-- mods-enabled
+|       |-- *.load
+|       `-- *.conf
+|-- conf-enabled
+|       `-- *.conf
+|-- sites-enabled
+|       `-- *.conf
+          </pre>
+          <ul>
+                        <li>
+                           <tt>apache2.conf</tt> is the main configuration
+                           file. It puts the pieces together by including all remaining configuration
+                           files when starting up the web server.
+                        </li>
+
+                        <li>
+                           <tt>ports.conf</tt> is always included from the
+                           main configuration file. It is used to determine the listening ports for
+                           incoming connections, and this file can be customized anytime.
+                        </li>
+
+                        <li>
+                           Configuration files in the <tt>mods-enabled/</tt>,
+                           <tt>conf-enabled/</tt> and <tt>sites-enabled/</tt> directories contain
+                           particular configuration snippets which manage modules, global configuration
+                           fragments, or virtual host configurations, respectively.
+                        </li>
+
+                        <li>
+                           They are activated by symlinking available
+                           configuration files from their respective
+                           *-available/ counterparts. These should be managed
+                           by using our helpers
+                           <tt>
+                                <a href="http://manpages.debian.org/cgi-bin/man.cgi?query=a2enmod">a2enmod</a>,
+                                <a href="http://manpages.debian.org/cgi-bin/man.cgi?query=a2dismod">a2dismod</a>,
+                           </tt>
+                           <tt>
+                                <a href="http://manpages.debian.org/cgi-bin/man.cgi?query=a2ensite">a2ensite</a>,
+                                <a href="http://manpages.debian.org/cgi-bin/man.cgi?query=a2dissite">a2dissite</a>,
+                            </tt>
+                                and
+                           <tt>
+                                <a href="http://manpages.debian.org/cgi-bin/man.cgi?query=a2enconf">a2enconf</a>,
+                                <a href="http://manpages.debian.org/cgi-bin/man.cgi?query=a2disconf">a2disconf</a>
+                           </tt>. See their respective man pages for detailed information.
+                        </li>
+
+                        <li>
+                           The binary is called apache2. Due to the use of
+                           environment variables, in the default configuration, apache2 needs to be
+                           started/stopped with <tt>/etc/init.d/apache2</tt> or <tt>apache2ctl</tt>.
+                           <b>Calling <tt>/usr/bin/apache2</tt> directly will not work</b> with the
+                           default configuration.
+                        </li>
+          </ul>
+        </div>
+
+        <div class="section_header">
+            <div id="docroot"></div>
+                Document Roots
+        </div>
+
+        <div class="content_section_text">
+            <p>
+                By default, Ubuntu does not allow access through the web browser to
+                <em>any</em> file apart of those located in <tt>/var/www</tt>,
+                <a href="http://httpd.apache.org/docs/2.4/mod/mod_userdir.html">public_html</a>
+                directories (when enabled) and <tt>/usr/share</tt> (for web
+                applications). If your site is using a web document root
+                located elsewhere (such as in <tt>/srv</tt>) you may need to whitelist your
+                document root directory in <tt>/etc/apache2/apache2.conf</tt>.
+            </p>
+            <p>
+                The default Ubuntu document root is <tt>/var/www/html</tt>. You
+                can make your own virtual hosts under /var/www. This is different
+                to previous releases which provides better security out of the box.
+            </p>
+        </div>
+
+        <div class="section_header">
+          <div id="bugs"></div>
+                Reporting Problems
+        </div>
+        <div class="content_section_text">
+          <p>
+                Please use the <tt>ubuntu-bug</tt> tool to report bugs in the
+                Apache2 package with Ubuntu. However, check <a
+                href="https://bugs.launchpad.net/ubuntu/+source/apache2">existing
+                bug reports</a> before reporting a new bug.
+          </p>
+          <p>
+                Please report bugs specific to modules (such as PHP and others)
+                to respective packages, not to the web server itself.
+          </p>
+        </div>
+
+
+
+
+      </div>
+    </div>
+    <div class="validator">
+    <p>
+      <a href="http://validator.w3.org/check?uri=referer"><img src="http://www.w3.org/Icons/valid-xhtml10" alt="Valid XHTML 1.0 Transitional" height="31" width="88" /></a>
+    </p>
+    </div>
+  </body>
+</html>
+
+====================
+
+POST /index.html HTTP/1.1
+--------------------
+HTTP/1.1 200 OK
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Last-Modified: <GMT>
+ETag: "<ETAG>"
+Accept-Ranges: bytes
+Content-Length: <...>
+Vary: Accept-Encoding
+Content-Type: text/html
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <!--
+    Modified from the Debian original for Ubuntu
+    Last updated: 2014-03-19
+    See: https://launchpad.net/bugs/1288690
+  -->
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Apache2 Ubuntu Default Page: It works</title>
+    <style type="text/css" media="screen">
+  * {
+    margin: 0px 0px 0px 0px;
+    padding: 0px 0px 0px 0px;
+  }
+
+  body, html {
+    padding: 3px 3px 3px 3px;
+
+    background-color: #D8DBE2;
+
+    font-family: Verdana, sans-serif;
+    font-size: 11pt;
+    text-align: center;
+  }
+
+  div.main_page {
+    position: relative;
+    display: table;
+
+    width: 800px;
+
+    margin-bottom: 3px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0px 0px 0px 0px;
+
+    border-width: 2px;
+    border-color: #212738;
+    border-style: solid;
+
+    background-color: #FFFFFF;
+
+    text-align: center;
+  }
+
+  div.page_header {
+    height: 99px;
+    width: 100%;
+
+    background-color: #F5F6F7;
+  }
+
+  div.page_header span {
+    margin: 15px 0px 0px 50px;
+
+    font-size: 180%;
+    font-weight: bold;
+  }
+
+  div.page_header img {
+    margin: 3px 0px 0px 40px;
+
+    border: 0px 0px 0px;
+  }
+
+  div.table_of_contents {
+    clear: left;
+
+    min-width: 200px;
+
+    margin: 3px 3px 3px 3px;
+
+    background-color: #FFFFFF;
+
+    text-align: left;
+  }
+
+  div.table_of_contents_item {
+    clear: left;
+
+    width: 100%;
+
+    margin: 4px 0px 0px 0px;
+
+    background-color: #FFFFFF;
+
+    color: #000000;
+    text-align: left;
+  }
+
+  div.table_of_contents_item a {
+    margin: 6px 0px 0px 6px;
+  }
+
+  div.content_section {
+    margin: 3px 3px 3px 3px;
+
+    background-color: #FFFFFF;
+
+    text-align: left;
+  }
+
+  div.content_section_text {
+    padding: 4px 8px 4px 8px;
+
+    color: #000000;
+    font-size: 100%;
+  }
+
+  div.content_section_text pre {
+    margin: 8px 0px 8px 0px;
+    padding: 8px 8px 8px 8px;
+
+    border-width: 1px;
+    border-style: dotted;
+    border-color: #000000;
+
+    background-color: #F5F6F7;
+
+    font-style: italic;
+  }
+
+  div.content_section_text p {
+    margin-bottom: 6px;
+  }
+
+  div.content_section_text ul, div.content_section_text li {
+    padding: 4px 8px 4px 16px;
+  }
+
+  div.section_header {
+    padding: 3px 6px 3px 6px;
+
+    background-color: #8E9CB2;
+
+    color: #FFFFFF;
+    font-weight: bold;
+    font-size: 112%;
+    text-align: center;
+  }
+
+  div.section_header_red {
+    background-color: #CD214F;
+  }
+
+  div.section_header_grey {
+    background-color: #9F9386;
+  }
+
+  .floating_element {
+    position: relative;
+    float: left;
+  }
+
+  div.table_of_contents_item a,
+  div.content_section_text a {
+    text-decoration: none;
+    font-weight: bold;
+  }
+
+  div.table_of_contents_item a:link,
+  div.table_of_contents_item a:visited,
+  div.table_of_contents_item a:active {
+    color: #000000;
+  }
+
+  div.table_of_contents_item a:hover {
+    background-color: #000000;
+
+    color: #FFFFFF;
+  }
+
+  div.content_section_text a:link,
+  div.content_section_text a:visited,
+   div.content_section_text a:active {
+    background-color: #DCDFE6;
+
+    color: #000000;
+  }
+
+  div.content_section_text a:hover {
+    background-color: #000000;
+
+    color: #DCDFE6;
+  }
+
+  div.validator {
+  }
+    </style>
+  </head>
+  <body>
+    <div class="main_page">
+      <div class="page_header floating_element">
+        <img src="/icons/ubuntu-logo.png" alt="Ubuntu Logo" class="floating_element"/>
+        <span class="floating_element">
+          Apache2 Ubuntu Default Page
+        </span>
+      </div>
+<!--      <div class="table_of_contents floating_element">
+        <div class="section_header section_header_grey">
+          TABLE OF CONTENTS
+        </div>
+        <div class="table_of_contents_item floating_element">
+          <a href="#about">About</a>
+        </div>
+        <div class="table_of_contents_item floating_element">
+          <a href="#changes">Changes</a>
+        </div>
+        <div class="table_of_contents_item floating_element">
+          <a href="#scope">Scope</a>
+        </div>
+        <div class="table_of_contents_item floating_element">
+          <a href="#files">Config files</a>
+        </div>
+      </div>
+-->
+      <div class="content_section floating_element">
+
+
+        <div class="section_header section_header_red">
+          <div id="about"></div>
+          It works!
+        </div>
+        <div class="content_section_text">
+          <p>
+                This is the default welcome page used to test the correct 
+                operation of the Apache2 server after installation on Ubuntu systems.
+                It is based on the equivalent page on Debian, from which the Ubuntu Apache
+                packaging is derived.
+                If you can read this page, it means that the Apache HTTP server installed at
+                this site is working properly. You should <b>replace this file</b> (located at
+                <tt>/var/www/html/index.html</tt>) before continuing to operate your HTTP server.
+          </p>
+
+
+          <p>
+                If you are a normal user of this web site and don't know what this page is
+                about, this probably means that the site is currently unavailable due to
+                maintenance.
+                If the problem persists, please contact the site's administrator.
+          </p>
+
+        </div>
+        <div class="section_header">
+          <div id="changes"></div>
+                Configuration Overview
+        </div>
+        <div class="content_section_text">
+          <p>
+                Ubuntu's Apache2 default configuration is different from the
+                upstream default configuration, and split into several files optimized for
+                interaction with Ubuntu tools. The configuration system is
+                <b>fully documented in
+                /usr/share/doc/apache2/README.Debian.gz</b>. Refer to this for the full
+                documentation. Documentation for the web server itself can be
+                found by accessing the <a href="/manual">manual</a> if the <tt>apache2-doc</tt>
+                package was installed on this server.
+
+          </p>
+          <p>
+                The configuration layout for an Apache2 web server installation on Ubuntu systems is as follows:
+          </p>
+          <pre>
+/etc/apache2/
+|-- apache2.conf
+|       `--  ports.conf
+|-- mods-enabled
+|       |-- *.load
+|       `-- *.conf
+|-- conf-enabled
+|       `-- *.conf
+|-- sites-enabled
+|       `-- *.conf
+          </pre>
+          <ul>
+                        <li>
+                           <tt>apache2.conf</tt> is the main configuration
+                           file. It puts the pieces together by including all remaining configuration
+                           files when starting up the web server.
+                        </li>
+
+                        <li>
+                           <tt>ports.conf</tt> is always included from the
+                           main configuration file. It is used to determine the listening ports for
+                           incoming connections, and this file can be customized anytime.
+                        </li>
+
+                        <li>
+                           Configuration files in the <tt>mods-enabled/</tt>,
+                           <tt>conf-enabled/</tt> and <tt>sites-enabled/</tt> directories contain
+                           particular configuration snippets which manage modules, global configuration
+                           fragments, or virtual host configurations, respectively.
+                        </li>
+
+                        <li>
+                           They are activated by symlinking available
+                           configuration files from their respective
+                           *-available/ counterparts. These should be managed
+                           by using our helpers
+                           <tt>
+                                <a href="http://manpages.debian.org/cgi-bin/man.cgi?query=a2enmod">a2enmod</a>,
+                                <a href="http://manpages.debian.org/cgi-bin/man.cgi?query=a2dismod">a2dismod</a>,
+                           </tt>
+                           <tt>
+                                <a href="http://manpages.debian.org/cgi-bin/man.cgi?query=a2ensite">a2ensite</a>,
+                                <a href="http://manpages.debian.org/cgi-bin/man.cgi?query=a2dissite">a2dissite</a>,
+                            </tt>
+                                and
+                           <tt>
+                                <a href="http://manpages.debian.org/cgi-bin/man.cgi?query=a2enconf">a2enconf</a>,
+                                <a href="http://manpages.debian.org/cgi-bin/man.cgi?query=a2disconf">a2disconf</a>
+                           </tt>. See their respective man pages for detailed information.
+                        </li>
+
+                        <li>
+                           The binary is called apache2. Due to the use of
+                           environment variables, in the default configuration, apache2 needs to be
+                           started/stopped with <tt>/etc/init.d/apache2</tt> or <tt>apache2ctl</tt>.
+                           <b>Calling <tt>/usr/bin/apache2</tt> directly will not work</b> with the
+                           default configuration.
+                        </li>
+          </ul>
+        </div>
+
+        <div class="section_header">
+            <div id="docroot"></div>
+                Document Roots
+        </div>
+
+        <div class="content_section_text">
+            <p>
+                By default, Ubuntu does not allow access through the web browser to
+                <em>any</em> file apart of those located in <tt>/var/www</tt>,
+                <a href="http://httpd.apache.org/docs/2.4/mod/mod_userdir.html">public_html</a>
+                directories (when enabled) and <tt>/usr/share</tt> (for web
+                applications). If your site is using a web document root
+                located elsewhere (such as in <tt>/srv</tt>) you may need to whitelist your
+                document root directory in <tt>/etc/apache2/apache2.conf</tt>.
+            </p>
+            <p>
+                The default Ubuntu document root is <tt>/var/www/html</tt>. You
+                can make your own virtual hosts under /var/www. This is different
+                to previous releases which provides better security out of the box.
+            </p>
+        </div>
+
+        <div class="section_header">
+          <div id="bugs"></div>
+                Reporting Problems
+        </div>
+        <div class="content_section_text">
+          <p>
+                Please use the <tt>ubuntu-bug</tt> tool to report bugs in the
+                Apache2 package with Ubuntu. However, check <a
+                href="https://bugs.launchpad.net/ubuntu/+source/apache2">existing
+                bug reports</a> before reporting a new bug.
+          </p>
+          <p>
+                Please report bugs specific to modules (such as PHP and others)
+                to respective packages, not to the web server itself.
+          </p>
+        </div>
+
+
+
+
+      </div>
+    </div>
+    <div class="validator">
+    <p>
+      <a href="http://validator.w3.org/check?uri=referer"><img src="http://www.w3.org/Icons/valid-xhtml10" alt="Valid XHTML 1.0 Transitional" height="31" width="88" /></a>
+    </p>
+    </div>
+  </body>
+</html>
+
+====================
+
+POST /icons/ubuntu-logo.png HTTP/1.1
+--------------------
+HTTP/1.1 200 OK
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Last-Modified: <GMT>
+ETag: "<ETAG>"
+Accept-Ranges: bytes
+Content-Length: <...>
+Content-Type: image/png
+
+âPNG
+
+   IHDR   w   c   °~ü  IDATxÌù{îS’∆¡bE¨ä$©b}?ZµV—V+>ò$#ÉZDú¢@TD¨PT(*åTXµ(* (-•*‚Qúô$Ã{ò˜Éô…<≤˚ÌÙ.»:Ω7π˜êêêúΩ÷ÔèôúsÁﬁÛÂû«ﬁ˚úÈ@DI«û˛∂Sr]∂aπ.«§<ß˝∞<œeﬂÚÅÏﬂz\ˆ’yn€πn€3ßmtûÀvY2µC“<à7›v.ƒô†â $IAÆ€Òw~›'};tR‚∆âºN:bLª≈ÄJèÀ1?«ŸÌ%ÓabÁ†?E√èE√WH&C;wﬂ9ÓnΩî∏1∑€„Á—˝zπ—„@Sû€ûÌΩπkW%n…qßùÅ∆›(®ÃuŸoW‚FÅ\ß˝ZnP@âœ≤π7Q‚JÇ.¯~4d+†DÀ©;˚:~¶ƒµ /C0æÕéóh˜^EEè Ô≠gF.Ôv|ÁKÔ~∫◊Ïƒ…ÂXQÏG˛ºÔH3
+¥∂P›Í∑»”øgÅÌ•Xöù™ƒç fƒS‚!Ïﬁ·ø¶∂⁄J“≥Üı+"_√iﬂVúŸ≥ã◊ è€q´Ëa:\‘º?õ-†Ç˚Æ6sù˜î∏:xúi°q ≈Óé√Ÿæ£M]á}⁄J‹ˆdˆ¥£a|—À˚á”©l˙=Tı÷¥‡∏πÛ∫†Äç[?°⁄Õß ◊&SÈ‘·¥wË≈¡ÚMªæ¶pV6„~≥;ÄYÙ %ÆF‘f∆›©x‚ ™ˇd¸Md∆XTÆ[˘∆T„^π≠ï|∑ùm~Ï≤Íul ãõóa?;ZkŸΩw^Qõ…™ÒxÍΩÂ4jŒ›AzV1g¢ƒ˝ÿ&(q›∂•á‘˝¸Uø˜"ñ#i¡ü´ﬂùIV≠ÈªØ noÓ É]6œö≠~Ú{vRYˆ}≤˜VÛ√ı«€RV\oÜ≠œ°õ?ÚJj)»!∂ÚY„åµm5d’ö‹Fæ¡ÁêÊòà÷ÿˇB äãµ·ziá√Ëk©}i|€ºÉŒ
+~V˛Úxí1Ó“˜o\C˚f>D˚^Ï¥/ç,~Ø´GÔîó”Z§«÷!ø§÷äb≠vÂÎ¡œ=7ˆ†ñ¬‹`ôöÊQŸ¥ëT4ŒtTèøÖ*Ê=Iı/•ñ¸°h{≈T˙Ã]á"Û)(Æ„Y)g˝Ä^Üjo£Ç˚˚r9û›öÍ^∏éª‰otª&e≈ÕM9q €%”XUgÑ}À‡lêZBUÃû@Ìçıdd~ﬂ‹#H	Ã©:)#.˘ÁHM†Ü_j∏‘a'YˆΩá∂î∫„W‘ZV@FV˛ cr°Aß„ÒîÀüÒ2ç‘∞a%ºQ—â=‰‚/ä~Ø_W≈K/ôÎnJq·˝ j˘n?78¶ÍY˝ßÔG’œ\ÒÍ∆>ÊôceÆ9Ì''ª∏Zº÷ﬁbπ¡—%
+&.Å¢ ˛ç8<æîÎö›ˆÃ§77Ω{öL„4~˚9ÈYÕÚπ1â?zì·§M6X˛Ê{ì^\-¥GFîNJüØ$øwW0 PÙpf˜%ìÎÆIF˝>6˘Q˝O:IÙÎ^ô7˜Ø…ˇÊ:.KÛ@‡Ä„æjA6ÖZKâ/¶1^˛íÈ¬à÷ØÁ¥ΩûÙ‚¬±póﬁ√≥Á»»ÿâü?‚ä`‘'‘õç©∏ÏÜ‘3Ù(2ôí´ìø[v;&ÍæµÀÁê`∫a∑∂ä“åÉ1ó√ÄÏôb?6áÛG˛ñÚÔæú|YÁÀÑ w$ˇõÎtL◊{xNBg÷„rÕª∑àø;R%ø∏ÿƒH„Xƒ4vˇ¡œ+◊=J¿ok›öÖTªÍÕ`P¢f≈´T≥ÏéIåπˆçI/.Ô≥—{xtuÜ©•-Öy‰πÈÁT8Ê›ôXQµo§gµˇ|C‚zéeI/Æ◊mø∆®ä∆eàæ›‡íà«:^ö4}øëB≠Ω°FLè*F—",_ã7u'∑‹œqV§IL…SCÇ.¿‚«ë'3(^∞[‘≥“ßá«DXvwÚ2L«p_∑ L®Kzqy„îLc◊ºÑÙlˇ¶µ1ó«U=c«b ë!€ù©r⁄´≠6N…§€¡Ìbıó—p¸Ø⁄GzÜ	ñ‘5y8Jë®ê˝]´ç√3Â∂Ír“≥÷“|Œ^åé∏Ó4j‹æÅå>gôÎ÷Á∏œ<&%ƒ≈√fIÖ‚Ê=EF∆ÆBL∫Ñ:—ÕÙh⁄πIÚ∫∂%)œ’N¢ÒÀ8Û[Ú˜êë5~Û©ÙÃ=CÂÎSåÊÈ<*èÀvGjÂPπlIÖ‚&§pÜ=@ñØâısƒç`ukÀˆ≠Œ∫•î∏òT›ÌÆ≥µºà<7ü,Sˆ‹(*y2À∞´ÊrúR√^'1√C¥Êúo\WÇèS.˚—õ·ËÅoñò]è¢q~2>„`˙ÅD∫ˆ˙jéÒõ_Ù,™_øúw)ÑÕW47r˝_ﬂêÂ«q|âSN\Ü∂eçù_Æ:8ŸŸÒ≈A·ˇÛ…Ø•˘mÁkÛ¨yÔ–K§Ö’°h)).èEºaJ~Ÿ‚†™∑ü„lEvÚH2Á…è%„ÑÄπì¥§˜SÿC∆ŸîÍì°h©ΩÀnπC]æ‰ﬂ›Á`Æ’ˆœ»™UŒöÎÚﬁ^ˆWˇˇ|‡2¡˘o80•≈ÂM hå¬®ÏœvIpå¥b<ær.2ﬁ|√|Â∆mÎ≠ãõﬁ≠ü⁄Yoòz#Ôa‚îù∫5ãƒ7—x˚«g5ﬂıR
+c÷∫h∑c≠:6!4 "yQç«d_÷yT¯ÁtDè˛ÑTù«yÀ	/Åx/Æﬁ€N·¨¸≈øò>2AH@W‚z˚ˆÓå∆˘:∫ÀÁEãÜ/áπì]3ÏøQßŸËêﬂœﬁTq√mÿ∆ZŸ¨[3KùCƒ=/Á7‡pãÀæeƒÜu”jÀûaÓWu<†◊d⁄¿∏Áo”lﬁΩïwÊ≥SÉ«g3[4ﬂ‰eè◊¬a(ÒË¢%é»Øé‰ï¸72¬	ÈâDù‰Œ=%Æ‡‰Xú`áhÁÈÖ†ƒïo…H>◊8Œ¬∂ÚQÜ·„≥J\˘ÃIú«ó”]ùˆÂ|ñá˙◊31Ü=@ÕC£∑≈Z‘ˇÒ‡∏J˝”®8¸Kö\ßÌQDñæ‡ôkÙDµy1û)§£*q„ÖÁ˙¥Óó„nàÛ!h¥(h l≈x˙$Ô¸Wˇ®1¡ˇ{üΩÅTûã1VﬁòÎ∂ﬂ£ç’s `6∫⁄˘»˝W∑+=]O€riá£Ú9î∏
+%ÆW°ƒU(qaΩ¿y™±ìD\ÿ—‡SPÃWçù<‚vƒ(qï∏
+%ÓëÃ˙Ç—¿ÆƒMaßÌpÆ7yƒùÆƒ’P‚*qï∏J\%.[Ô“LTË(‘qò÷Ù£¿LpYôE¬N˘€›•Ô◊∏¸Ò‡
+ê	ÜÅ±`™69. GKä{=Ëm¿©B]áyG/M®”ÅBX!ÒVæc¢Ã:*hd@Ëg‚Ô7á‘˘(J˜€	, ?Ä †¥Ä%†´%q√S#‘}G¯º≥âg]!‘âù∏¥É…‡(	q„qø^–Gâ{?ÿVÅ"É2K@‹X>õAùNπF`7)Æ4Pz$ãª\:	e{Çπ:Âoà£∏À¬\/îÂ'G{Bu$â˚æâÎéÍl„$Ó;Æyh)œbwIq%ñB,®Po`"äÀ¿Vä3·‚*qá
+ıf'∞∏∑uÜÜWâ€E®∑6Å≈˝ùPgÇ7∞ êzy	,Ó9Bùó"ã´ƒ›RØtJPq‚3&∫∏$Ä∏õÖ∫]¬àª&é‚v=Ã‚+#nk»ü%X∑úØÛy}»Á_'±∏Ñ∫Ωdƒ›Ú√Ó8O®∫öòPÌ	˘‹ó‡‚>#î9ﬂÇ∏ŸB›Àdƒ˝<‰áÍ8ãõ.‘õ•Sf]®Î/¡≈'îπ⁄Ç∏u»àªX¯EüxàÎ®„ƒ°SÓBôkX‹;DßåqoÍæ,#Ó√¬/ƒI‹:!¿Œ:Â∆Âñ$∞∏N°ÃãV‚÷Çã≥gU‹@u»/⁄¿#1W‹ù0¥u˙î?NòtqΩâ†cä€¯C 4Äﬁ◊;Q|ÿ"·o¨6”‚jøú
+H‡m∂ón√¡xöDcy¥kç A:	^ª 	,≤ò2 lŸ`à÷•èÇyÒ◊`©OkÌzß÷ˆÀ¿~pëP˜Bù‰ÅB0åô⁄u∆Ä†PO‹ìÑâï5ñ$ØÅ"4ÏI`ÉÃı„ ÓÖ¬r3cuÍ?%
+l!’dÜƒEÍ‹–17îú∆§N`öƒﬂYx8≈e`WÇΩVÔMª˜YŒj1∏ëG¿õ`+®`¯∑6ªû°uÁÅ£¬<ºL÷∫ùı‡{P¸¿>–∫®¡‚€jA‰>⁄§p>ÿ¢›o!ÿ÷±P‡ymÊz>8 ‡ã2=Ñ,3K,°Œ ΩÕD6ÿ*¡∞
+Ã“⁄Í'aÍü¨k3µÁ*’ﬂ•ıbÀ¡\0Fj˜_UVÖjﬁö    IENDÆB`Ç====================
+
+POST /not-existed HTTP/1.1
+--------------------
+HTTP/1.1 404 Not Found
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Content-Length: <...>
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL /not-existed was not found on this server.</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+OPTIONS / HTTP/1.1
+--------------------
+HTTP/1.1 200 OK
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Allow: POST,OPTIONS,GET,HEAD
+Content-Length: <...>
+Content-Type: text/html
+
+====================
+
+OPTIONS /index.html HTTP/1.1
+--------------------
+HTTP/1.1 200 OK
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Allow: POST,OPTIONS,GET,HEAD
+Content-Length: <...>
+Content-Type: text/html
+
+====================
+
+OPTIONS /icons/ubuntu-logo.png HTTP/1.1
+--------------------
+HTTP/1.1 200 OK
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Allow: POST,OPTIONS,GET,HEAD
+Content-Length: <...>
+Content-Type: image/png
+
+====================
+
+OPTIONS /not-existed HTTP/1.1
+--------------------
+HTTP/1.1 200 OK
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Allow: POST,OPTIONS,GET,HEAD
+Content-Length: <...>
+
+====================
+
+PUT / HTTP/1.1
+--------------------
+HTTP/1.1 405 Method Not Allowed
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Allow: POST,OPTIONS,GET,HEAD
+Content-Length: <...>
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>405 Method Not Allowed</title>
+</head><body>
+<h1>Method Not Allowed</h1>
+<p>The requested method PUT is not allowed for the URL /index.html.</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+PUT /index.html HTTP/1.1
+--------------------
+HTTP/1.1 405 Method Not Allowed
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Allow: POST,OPTIONS,GET,HEAD
+Content-Length: <...>
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>405 Method Not Allowed</title>
+</head><body>
+<h1>Method Not Allowed</h1>
+<p>The requested method PUT is not allowed for the URL /index.html.</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+PUT /icons/ubuntu-logo.png HTTP/1.1
+--------------------
+HTTP/1.1 405 Method Not Allowed
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Allow: POST,OPTIONS,GET,HEAD
+Content-Length: <...>
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>405 Method Not Allowed</title>
+</head><body>
+<h1>Method Not Allowed</h1>
+<p>The requested method PUT is not allowed for the URL /icons/ubuntu-logo.png.</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+PUT /not-existed HTTP/1.1
+--------------------
+HTTP/1.1 405 Method Not Allowed
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Allow: POST,OPTIONS,GET,HEAD
+Content-Length: <...>
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>405 Method Not Allowed</title>
+</head><body>
+<h1>Method Not Allowed</h1>
+<p>The requested method PUT is not allowed for the URL /not-existed.</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+CONNECT / HTTP/1.1
+--------------------
+HTTP/1.1 400 Bad Request
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Content-Length: <...>
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>400 Bad Request</title>
+</head><body>
+<h1>Bad Request</h1>
+<p>Your browser sent a request that this server could not understand.<br />
+</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+CONNECT /index.html HTTP/1.1
+--------------------
+HTTP/1.1 400 Bad Request
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Content-Length: <...>
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>400 Bad Request</title>
+</head><body>
+<h1>Bad Request</h1>
+<p>Your browser sent a request that this server could not understand.<br />
+</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+CONNECT /icons/ubuntu-logo.png HTTP/1.1
+--------------------
+HTTP/1.1 400 Bad Request
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Content-Length: <...>
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>400 Bad Request</title>
+</head><body>
+<h1>Bad Request</h1>
+<p>Your browser sent a request that this server could not understand.<br />
+</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+CONNECT /not-existed HTTP/1.1
+--------------------
+HTTP/1.1 400 Bad Request
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Content-Length: <...>
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>400 Bad Request</title>
+</head><body>
+<h1>Bad Request</h1>
+<p>Your browser sent a request that this server could not understand.<br />
+</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+INVALID / HTTP/1.1
+--------------------
+HTTP/1.1 501 Not Implemented
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Allow: POST,OPTIONS,GET,HEAD
+Content-Length: <...>
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>501 Not Implemented</title>
+</head><body>
+<h1>Not Implemented</h1>
+<p>INVALID to /index.html not supported.<br />
+</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+INVALID /index.html HTTP/1.1
+--------------------
+HTTP/1.1 501 Not Implemented
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Allow: POST,OPTIONS,GET,HEAD
+Content-Length: <...>
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>501 Not Implemented</title>
+</head><body>
+<h1>Not Implemented</h1>
+<p>INVALID to /index.html not supported.<br />
+</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
+INVALID /not-existed HTTP/1.1
+--------------------
+HTTP/1.1 501 Not Implemented
+Date: <GMT>
+Server: Apache/2.4.7 (Ubuntu)
+Allow: POST,OPTIONS,GET,HEAD
+Content-Length: <...>
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>501 Not Implemented</title>
+</head><body>
+<h1>Not Implemented</h1>
+<p>INVALID to /not-existed not supported.<br />
+</p>
+<hr>
+<address>Apache/<VERSION> (Ubuntu) Server at <Host> Port <Port></address>
+</body></html>
+====================
+
