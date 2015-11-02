@@ -18,6 +18,7 @@ import (
 	"github.com/getlantern/http-proxy-extensions/mimic"
 	"github.com/getlantern/http-proxy-extensions/profilter"
 	"github.com/getlantern/http-proxy-extensions/tokenfilter"
+	"github.com/getlantern/http-proxy/commonfilter"
 	"github.com/getlantern/http-proxy/forward"
 	"github.com/getlantern/http-proxy/httpconnect"
 	"github.com/getlantern/http-proxy/utils"
@@ -47,9 +48,13 @@ func NewServer(token string, maxConns uint64, idleTimeout time.Duration, disable
 	// filters that is run from last to first.
 	// Don't forget to check Oxy and Gorilla's handlers for middleware.
 
+	// Catches any request before reaching the CONNECT middleware or
+	// the forwarder
+	commonFilter, _ := commonfilter.New(nil)
+
 	// Handles Direct Proxying
 	forwardHandler, _ := forward.New(
-		nil,
+		commonFilter,
 		forward.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 		forward.IdleTimeoutSetter(idleTimeout),
 	)
