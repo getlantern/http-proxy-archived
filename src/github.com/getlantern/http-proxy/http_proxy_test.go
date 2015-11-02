@@ -606,26 +606,26 @@ type proxy struct {
 func setupNewHTTPServer(maxConns uint64, idleTimeout time.Duration) (*Server, error) {
 	s := NewServer(validToken, maxConns, idleTimeout, false, utils.QUIET)
 	var err error
-	chListenOn := make(chan string)
+	ready := make(chan string)
 	go func(err *error) {
-		if *err = s.ServeHTTP("localhost:0", &chListenOn); err != nil {
+		if *err = s.ServeHTTP("localhost:0", &ready); err != nil {
 			fmt.Println("Unable to serve: %s", err)
 		}
 	}(&err)
-	<-chListenOn
+	<-ready
 	return s, err
 }
 
 func setupNewHTTPSServer(maxConns uint64, idleTimeout time.Duration) (*Server, error) {
 	s := NewServer(validToken, maxConns, idleTimeout, false, utils.QUIET)
 	var err error
-	chListenOn := make(chan string)
+	ready := make(chan string)
 	go func(err *error) {
-		if *err = s.ServeHTTPS("localhost:0", "key.pem", "cert.pem", &chListenOn); err != nil {
+		if *err = s.ServeHTTPS("localhost:0", "key.pem", "cert.pem", &ready); err != nil {
 			fmt.Println("Unable to serve: %s", err)
 		}
 	}(&err)
-	<-chListenOn
+	<-ready
 	if err != nil {
 		return nil, err
 	}
