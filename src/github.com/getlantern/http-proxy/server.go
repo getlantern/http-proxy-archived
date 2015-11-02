@@ -64,7 +64,10 @@ func NewServer(token string, maxConns uint64, idleTimeout time.Duration, disable
 
 	// Catches any request before reaching the CONNECT middleware or
 	// the forwarder
-	commonFilter, _ := commonfilter.New(connectHandler)
+	commonFilter, _ := commonfilter.New(
+		connectHandler,
+		commonfilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
+	)
 
 	var firstHandler http.Handler
 	if disableFilters {
