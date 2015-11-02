@@ -109,15 +109,7 @@ func TestReportStats(t *testing.T) {
 	testRoundTrip(t, httpProxy, httpTargetServer, testFn)
 	testRoundTrip(t, tlsProxy, httpTargetServer, testFn)
 	time.Sleep(100 * time.Millisecond)
-	if assert.Equal(t, 1, len(m.error)) {
-		assert.Equal(t, 2, m.error[measured.Error{
-			ID:    "1234-1234-1234-1234-1234-1234",
-			Error: "EOF",
-			Phase: "read",
-		}], "should report EOF error")
-	}
 	assert.Equal(t, 1, len(m.traffic))
-	t.Logf("%+v", m.error)
 	t.Logf("%+v", m.traffic[0])
 }
 
@@ -237,7 +229,10 @@ func TestIdleTargetConnections(t *testing.T) {
 	}
 
 	failForwardFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
-		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
+		reqStr := "GET / HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-Device-Id: %s\r\n\r\n"
+		req := fmt.Sprintf(reqStr, targetURL.Host, validToken, deviceId)
+		t.Log("\n" + req)
+		conn.Write([]byte(req))
 		var buf [400]byte
 		conn.Read(buf[:])
 
@@ -251,7 +246,9 @@ func TestIdleTargetConnections(t *testing.T) {
 	}
 
 	failConnectFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
-		conn.Write([]byte("CONNECT www.google.com HTTP/1.1\r\nHost: www.google.com\r\n\r\n"))
+		reqStr := "CONNECT www.google.com HTTP/1.1\r\nHost: www.google.com\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-Device-Id: %s\r\n\r\n"
+		req := fmt.Sprintf(reqStr, validToken, deviceId)
+		conn.Write([]byte(req))
 		var buf [400]byte
 		conn.Read(buf[:])
 
