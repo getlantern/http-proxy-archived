@@ -178,7 +178,6 @@ func (f *Forwarder) cloneRequest(req *http.Request, u *url.URL) (*http.Request, 
 		return nil, err
 	}
 
-	//f.log.Errorf("%v\n", string(buf))
 	rcloser := ioutil.NopCloser(req.Body)
 	outReq.Body = rcloser
 
@@ -191,7 +190,7 @@ func (f *Forwarder) cloneRequest(req *http.Request, u *url.URL) (*http.Request, 
 	}
 
 	// Append Trailer
-	if chunkedTrasfer && len(req.Trailer) > 0 && req.Header.Get("Content-Length") == "" {
+	if chunkedTrasfer && len(req.Trailer) > 0 {
 		outReq.Trailer = http.Header{}
 		for k, vv := range req.Trailer {
 			for _, v := range vv {
