@@ -108,9 +108,11 @@ func TestReportStats(t *testing.T) {
 
 	testRoundTrip(t, httpProxy, httpTargetServer, testFn)
 	testRoundTrip(t, tlsProxy, httpTargetServer, testFn)
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(200 * time.Millisecond)
 	assert.Equal(t, 1, len(m.traffic))
-	t.Logf("%+v", m.traffic[0])
+	if len(m.traffic) > 0 {
+		t.Logf("%+v", m.traffic[0])
+	}
 }
 
 func TestMaxConnections(t *testing.T) {
