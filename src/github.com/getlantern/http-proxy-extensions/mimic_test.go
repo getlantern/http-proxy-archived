@@ -1,4 +1,4 @@
-package main
+package mimic
 
 import (
 	"bytes"
@@ -13,12 +13,13 @@ import (
 
 	"github.com/getlantern/testify/assert"
 
-	"./utils"
+	proxy "github.com/getlantern/http-proxy"
+	"github.com/getlantern/http-proxy/utils"
 )
 
-const target = "test/apache-2.4.7-ubuntu14.04.raw"
-const template = "test/apache-2.4.7-ubuntu14.04.tpl"
-const current = "test/chained-server.raw"
+const target = "test-data/apache-2.4.7-ubuntu14.04.raw"
+const template = "test-data/apache-2.4.7-ubuntu14.04.tpl"
+const current = "test-data/chained-server.raw"
 
 type entry struct {
 	method         string
@@ -88,7 +89,7 @@ var candidates = []entry{
 }
 
 func TestMimicApache(t *testing.T) {
-	s := NewServer("anytoken", 100000, 30*time.Second, false, utils.DEBUG)
+	s := proxy.NewServer("anytoken", 100000, 30*time.Second, false, utils.DEBUG)
 	chListenOn := make(chan string)
 	go func() {
 		err := s.ServeHTTP(":0", &chListenOn)

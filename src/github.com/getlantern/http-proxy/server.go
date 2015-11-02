@@ -10,16 +10,17 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/getlantern/measured"
 	"github.com/gorilla/context"
 
-	"./devicefilter"
-	"./forward"
-	"./httpconnect"
-	"./mimic"
-	"./profilter"
-	"./tokenfilter"
-	"./utils"
+	"github.com/getlantern/measured"
+
+	"github.com/getlantern/http-proxy-extensions/devicefilter"
+	"github.com/getlantern/http-proxy-extensions/mimic"
+	"github.com/getlantern/http-proxy-extensions/profilter"
+	"github.com/getlantern/http-proxy-extensions/tokenfilter"
+	"github.com/getlantern/http-proxy/forward"
+	"github.com/getlantern/http-proxy/httpconnect"
+	"github.com/getlantern/http-proxy/utils"
 )
 
 type Server struct {

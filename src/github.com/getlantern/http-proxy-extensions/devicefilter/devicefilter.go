@@ -8,8 +8,8 @@ import (
 
 	"github.com/getlantern/measured"
 
-	"../mimic"
-	"../utils"
+	"github.com/getlantern/http-proxy-extensions/mimic"
+	"github.com/getlantern/http-proxy/utils"
 )
 
 const (

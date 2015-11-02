@@ -18,7 +18,7 @@ import (
 	"github.com/getlantern/measured"
 	"github.com/getlantern/testify/assert"
 
-	"./utils"
+	"github.com/getlantern/http-proxy/utils"
 )
 
 const (

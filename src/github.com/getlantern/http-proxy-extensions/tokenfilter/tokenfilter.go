@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"net/http/httputil"
 
-	"../mimic"
-	"../utils"
+	"github.com/getlantern/http-proxy-extensions/mimic"
+	"github.com/getlantern/http-proxy/utils"
 )
 
 const (

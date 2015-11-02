@@ -6,9 +6,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/getlantern/http-proxy/utils"
 	"github.com/getlantern/measured"
-
-	"./utils"
 )
 
 var (

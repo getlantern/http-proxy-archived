@@ -9,8 +9,7 @@ import (
 	"time"
 
 	"github.com/getlantern/idletiming"
-
-	"../utils"
+  "github.com/getlantern/http-proxy/utils"
 )
 
 type Forwarder struct {
@@ -61,7 +60,6 @@ func New(next http.Handler, setters ...optSetter) (*Forwarder, error) {
 	var dialerFunc func(string, string) (net.Conn, error)
 
 	var timeoutTransport http.RoundTripper = &http.Transport{
-		Proxy:               http.ProxyFromEnvironment,
 		Dial:                dialerFunc,
 		TLSHandshakeTimeout: 10 * time.Second,
 	}
