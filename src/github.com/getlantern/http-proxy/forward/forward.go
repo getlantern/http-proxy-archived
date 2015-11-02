@@ -2,14 +2,15 @@ package forward
 
 import (
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"time"
 
+	"github.com/getlantern/http-proxy/utils"
 	"github.com/getlantern/idletiming"
-  "github.com/getlantern/http-proxy/utils"
 )
 
 type Forwarder struct {
@@ -103,19 +104,15 @@ func New(next http.Handler, setters ...optSetter) (*Forwarder, error) {
 }
 
 func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	if f.log.IsLevel(utils.DEBUG) {
-		reqStr, _ := httputil.DumpRequest(req, true)
-		f.log.Debugf("Forward Middleware received request:\n%s", reqStr)
-	}
 
 	// Create a copy of the request suitable for our needs
-	reqClone := f.cloneRequest(req, req.URL)
-	f.rewriter.Rewrite(reqClone)
-
-	if f.log.IsLevel(utils.DEBUG) {
-		reqStr, _ := httputil.DumpRequestOut(reqClone, true)
-		f.log.Debugf("Forward Middleware forwards request:\n%s", reqStr)
+	reqClone, err := f.cloneRequest(req, req.URL)
+	if err != nil {
+		f.log.Errorf("Error forwarding to %v, error: %v", req.Host, err)
+		f.errHandler.ServeHTTP(w, req, err)
+		return
 	}
+	f.rewriter.Rewrite(reqClone)
 
 	// Forward the request and get a response
 	start := time.Now().UTC()
@@ -136,14 +133,19 @@ func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// Forward the response to the origin
 	copyHeadersForForwarding(w.Header(), response.Header)
 	w.WriteHeader(response.StatusCode)
+
 	// It became nil in a Co-Advisor test though the doc says it will never be nil
 	if response.Body != nil {
-		_, _ = io.Copy(w, response.Body)
+		_, err = io.Copy(w, response.Body)
+		if err != nil {
+			f.log.Errorf("%v\n", err)
+		}
+
 		response.Body.Close()
 	}
 }
 
-func (f *Forwarder) cloneRequest(req *http.Request, u *url.URL) *http.Request {
+func (f *Forwarder) cloneRequest(req *http.Request, u *url.URL) (*http.Request, error) {
 	outReq := new(http.Request)
 	// Beware, this will make a shallow copy. We have to copy all maps
 	*outReq = *req
@@ -167,5 +169,36 @@ func (f *Forwarder) cloneRequest(req *http.Request, u *url.URL) *http.Request {
 	// raw query is already included in RequestURI, so ignore it to avoid dupes
 	outReq.URL.RawQuery = ""
 	// Do not pass client Host header unless optsetter PassHostHeader is set.
-	return outReq
+
+	// Trailer support
+	// We are forced to do this because Go's server won't allow us to read the trailers otherwise
+	_, err := httputil.DumpRequestOut(req, true)
+	if err != nil {
+		f.log.Errorf("Error: %v", err)
+		return nil, err
+	}
+
+	//f.log.Errorf("%v\n", string(buf))
+	rcloser := ioutil.NopCloser(req.Body)
+	outReq.Body = rcloser
+
+	chunkedTrasfer := false
+	for _, enc := range req.TransferEncoding {
+		if enc == "chunked" {
+			chunkedTrasfer = true
+			break
+		}
+	}
+
+	// Append Trailer
+	if chunkedTrasfer && len(req.Trailer) > 0 && req.Header.Get("Content-Length") == "" {
+		outReq.Trailer = http.Header{}
+		for k, vv := range req.Trailer {
+			for _, v := range vv {
+				outReq.Trailer.Add(k, v)
+			}
+		}
+	}
+
+	return outReq, nil
 }
