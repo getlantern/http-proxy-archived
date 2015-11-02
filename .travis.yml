@@ -5,9 +5,7 @@ install:
 - go get golang.org/x/tools/cmd/cover
 - go get -v github.com/axw/gocov/gocov
 - go get -v github.com/mattn/goveralls
-- go get -t
 script:
-- (cd /src/github.com/getlantern/http-proxy; go test -v -covermode=count -coverprofile=/profile_tmp;tail -n +2 /profile_tmp.cov >> /profile.cov)
-- (cd /src/github.com/getlantern/http-proxy-extensions; go test -v -covermode=count -coverprofile=/profile_tmp;tail -n +2 /profile_tmp.cov >> /profile.cov)
+- GOPATH=`pwd`:$GOPATH go test -v -covermode=count -coverprofile=profile_tmp github.com/getlantern/http-proxy && tail -n +2 profile_tmp >> profile.cov && go test -v -covermode=count -coverprofile=profile_tmp github.com/getlantern/http-proxy-extensions && tail -n +2 profile_tmp >> profile.cov
 after_success:
 - GOPATH=`pwd`:$GOPATH $HOME/gopath/bin/goveralls -coverprofile=profile.cov -service=travis-ci
