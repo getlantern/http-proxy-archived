@@ -48,13 +48,9 @@ func NewServer(token string, maxConns uint64, idleTimeout time.Duration, disable
 	// filters that is run from last to first.
 	// Don't forget to check Oxy and Gorilla's handlers for middleware.
 
-	// Catches any request before reaching the CONNECT middleware or
-	// the forwarder
-	commonFilter, _ := commonfilter.New(nil)
-
 	// Handles Direct Proxying
 	forwardHandler, _ := forward.New(
-		commonFilter,
+		nil,
 		forward.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 		forward.IdleTimeoutSetter(idleTimeout),
 	)
@@ -66,13 +62,17 @@ func NewServer(token string, maxConns uint64, idleTimeout time.Duration, disable
 		httpconnect.IdleTimeoutSetter(idleTimeout),
 	)
 
+	// Catches any request before reaching the CONNECT middleware or
+	// the forwarder
+	commonFilter, _ := commonfilter.New(connectHandler)
+
 	var firstHandler http.Handler
 	if disableFilters {
-		firstHandler = connectHandler
+		firstHandler = commonFilter
 	} else {
 		// Identifies Lantern Pro users (currently NOOP)
 		lanternPro, _ := profilter.New(
-			connectHandler,
+			commonFilter,
 			profilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 		)
 		// Returns a 404 to requests without the proper token.  Removes the
