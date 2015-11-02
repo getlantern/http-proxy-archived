@@ -1,7 +1,6 @@
 package commonfilter
 
 import (
-	"fmt"
 	"net"
 	"net/http"
 	"strings"
@@ -41,7 +40,7 @@ func New(next http.Handler, setters ...optSetter) (*CommonFilter, error) {
 
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		fmt.Print(fmt.Errorf("Error enumerating local addresses: %+\n", err))
+		f.log.Errorf("Error enumerating local addresses: %v\n", err)
 	}
 	for _, a := range addrs {
 		str := a.String()
