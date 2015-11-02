@@ -122,6 +122,8 @@ func TestReportStats(t *testing.T) {
 }
 
 func TestMaxConnections(t *testing.T) {
+	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-Device-Id: %s\r\n\r\n"
+
 	limitedServer, err := setupNewHTTPServer(5, 30*time.Second)
 	if err != nil {
 		log.Println("Error starting proxy server")
@@ -130,7 +132,8 @@ func TestMaxConnections(t *testing.T) {
 
 	//limitedServer.httpServer.SetKeepAlivesEnabled(false)
 	okFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
-		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
+		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, validToken, deviceId)
+		conn.Write([]byte(req))
 		var buf [400]byte
 		_, err = conn.Read(buf[:])
 
@@ -142,7 +145,8 @@ func TestMaxConnections(t *testing.T) {
 	waitFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
 		conn.SetReadDeadline(time.Now().Add(50 * time.Millisecond))
 
-		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
+		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host, validToken, deviceId)
+		conn.Write([]byte(req))
 		var buf [400]byte
 		_, err = conn.Read(buf[:])
 
@@ -266,7 +270,7 @@ func TestIdleTargetConnections(t *testing.T) {
 	testRoundTrip(t, impatientServer, httpTargetServer, failConnectFn)
 }
 
-// No X-Lantern-Auth-Token -> 404
+// No X-Lantern-Auth-Token -> 400
 func TestConnectNoToken(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Device-Id: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 400 Bad Request\r\n"
@@ -295,7 +299,7 @@ func TestConnectNoToken(t *testing.T) {
 	testRoundTrip(t, tlsProxy, tlsTargetServer, testFn)
 }
 
-// Bad X-Lantern-Auth-Token -> 404
+// Bad X-Lantern-Auth-Token -> 400
 func TestConnectBadToken(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-Device-Id: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 400 Bad Request\r\n"
@@ -324,7 +328,7 @@ func TestConnectBadToken(t *testing.T) {
 	testRoundTrip(t, tlsProxy, tlsTargetServer, testFn)
 }
 
-// No X-Lantern-Device-Id -> 404
+// No X-Lantern-Device-Id -> 400
 func TestConnectNoDevice(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 400 Bad Request\r\n"
