@@ -144,8 +144,12 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 		})
 
 	limListener := newLimitedListener(listener, &s.numConns, s.idleTimeout)
-	mListener := measured.Listener(limListener, 30*time.Second)
-	s.listener = mListener
+	if *enableReports {
+		mListener := measured.Listener(limListener, 30*time.Second)
+		s.listener = mListener
+	} else {
+		s.listener = limListener
+	}
 
 	s.httpServer = http.Server{Handler: proxy,
 		ConnState: func(c net.Conn, state http.ConnState) {
