@@ -11,17 +11,17 @@ import (
 )
 
 var (
-	help           = flag.Bool("help", false, "Get usage help")
-	keyfile        = flag.String("key", "", "Private key file name")
-	certfile       = flag.String("cert", "", "Certificate file name")
-	https          = flag.Bool("https", false, "Use TLS for client to proxy communication")
-	addr           = flag.String("addr", ":8080", "Address to listen")
-	maxConns       = flag.Uint64("maxconns", 0, "Max number of simultaneous connections allowed connections")
-	idleClose      = flag.Uint64("idleclose", 30, "Time in seconds that an idle connection will be allowed before closing it")
-	token          = flag.String("token", "", "Lantern token")
-	disableFilters = flag.Bool("disablefilters", false, "Disable Lantern-specific filters")
-	disableReports = flag.Bool("disablereports", false, "Disable stats reporting")
-	debug          = flag.Bool("debug", false, "Produce debug output")
+	help          = flag.Bool("help", false, "Get usage help")
+	keyfile       = flag.String("key", "", "Private key file name")
+	certfile      = flag.String("cert", "", "Certificate file name")
+	https         = flag.Bool("https", false, "Use TLS for client to proxy communication")
+	addr          = flag.String("addr", ":8080", "Address to listen")
+	maxConns      = flag.Uint64("maxconns", 0, "Max number of simultaneous connections allowed connections")
+	idleClose     = flag.Uint64("idleclose", 30, "Time in seconds that an idle connection will be allowed before closing it")
+	token         = flag.String("token", "", "Lantern token")
+	enableFilters = flag.Bool("enablefilters", false, "Enable Lantern-specific filters")
+	enableReports = flag.Bool("enablereports", false, "Enable stats reporting")
+	debug         = flag.Bool("debug", false, "Produce debug output")
 )
 
 func main() {
@@ -40,7 +40,7 @@ func main() {
 		logLevel = utils.ERROR
 	}
 
-	if !*disableReports {
+	if *enableReports {
 		redisAddr := os.Getenv("REDIS_PRODUCTION_URL")
 		if redisAddr == "" {
 			redisAddr = "127.0.0.1:6379"
@@ -58,7 +58,7 @@ func main() {
 		*token,
 		*maxConns,
 		time.Duration(*idleClose)*time.Second,
-		*disableFilters,
+		*enableFilters,
 		logLevel,
 	)
 	if *https {

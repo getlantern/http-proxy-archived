@@ -37,7 +37,7 @@ type Server struct {
 	idleTimeout time.Duration
 }
 
-func NewServer(token string, maxConns uint64, idleTimeout time.Duration, disableFilters bool, logLevel utils.LogLevel) *Server {
+func NewServer(token string, maxConns uint64, idleTimeout time.Duration, enableFilters bool, logLevel utils.LogLevel) *Server {
 	stdWriter := io.Writer(os.Stdout)
 
 	if maxConns == 0 {
@@ -70,7 +70,7 @@ func NewServer(token string, maxConns uint64, idleTimeout time.Duration, disable
 	)
 
 	var firstHandler http.Handler
-	if disableFilters {
+	if !enableFilters {
 		firstHandler = commonFilter
 	} else {
 		// Identifies Lantern Pro users (currently NOOP)

@@ -25,7 +25,7 @@ You can either use the proxy as a regular HTTP proxy or with Lantern-specific ex
 Run the server as follows:
 
 ```
-test/run-server.sh -disablefilters
+test/run-server.sh
 ```
 
 Test direct proxying with cURL:
@@ -42,12 +42,12 @@ curl -kpvx localhost:8080 http://www.google.com/humans.txt
 curl -kpvx localhost:8080 https://www.google.com/humans.txt
 ```
 
-### Testing with Lantern extensions
+### Testing with Lantern extensions and configuration
 
 Run the server with:
 
 ```
-test/run-server.sh -https -token=<your-token>
+test/run-server.sh -https -enablefilters -enablereports -token=<your-token>
 ```
 
 You have two options to test it: the Lantern client or [checkfallbacks](https://github.com/getlantern/lantern/tree/valencia/src/github.com/getlantern/checkfallbacks).
