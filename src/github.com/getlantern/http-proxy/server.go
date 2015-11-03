@@ -98,6 +98,7 @@ func NewServer(token string, maxConns uint64, idleTimeout time.Duration, enableF
 	server := &Server{
 		firstHandler: firstHandler,
 		maxConns:     maxConns,
+		numConns:     0,
 		idleTimeout:  idleTimeout,
 	}
 	return server
