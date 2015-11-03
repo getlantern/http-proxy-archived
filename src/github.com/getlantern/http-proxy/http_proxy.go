@@ -20,6 +20,7 @@ var (
 	idleClose      = flag.Uint64("idleclose", 30, "Time in seconds that an idle connection will be allowed before closing it")
 	token          = flag.String("token", "", "Lantern token")
 	disableFilters = flag.Bool("disablefilters", false, "Disable Lantern-specific filters")
+	disableReports = flag.Bool("disablereports", false, "Disable stats reporting")
 	debug          = flag.Bool("debug", false, "Produce debug output")
 )
 
@@ -39,16 +40,18 @@ func main() {
 		logLevel = utils.ERROR
 	}
 
-	redisAddr := os.Getenv("REDIS_PRODUCTION_URL")
-	if redisAddr == "" {
-		redisAddr = "127.0.0.1:6379"
-	}
-	rp, err := utils.NewRedisReporter(redisAddr)
-	if err != nil {
-		fmt.Printf("Error connecting to redis: %v\n", err)
-	} else {
-		measured.Start(20*time.Second, rp)
-		defer measured.Stop()
+	if !*disableReports {
+		redisAddr := os.Getenv("REDIS_PRODUCTION_URL")
+		if redisAddr == "" {
+			redisAddr = "127.0.0.1:6379"
+		}
+		rp, err := utils.NewRedisReporter(redisAddr)
+		if err != nil {
+			fmt.Printf("Error connecting to redis: %v\n", err)
+		} else {
+			measured.Start(20*time.Second, rp)
+			defer measured.Stop()
+		}
 	}
 
 	server := NewServer(
