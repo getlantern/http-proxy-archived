@@ -2,7 +2,6 @@ package forward
 
 import (
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -168,36 +167,37 @@ func (f *Forwarder) cloneRequest(req *http.Request, u *url.URL) (*http.Request, 
 	outReq.URL.Opaque = req.RequestURI
 	// raw query is already included in RequestURI, so ignore it to avoid dupes
 	outReq.URL.RawQuery = ""
-	// Do not pass client Host header unless optsetter PassHostHeader is set.
 
-	// Trailer support
-	// We are forced to do this because Go's server won't allow us to read the trailers otherwise
-	_, err := httputil.DumpRequestOut(req, true)
-	if err != nil {
-		f.log.Errorf("Error: %v", err)
-		return nil, err
-	}
-
-	rcloser := ioutil.NopCloser(req.Body)
-	outReq.Body = rcloser
-
-	chunkedTrasfer := false
-	for _, enc := range req.TransferEncoding {
-		if enc == "chunked" {
-			chunkedTrasfer = true
-			break
+	/*
+		// Trailer support
+		// We are forced to do this because Go's server won't allow us to read the trailers otherwise
+		_, err := httputil.DumpRequestOut(req, true)
+		if err != nil {
+			f.log.Errorf("Error: %v", err)
+			return outReq, err
 		}
-	}
 
-	// Append Trailer
-	if chunkedTrasfer && len(req.Trailer) > 0 {
-		outReq.Trailer = http.Header{}
-		for k, vv := range req.Trailer {
-			for _, v := range vv {
-				outReq.Trailer.Add(k, v)
+		rcloser := ioutil.NopCloser(req.Body)
+		outReq.Body = rcloser
+
+		chunkedTransfer := false
+		for _, enc := range req.TransferEncoding {
+			if enc == "chunked" {
+				chunkedTransfer = true
+				break
 			}
 		}
-	}
+
+		// Append Trailer
+		if chunkedTransfer && len(req.Trailer) > 0 {
+			outReq.Trailer = http.Header{}
+			for k, vv := range req.Trailer {
+				for _, v := range vv {
+					outReq.Trailer.Add(k, v)
+				}
+			}
+		}
+	*/
 
 	return outReq, nil
 }
