@@ -160,13 +160,20 @@ func (f *Forwarder) cloneRequest(req *http.Request, u *url.URL) (*http.Request, 
 	copyHeadersForForwarding(outReq.Header, req.Header)
 
 	// Request URL
-	scheme := "http"
 	outReq.URL = cloneURL(req.URL)
-	outReq.URL.Scheme = scheme
+	// We know that is going to be HTTP always because HTTPS isn't forwarded.
+	// We need to hardcode it here because req.URL.Scheme can be undefined, since
+	// client request don't need to use absolute URIs
+	outReq.URL.Scheme = "http"
+	// We need to make sure the host is defined in the URL (not the actual URI)
 	outReq.URL.Host = req.Host
+	// Make sure we define an opaque URL, so the URI is just the path
 	outReq.URL.Opaque = req.URL.Path
+
 	// raw query is already included in RequestURI, so ignore it to avoid dupes
 	outReq.URL.RawQuery = ""
+
+	outReq.Header.Set("User-Agent", req.UserAgent())
 
 	/*
 		// Trailer support
