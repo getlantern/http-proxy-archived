@@ -5,11 +5,13 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/getlantern/golog"
 	"github.com/getlantern/http-proxy/utils"
 )
 
+var log = golog.LoggerFor("commonfilter")
+
 type CommonFilter struct {
-	log        utils.Logger
 	errHandler utils.ErrorHandler
 	next       http.Handler
 
@@ -18,17 +20,9 @@ type CommonFilter struct {
 
 type optSetter func(f *CommonFilter) error
 
-func Logger(l utils.Logger) optSetter {
-	return func(f *CommonFilter) error {
-		f.log = l
-		return nil
-	}
-}
-
 func New(next http.Handler, setters ...optSetter) (*CommonFilter, error) {
 	f := &CommonFilter{
 		next:       next,
-		log:        utils.NullLogger,
 		errHandler: utils.DefaultHandler,
 	}
 
@@ -40,7 +34,7 @@ func New(next http.Handler, setters ...optSetter) (*CommonFilter, error) {
 
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		f.log.Errorf("Error enumerating local addresses: %v\n", err)
+		log.Errorf("Error enumerating local addresses: %v\n", err)
 	}
 	for _, a := range addrs {
 		str := a.String()

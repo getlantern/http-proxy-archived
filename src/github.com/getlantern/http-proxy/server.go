@@ -1,12 +1,9 @@
 package main
 
 import (
-	"fmt"
-	"io"
 	"math"
 	"net"
 	"net/http"
-	"os"
 	"sync/atomic"
 	"time"
 
@@ -21,7 +18,6 @@ import (
 	"github.com/getlantern/http-proxy/commonfilter"
 	"github.com/getlantern/http-proxy/forward"
 	"github.com/getlantern/http-proxy/httpconnect"
-	"github.com/getlantern/http-proxy/utils"
 )
 
 type Server struct {
@@ -37,9 +33,7 @@ type Server struct {
 	idleTimeout time.Duration
 }
 
-func NewServer(token string, maxConns uint64, idleTimeout time.Duration, enableFilters bool, logLevel utils.LogLevel) *Server {
-	stdWriter := io.Writer(os.Stdout)
-
+func NewServer(token string, maxConns uint64, idleTimeout time.Duration, enableFilters bool) *Server {
 	if maxConns == 0 {
 		maxConns = math.MaxInt64
 	}
@@ -51,14 +45,12 @@ func NewServer(token string, maxConns uint64, idleTimeout time.Duration, enableF
 	// Handles Direct Proxying
 	forwardHandler, _ := forward.New(
 		nil,
-		forward.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 		forward.IdleTimeoutSetter(idleTimeout),
 	)
 
 	// Handles HTTP CONNECT
 	connectHandler, _ := httpconnect.New(
 		forwardHandler,
-		httpconnect.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 		httpconnect.IdleTimeoutSetter(idleTimeout),
 	)
 
@@ -66,7 +58,6 @@ func NewServer(token string, maxConns uint64, idleTimeout time.Duration, enableF
 	// the forwarder
 	commonFilter, _ := commonfilter.New(
 		connectHandler,
-		commonfilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 	)
 
 	var firstHandler http.Handler
@@ -76,21 +67,18 @@ func NewServer(token string, maxConns uint64, idleTimeout time.Duration, enableF
 		// Identifies Lantern Pro users (currently NOOP)
 		lanternPro, _ := profilter.New(
 			commonFilter,
-			profilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 		)
 		// Returns a 404 to requests without the proper token.  Removes the
 		// header before continuing.
 		tokenFilter, _ := tokenfilter.New(
 			lanternPro,
 			tokenfilter.TokenSetter(token),
-			tokenfilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 		)
 		// Extracts the user ID and attaches the matching client to the request
 		// context.  Returns a 404 to requests without the UID.  Removes the
 		// header before continuing.
 		deviceFilter, _ := devicefilter.New(
 			tokenFilter,
-			devicefilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 		)
 		firstHandler = deviceFilter
 	}
@@ -110,7 +98,7 @@ func (s *Server) ServeHTTP(addr string, chListenOn *chan string) error {
 		return err
 	}
 	s.tls = false
-	fmt.Printf("Listen http on %s\n", addr)
+	log.Debugf("Listen http on %s", addr)
 	return s.doServe(listener, chListenOn)
 }
 
@@ -120,7 +108,7 @@ func (s *Server) ServeHTTPS(addr, keyfile, certfile string, chListenOn *chan str
 		return err
 	}
 	s.tls = true
-	fmt.Printf("Listen http on %s\n", addr)
+	log.Debugf("Listen https on %s", addr)
 	return s.doServe(listener, chListenOn)
 }
 
@@ -158,7 +146,7 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 				select {
 				case q <- c:
 				default:
-					fmt.Print("Oops! the connection queue is full!\n")
+					log.Error("Oops! the connection queue is full!")
 				}
 			}
 

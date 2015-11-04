@@ -9,12 +9,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/getlantern/golog"
+	"github.com/getlantern/http-proxy/utils"
 	"github.com/getlantern/idletiming"
-  "github.com/getlantern/http-proxy/utils"
 )
 
+var log = golog.LoggerFor("tokenfilter")
+
 type HTTPConnectHandler struct {
-	log        utils.Logger
 	errHandler utils.ErrorHandler
 	next       http.Handler
 
@@ -22,13 +24,6 @@ type HTTPConnectHandler struct {
 }
 
 type optSetter func(f *HTTPConnectHandler) error
-
-func Logger(l utils.Logger) optSetter {
-	return func(f *HTTPConnectHandler) error {
-		f.log = l
-		return nil
-	}
-}
 
 func IdleTimeoutSetter(i time.Duration) optSetter {
 	return func(f *HTTPConnectHandler) error {
@@ -39,7 +34,6 @@ func IdleTimeoutSetter(i time.Duration) optSetter {
 
 func New(next http.Handler, setters ...optSetter) (*HTTPConnectHandler, error) {
 	f := &HTTPConnectHandler{
-		log:        utils.NullLogger,
 		errHandler: utils.DefaultHandler,
 		next:       next,
 	}
@@ -53,9 +47,9 @@ func New(next http.Handler, setters ...optSetter) (*HTTPConnectHandler, error) {
 }
 
 func (f *HTTPConnectHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	if f.log.IsLevel(utils.DEBUG) {
+	if log.IsTraceEnabled() {
 		reqStr, _ := httputil.DumpRequest(req, true)
-		f.log.Debugf("HTTPConnectHandler Middleware received request:\n%s", reqStr)
+		log.Tracef("HTTPConnectHandler Middleware received request:\n%s", reqStr)
 	}
 
 	// If the request is not HTTP CONNECT, pass along to the next handler
@@ -64,7 +58,7 @@ func (f *HTTPConnectHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	f.log.Debugf("Proxying CONNECT request\n")
+	log.Tracef("Proxying CONNECT request")
 
 	f.intercept(w, req)
 }
@@ -91,12 +85,12 @@ func (f *HTTPConnectHandler) intercept(w http.ResponseWriter, req *http.Request)
 	closeConns := func() {
 		if clientConn != nil {
 			if err := clientConn.Close(); err != nil {
-				f.log.Errorf("Error closing the out connection: %s", err)
+				log.Errorf("Error closing the out connection: %s", err)
 			}
 		}
 		if connOut != nil {
 			if err := connOut.Close(); err != nil {
-				f.log.Errorf("Error closing the client connection: %s", err)
+				log.Errorf("Error closing the client connection: %s", err)
 			}
 		}
 	}

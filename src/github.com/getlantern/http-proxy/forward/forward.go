@@ -8,12 +8,14 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/getlantern/golog"
 	"github.com/getlantern/http-proxy/utils"
 	"github.com/getlantern/idletiming"
 )
 
+var log = golog.LoggerFor("forward")
+
 type Forwarder struct {
-	log          utils.Logger
 	errHandler   utils.ErrorHandler
 	roundTripper http.RoundTripper
 	rewriter     RequestRewriter
@@ -42,13 +44,6 @@ func Rewriter(r RequestRewriter) optSetter {
 	}
 }
 
-func Logger(l utils.Logger) optSetter {
-	return func(f *Forwarder) error {
-		f.log = l
-		return nil
-	}
-}
-
 func IdleTimeoutSetter(i time.Duration) optSetter {
 	return func(f *Forwarder) error {
 		f.idleTimeout = i
@@ -64,7 +59,6 @@ func New(next http.Handler, setters ...optSetter) (*Forwarder, error) {
 		TLSHandshakeTimeout: 10 * time.Second,
 	}
 	f := &Forwarder{
-		log:          utils.NullLogger,
 		errHandler:   utils.DefaultHandler,
 		roundTripper: timeoutTransport,
 		next:         next,
@@ -107,7 +101,7 @@ func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// Create a copy of the request suitable for our needs
 	reqClone, err := f.cloneRequest(req, req.URL)
 	if err != nil {
-		f.log.Errorf("Error forwarding to %v, error: %v", req.Host, err)
+		log.Errorf("Error forwarding to %v, error: %v", req.Host, err)
 		f.errHandler.ServeHTTP(w, req, err)
 		return
 	}
@@ -117,16 +111,16 @@ func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	start := time.Now().UTC()
 	response, err := f.roundTripper.RoundTrip(reqClone)
 	if err != nil {
-		f.log.Errorf("Error forwarding to %v, error: %v", req.Host, err)
+		log.Errorf("Error forwarding to %v, error: %v", req.Host, err)
 		f.errHandler.ServeHTTP(w, req, err)
 		return
 	}
-	f.log.Infof("Round trip: %v, code: %v, duration: %v\n",
+	log.Debugf("Round trip: %v, code: %v, duration: %v",
 		req.URL, response.StatusCode, time.Now().UTC().Sub(start))
 
-	if f.log.IsLevel(utils.DEBUG) {
+	if log.IsTraceEnabled() {
 		respStr, _ := httputil.DumpResponse(response, true)
-		f.log.Debugf("Forward Middleware received response:\n%s", respStr)
+		log.Tracef("Forward Middleware received response:\n%s", respStr)
 	}
 
 	// Forward the response to the origin
@@ -137,7 +131,7 @@ func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if response.Body != nil {
 		_, err = io.Copy(w, response.Body)
 		if err != nil {
-			f.log.Errorf("%v\n", err)
+			log.Error(err)
 		}
 
 		response.Body.Close()
@@ -173,7 +167,7 @@ func (f *Forwarder) cloneRequest(req *http.Request, u *url.URL) (*http.Request, 
 		// We are forced to do this because Go's server won't allow us to read the trailers otherwise
 		_, err := httputil.DumpRequestOut(req, true)
 		if err != nil {
-			f.log.Errorf("Error: %v", err)
+			log.Errorf("Error: %v", err)
 			return outReq, err
 		}
 
