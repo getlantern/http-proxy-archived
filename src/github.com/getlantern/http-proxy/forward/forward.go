@@ -164,7 +164,7 @@ func (f *Forwarder) cloneRequest(req *http.Request, u *url.URL) (*http.Request, 
 	outReq.URL = cloneURL(req.URL)
 	outReq.URL.Scheme = scheme
 	outReq.URL.Host = req.Host
-	outReq.URL.Opaque = req.RequestURI
+	outReq.URL.Opaque = req.URL.Path
 	// raw query is already included in RequestURI, so ignore it to avoid dupes
 	outReq.URL.RawQuery = ""
 
