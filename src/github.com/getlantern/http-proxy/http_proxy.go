@@ -37,7 +37,7 @@ func main() {
 		flag.Usage()
 		return
 	}
-
+	// TODO: use real parameters
 	err = logging.Init("instanceid", "version", "releasedate", *logglyToken)
 	if err != nil {
 		log.Error(err)

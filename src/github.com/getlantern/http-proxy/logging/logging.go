@@ -21,6 +21,7 @@ const (
 var (
 	log          = golog.LoggerFor("flashlight.logging")
 	logdir       = "/var/log/http-proxy"
+	logglyTag    = "http-proxy"
 	processStart = time.Now()
 
 	logFile *rotator.SizeRotator
@@ -60,7 +61,6 @@ func Init(instanceId string, version string, revisionDate string, logglyToken st
 
 	// Loggly has its own timestamp so don't bother adding it in message,
 	// moreover, golog always write each line in whole, so we need not to care about line breaks.
-
 	errorOut = timestamped{NonStopWriter(os.Stderr, logFile)}
 	debugOut = timestamped{NonStopWriter(os.Stdout, logFile)}
 	golog.SetOutputs(errorOut, debugOut)
@@ -68,9 +68,8 @@ func Init(instanceId string, version string, revisionDate string, logglyToken st
 	if logglyToken != "" {
 		logglyWriter := &logglyErrorWriter{
 			versionToLoggly: fmt.Sprintf("%v (%v)", version, revisionDate),
-			client:          loggly.New(logglyToken),
+			client:          loggly.New(logglyToken, logglyTag),
 		}
-		logglyWriter.client.Defaults["hostname"] = "hidden"
 		logglyWriter.client.Defaults["instanceid"] = instanceId
 		addLoggly(logglyWriter)
 	}
