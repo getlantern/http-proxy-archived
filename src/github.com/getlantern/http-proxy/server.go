@@ -31,9 +31,11 @@ type Server struct {
 	numConns uint64
 
 	idleTimeout time.Duration
+
+	enableReports bool
 }
 
-func NewServer(token string, maxConns uint64, idleTimeout time.Duration, enableFilters bool) *Server {
+func NewServer(token string, maxConns uint64, idleTimeout time.Duration, enableFilters, enableReports bool) *Server {
 	if maxConns == 0 {
 		maxConns = math.MaxInt64
 	}
@@ -96,10 +98,11 @@ func NewServer(token string, maxConns uint64, idleTimeout time.Duration, enableF
 	}
 
 	server := &Server{
-		firstHandler: firstHandler,
-		maxConns:     maxConns,
-		numConns:     0,
-		idleTimeout:  idleTimeout,
+		firstHandler:  firstHandler,
+		maxConns:      maxConns,
+		numConns:      0,
+		idleTimeout:   idleTimeout,
+		enableReports: enableReports,
 	}
 	return server
 }
@@ -145,7 +148,8 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 		})
 
 	limListener := newLimitedListener(listener, &s.numConns, s.idleTimeout)
-	if *enableReports {
+
+	if s.enableReports {
 		mListener := measured.Listener(limListener, 30*time.Second)
 		s.listener = mListener
 	} else {
