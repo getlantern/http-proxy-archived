@@ -11,9 +11,9 @@ import (
 
 	"github.com/getlantern/measured"
 
-	"github.com/getlantern/http-proxy-extensions/devicefilter"
+	// "github.com/getlantern/http-proxy-extensions/devicefilter"
 	"github.com/getlantern/http-proxy-extensions/mimic"
-	"github.com/getlantern/http-proxy-extensions/profilter"
+	// "github.com/getlantern/http-proxy-extensions/profilter"
 	"github.com/getlantern/http-proxy-extensions/tokenfilter"
 	"github.com/getlantern/http-proxy/commonfilter"
 	"github.com/getlantern/http-proxy/forward"
@@ -64,23 +64,35 @@ func NewServer(token string, maxConns uint64, idleTimeout time.Duration, enableF
 	if !enableFilters {
 		firstHandler = commonFilter
 	} else {
-		// Identifies Lantern Pro users (currently NOOP)
-		lanternPro, _ := profilter.New(
-			commonFilter,
-		)
-		// Returns a 404 to requests without the proper token.  Removes the
-		// header before continuing.
+		// Temporarily remove deviceFilter and lanternPro.  These need changes in the client
+		// that will come after the proxy is well tested.
+		/*
+			// Identifies Lantern Pro users (currently NOOP)
+			lanternPro, _ := profilter.New(
+				commonFilter,
+				profilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
+			)
+			// Returns a 404 to requests without the proper token.  Removes the
+			// header before continuing.
+			tokenFilter, _ := tokenfilter.New(
+				lanternPro,
+				tokenfilter.TokenSetter(token),
+				tokenfilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
+			)
+			// Extracts the user ID and attaches the matching client to the request
+			// context.  Returns a 404 to requests without the UID.  Removes the
+			// header before continuing.
+			deviceFilter, _ := devicefilter.New(
+				tokenFilter,
+				devicefilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
+			)
+			firstHandler = deviceFilter
+		*/
 		tokenFilter, _ := tokenfilter.New(
-			lanternPro,
+			commonFilter,
 			tokenfilter.TokenSetter(token),
 		)
-		// Extracts the user ID and attaches the matching client to the request
-		// context.  Returns a 404 to requests without the UID.  Removes the
-		// header before continuing.
-		deviceFilter, _ := devicefilter.New(
-			tokenFilter,
-		)
-		firstHandler = deviceFilter
+		firstHandler = tokenFilter
 	}
 
 	server := &Server{
@@ -142,18 +154,19 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 
 	s.httpServer = http.Server{Handler: proxy,
 		ConnState: func(c net.Conn, state http.ConnState) {
-			if state == http.StateActive {
+			switch state {
+			case http.StateNew:
+				if atomic.LoadUint64(&s.numConns) >= s.maxConns {
+					limListener.Stop()
+				} else if limListener.IsStopped() {
+					limListener.Restart()
+				}
+			case http.StateActive:
 				select {
 				case q <- c:
 				default:
 					log.Error("Oops! the connection queue is full!")
 				}
-			}
-
-			if atomic.LoadUint64(&s.numConns) >= s.maxConns {
-				limListener.Stop()
-			} else if limListener.IsStopped() {
-				limListener.Restart()
 			}
 		},
 	}
