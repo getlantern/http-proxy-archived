@@ -1,5 +1,7 @@
 # HTTP Proxy in Go
 
+[![Build Status](https://travis-ci.org/getlantern/http-proxy.svg?branch=master)](https://travis-ci.org/getlantern/http-proxy)
+
 ## Run
 
 First get dependencies:
