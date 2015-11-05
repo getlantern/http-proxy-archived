@@ -112,7 +112,6 @@ func TestReportStats(t *testing.T) {
 	}
 }
 
-/*
 func TestMaxConnections(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\nX-Lantern-Device-Id: %s\r\n\r\n"
 
@@ -554,7 +553,7 @@ func TestDirectOK(t *testing.T) {
 	testRoundTrip(t, httpProxy, tlsTargetServer, testFail)
 	testRoundTrip(t, tlsProxy, tlsTargetServer, testFail)
 }
-*/
+
 //
 // Auxiliary functions
 //

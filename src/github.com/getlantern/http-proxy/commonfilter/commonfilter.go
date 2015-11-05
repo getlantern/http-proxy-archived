@@ -16,14 +16,18 @@ type CommonFilter struct {
 	next       http.Handler
 
 	localIPs []net.IP
+
+	// Allow tests in localhost, because this filter blocks request to this address
+	testingLocalhost bool
 }
 
 type optSetter func(f *CommonFilter) error
 
-func New(next http.Handler, setters ...optSetter) (*CommonFilter, error) {
+func New(next http.Handler, testingLocalhost bool, setters ...optSetter) (*CommonFilter, error) {
 	f := &CommonFilter{
-		next:       next,
-		errHandler: utils.DefaultHandler,
+		next:             next,
+		errHandler:       utils.DefaultHandler,
+		testingLocalhost: testingLocalhost,
 	}
 
 	for _, s := range setters {
@@ -50,18 +54,20 @@ func New(next http.Handler, setters ...optSetter) (*CommonFilter, error) {
 }
 
 func (f *CommonFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	reqAddr, err := net.ResolveTCPAddr("tcp", req.URL.Host)
+	if !f.testingLocalhost {
+		reqAddr, err := net.ResolveTCPAddr("tcp", req.URL.Host)
 
-	// If there was an error resolving is probably because it wasn't an address
-	// in the form localhost:port
-	if err == nil {
-		for _, ip := range f.localIPs {
-			if reqAddr.IP.Equal(ip) {
-				f.errHandler.ServeHTTP(w, req, err)
-				return
+		// If there was an error resolving is probably because it wasn't an address
+		// in the form localhost:port
+		if err == nil {
+			for _, ip := range f.localIPs {
+				if reqAddr.IP.Equal(ip) {
+					f.errHandler.ServeHTTP(w, req, err)
+					return
+				}
 			}
-		}
 
+		}
 	}
 
 	f.next.ServeHTTP(w, req)

@@ -20,6 +20,10 @@ import (
 	"github.com/getlantern/http-proxy/httpconnect"
 )
 
+var (
+	testingLocal = false
+)
+
 type Server struct {
 	firstHandler http.Handler
 	httpServer   http.Server
@@ -60,6 +64,7 @@ func NewServer(token string, maxConns uint64, idleTimeout time.Duration, enableF
 	// the forwarder
 	commonFilter, _ := commonfilter.New(
 		connectHandler,
+		testingLocal,
 	)
 
 	var firstHandler http.Handler
