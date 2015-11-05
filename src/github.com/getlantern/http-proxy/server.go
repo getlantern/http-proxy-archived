@@ -96,7 +96,7 @@ func NewServer(token string, maxConns uint64, idleTimeout time.Duration, enableF
 			firstHandler = deviceFilter
 		*/
 		tokenFilter, _ := tokenfilter.New(
-			commonFilter,
+			connectHandler,
 			tokenfilter.TokenSetter(token),
 		)
 		firstHandler = tokenFilter
