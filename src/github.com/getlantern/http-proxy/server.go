@@ -164,18 +164,19 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 
 	s.httpServer = http.Server{Handler: proxy,
 		ConnState: func(c net.Conn, state http.ConnState) {
-			if state == http.StateActive {
+			switch state {
+			case http.StateNew:
+				if atomic.LoadUint64(&s.numConns) >= s.maxConns {
+					limListener.Stop()
+				} else if limListener.IsStopped() {
+					limListener.Restart()
+				}
+			case http.StateActive:
 				select {
 				case q <- c:
 				default:
 					fmt.Print("Oops! the connection queue is full!\n")
 				}
-			}
-
-			if atomic.LoadUint64(&s.numConns) >= s.maxConns {
-				limListener.Stop()
-			} else if limListener.IsStopped() {
-				limListener.Restart()
 			}
 		},
 	}
