@@ -88,7 +88,7 @@ var candidates = []entry{
 }
 
 func TestMimicApache(t *testing.T) {
-	s := proxy.NewServer("anytoken", 100000, 30*time.Second, false)
+	s := proxy.NewServer("anytoken", 100000, 30*time.Second, false, false)
 	chListenOn := make(chan string)
 	go func() {
 		err := s.ServeHTTP(":0", &chListenOn)
