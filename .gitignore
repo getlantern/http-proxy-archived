@@ -25,7 +25,7 @@ _testmain.go
 
 .env
 *.pem
-http-proxy
+./http-proxy
 /bin
 /pkg
-chained-server.raw
+http-proxy.raw
