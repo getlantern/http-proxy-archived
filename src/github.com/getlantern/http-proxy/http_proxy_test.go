@@ -106,7 +106,7 @@ func TestReportStats(t *testing.T) {
 	testRoundTrip(t, httpProxy, httpTargetServer, testFn)
 	testRoundTrip(t, tlsProxy, httpTargetServer, testFn)
 	time.Sleep(200 * time.Millisecond)
-	assert.Equal(t, 1, len(m.traffic))
+	assert.Equal(t, 2, len(m.traffic))
 	if len(m.traffic) > 0 {
 		t.Logf("%+v", m.traffic[0])
 	}
@@ -322,6 +322,9 @@ func TestConnectBadToken(t *testing.T) {
 
 // No X-Lantern-Device-Id -> 400
 func TestConnectNoDevice(t *testing.T) {
+	// TODO: Deactivated because this filter is deactivated
+	t.SkipNow()
+
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 400 Bad Request\r\n"
 
@@ -477,6 +480,9 @@ func TestDirectBadToken(t *testing.T) {
 
 // No X-Lantern-Device-Id -> 404
 func TestDirectNoDevice(t *testing.T) {
+	// TODO: Deactivated because this filter is deactivated
+	t.SkipNow()
+
 	connectReq := "GET /%s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 404 Not Found\r\n"
 
@@ -600,7 +606,7 @@ type proxy struct {
 }
 
 func setupNewHTTPServer(maxConns uint64, idleTimeout time.Duration) (*Server, error) {
-	s := NewServer(validToken, maxConns, idleTimeout, false)
+	s := NewServer(validToken, maxConns, idleTimeout, true, true)
 	var err error
 	ready := make(chan string)
 	go func(err *error) {
@@ -613,7 +619,7 @@ func setupNewHTTPServer(maxConns uint64, idleTimeout time.Duration) (*Server, er
 }
 
 func setupNewHTTPSServer(maxConns uint64, idleTimeout time.Duration) (*Server, error) {
-	s := NewServer(validToken, maxConns, idleTimeout, false)
+	s := NewServer(validToken, maxConns, idleTimeout, true, true)
 	var err error
 	ready := make(chan string)
 	go func(err *error) {

@@ -62,6 +62,7 @@ func main() {
 		*maxConns,
 		time.Duration(*idleClose)*time.Second,
 		*enableFilters,
+		*enableReports,
 	)
 	if *https {
 		err = server.ServeHTTPS(*addr, *keyfile, *certfile, nil)
