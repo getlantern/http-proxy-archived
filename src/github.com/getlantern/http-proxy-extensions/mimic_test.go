@@ -18,7 +18,7 @@ import (
 
 const target = "test-data/apache-2.4.7-ubuntu14.04.raw"
 const template = "test-data/apache-2.4.7-ubuntu14.04.tpl"
-const current = "test-data/chained-server.raw"
+const current = "test-data/http-proxy.raw"
 
 type entry struct {
 	method         string
@@ -88,7 +88,7 @@ var candidates = []entry{
 }
 
 func TestMimicApache(t *testing.T) {
-	s := proxy.NewServer("anytoken", 100000, 30*time.Second, false, false)
+	s := proxy.NewServer("anytoken", 100000, 30*time.Second, true, false)
 	chListenOn := make(chan string)
 	go func() {
 		err := s.ServeHTTP(":0", &chListenOn)
