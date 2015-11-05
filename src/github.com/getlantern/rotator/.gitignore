@@ -22,10 +22,3 @@ _testmain.go
 *.exe
 *.test
 *.prof
-
-.env
-*.pem
-http-proxy
-/bin
-/pkg
-chained-server.raw

@@ -14,7 +14,6 @@ import (
 	"github.com/getlantern/testify/assert"
 
 	proxy "github.com/getlantern/http-proxy"
-	"github.com/getlantern/http-proxy/utils"
 )
 
 const target = "test-data/apache-2.4.7-ubuntu14.04.raw"
@@ -89,7 +88,7 @@ var candidates = []entry{
 }
 
 func TestMimicApache(t *testing.T) {
-	s := proxy.NewServer("anytoken", 100000, 30*time.Second, false, utils.DEBUG)
+	s := proxy.NewServer("anytoken", 100000, 30*time.Second, false)
 	chListenOn := make(chan string)
 	go func() {
 		err := s.ServeHTTP(":0", &chListenOn)

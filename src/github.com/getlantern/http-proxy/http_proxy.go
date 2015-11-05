@@ -2,12 +2,14 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"time"
 
-	"github.com/getlantern/http-proxy/utils"
+	"github.com/getlantern/golog"
 	"github.com/getlantern/measured"
+
+	"github.com/getlantern/http-proxy/logging"
+	"github.com/getlantern/http-proxy/utils"
 )
 
 var (
@@ -22,6 +24,9 @@ var (
 	enableFilters = flag.Bool("enablefilters", false, "Enable Lantern-specific filters")
 	enableReports = flag.Bool("enablereports", false, "Enable stats reporting")
 	debug         = flag.Bool("debug", false, "Produce debug output")
+	logglyToken   = flag.String("logglytoken", "", "Token used to report to loggly.com, not reporting if empty")
+
+	log = golog.LoggerFor("main")
 )
 
 func main() {
@@ -32,12 +37,10 @@ func main() {
 		flag.Usage()
 		return
 	}
-
-	var logLevel utils.LogLevel
-	if *debug {
-		logLevel = utils.DEBUG
-	} else {
-		logLevel = utils.ERROR
+	// TODO: use real parameters
+	err = logging.Init("instanceid", "version", "releasedate", *logglyToken)
+	if err != nil {
+		log.Error(err)
 	}
 
 	if *enableReports {
@@ -47,7 +50,7 @@ func main() {
 		}
 		rp, err := utils.NewRedisReporter(redisAddr)
 		if err != nil {
-			fmt.Printf("Error connecting to redis: %v\n", err)
+			log.Errorf("Error connecting to redis: %v", err)
 		} else {
 			measured.Start(20*time.Second, rp)
 			defer measured.Stop()
@@ -59,7 +62,6 @@ func main() {
 		*maxConns,
 		time.Duration(*idleClose)*time.Second,
 		*enableFilters,
-		logLevel,
 	)
 	if *https {
 		err = server.ServeHTTPS(*addr, *keyfile, *certfile, nil)
@@ -67,6 +69,6 @@ func main() {
 		err = server.ServeHTTP(*addr, nil)
 	}
 	if err != nil {
-		fmt.Printf("Error serving: %v\n", err)
+		log.Errorf("Error serving: %v", err)
 	}
 }

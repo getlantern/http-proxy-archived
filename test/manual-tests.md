@@ -1,6 +1,6 @@
 # Manual tests
 
-For these manual tests, you'll need to servers, preferably in the same network so you can reach the highest possible transfer rates and smaller latencies.  Any suggestion to improve these tests is welcome.
+For these manual tests, you'll need 3 servers (*client*, *proxy*, *origin*), preferably in the same network so you can reach the highest possible transfer rates and smaller latencies.  Any suggestion to improve these tests is welcome.
 
 
 
@@ -40,7 +40,7 @@ In client machine:
 wget -e use_proxy=yes -e http_proxy=<proxy-addr>:8080 http://releases.ubuntu.com/15.10/ubuntu-15.10-desktop-amd64.iso
 ```
 
-In proxy machine: use memory footprint and connection monitoring.
+In proxy machine: use memory footprint monitoring and connection monitoring.
 
 #### Download with client rate limit
 
@@ -49,6 +49,8 @@ In client machine:
 ```
 wget --limit-rate=20k -e use_proxy=yes -e http_proxy=<proxy-addr>:8080 http://releases.ubuntu.com/15.10/ubuntu-15.10-desktop-amd64.iso
 ```
+
+In proxy machine: use memory footprint monitoring and connection monitoring.
 
 #### Download with origin rate limit
 
