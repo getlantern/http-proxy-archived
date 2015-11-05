@@ -189,8 +189,8 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 			case http.StateClosed:
 				// When go server encounters abnormal request, it
 				// will transit to StateClosed directly without
-				// the connection being withdrawed.
-				// Purge it in such case.
+				// the handler being invoked, hence the connection
+				// will not be withdrawed. Purge it in such case.
 				cb.Purge(c.RemoteAddr().String())
 			}
 
