@@ -1,12 +1,9 @@
 package main
 
 import (
-	"fmt"
-	"io"
 	"math"
 	"net"
 	"net/http"
-	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -22,7 +19,10 @@ import (
 	"github.com/getlantern/http-proxy/commonfilter"
 	"github.com/getlantern/http-proxy/forward"
 	"github.com/getlantern/http-proxy/httpconnect"
-	"github.com/getlantern/http-proxy/utils"
+)
+
+var (
+	testingLocal = false
 )
 
 type Server struct {
@@ -36,11 +36,11 @@ type Server struct {
 	numConns uint64
 
 	idleTimeout time.Duration
+
+	enableReports bool
 }
 
-func NewServer(token string, maxConns uint64, idleTimeout time.Duration, enableFilters bool, logLevel utils.LogLevel) *Server {
-	stdWriter := io.Writer(os.Stdout)
-
+func NewServer(token string, maxConns uint64, idleTimeout time.Duration, enableFilters, enableReports bool) *Server {
 	if maxConns == 0 {
 		maxConns = math.MaxInt64
 	}
@@ -52,14 +52,12 @@ func NewServer(token string, maxConns uint64, idleTimeout time.Duration, enableF
 	// Handles Direct Proxying
 	forwardHandler, _ := forward.New(
 		nil,
-		forward.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 		forward.IdleTimeoutSetter(idleTimeout),
 	)
 
 	// Handles HTTP CONNECT
 	connectHandler, _ := httpconnect.New(
 		forwardHandler,
-		httpconnect.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 		httpconnect.IdleTimeoutSetter(idleTimeout),
 	)
 
@@ -67,7 +65,7 @@ func NewServer(token string, maxConns uint64, idleTimeout time.Duration, enableF
 	// the forwarder
 	commonFilter, _ := commonfilter.New(
 		connectHandler,
-		commonfilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
+		testingLocal,
 	)
 
 	var firstHandler http.Handler
@@ -101,16 +99,16 @@ func NewServer(token string, maxConns uint64, idleTimeout time.Duration, enableF
 		tokenFilter, _ := tokenfilter.New(
 			commonFilter,
 			tokenfilter.TokenSetter(token),
-			tokenfilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
 		)
 		firstHandler = tokenFilter
 	}
 
 	server := &Server{
-		firstHandler: firstHandler,
-		maxConns:     maxConns,
-		numConns:     0,
-		idleTimeout:  idleTimeout,
+		firstHandler:  firstHandler,
+		maxConns:      maxConns,
+		numConns:      0,
+		idleTimeout:   idleTimeout,
+		enableReports: enableReports,
 	}
 	return server
 }
@@ -121,7 +119,7 @@ func (s *Server) ServeHTTP(addr string, chListenOn *chan string) error {
 		return err
 	}
 	s.tls = false
-	fmt.Printf("Listen http on %s\n", addr)
+	log.Debugf("Listen http on %s", addr)
 	return s.doServe(listener, chListenOn)
 }
 
@@ -131,7 +129,7 @@ func (s *Server) ServeHTTPS(addr, keyfile, certfile string, chListenOn *chan str
 		return err
 	}
 	s.tls = true
-	fmt.Printf("Listen http on %s\n", addr)
+	log.Debugf("Listen https on %s", addr)
 	return s.doServe(listener, chListenOn)
 }
 
@@ -174,7 +172,8 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 		})
 
 	limListener := newLimitedListener(listener, &s.numConns, s.idleTimeout)
-	if *enableReports {
+
+	if s.enableReports {
 		mListener := measured.Listener(limListener, 30*time.Second)
 		s.listener = mListener
 	} else {
@@ -184,6 +183,12 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 	s.httpServer = http.Server{Handler: proxy,
 		ConnState: func(c net.Conn, state http.ConnState) {
 			switch state {
+			case http.StateNew:
+				if atomic.LoadUint64(&s.numConns) >= s.maxConns {
+					limListener.Stop()
+				} else if limListener.IsStopped() {
+					limListener.Restart()
+				}
 			case http.StateActive:
 				cb.Put(c)
 			case http.StateClosed:
@@ -192,12 +197,6 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 				// the handler being invoked, hence the connection
 				// will not be withdrawed. Purge it in such case.
 				cb.Purge(c.RemoteAddr().String())
-			}
-
-			if atomic.LoadUint64(&s.numConns) >= s.maxConns {
-				limListener.Stop()
-			} else if limListener.IsStopped() {
-				limListener.Restart()
 			}
 		},
 	}

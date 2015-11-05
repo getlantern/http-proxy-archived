@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -17,8 +16,6 @@ import (
 	"github.com/getlantern/keyman"
 	"github.com/getlantern/measured"
 	"github.com/getlantern/testify/assert"
-
-	"github.com/getlantern/http-proxy/utils"
 )
 
 const (
@@ -66,18 +63,18 @@ func TestMain(m *testing.M) {
 	// Set up HTTP chained server
 	httpProxy, err = setupNewHTTPServer(0, 30*time.Second)
 	if err != nil {
-		log.Println("Error starting proxy server")
+		log.Error("Error starting proxy server")
 		os.Exit(1)
 	}
-	log.Printf("Started HTTP proxy server at %s\n", httpProxy.listener.Addr().String())
+	log.Debugf("Started HTTP proxy server at %s", httpProxy.listener.Addr().String())
 
 	// Set up HTTPS chained server
 	tlsProxy, err = setupNewHTTPSServer(0, 30*time.Second)
 	if err != nil {
-		log.Println("Error starting proxy server")
+		log.Error("Error starting proxy server")
 		os.Exit(1)
 	}
-	log.Printf("Started HTTPS proxy server at %s\n", tlsProxy.listener.Addr().String())
+	log.Debugf("Started HTTPS proxy server at %s", tlsProxy.listener.Addr().String())
 
 	os.Exit(m.Run())
 }
@@ -109,7 +106,7 @@ func TestReportStats(t *testing.T) {
 	testRoundTrip(t, httpProxy, httpTargetServer, testFn)
 	testRoundTrip(t, tlsProxy, httpTargetServer, testFn)
 	time.Sleep(200 * time.Millisecond)
-	assert.Equal(t, 1, len(m.traffic))
+	assert.Equal(t, 2, len(m.traffic))
 	if len(m.traffic) > 0 {
 		t.Logf("%+v", m.traffic[0])
 	}
@@ -120,8 +117,7 @@ func TestMaxConnections(t *testing.T) {
 
 	limitedServer, err := setupNewHTTPServer(5, 30*time.Second)
 	if err != nil {
-		log.Println("Error starting proxy server")
-		t.FailNow()
+		assert.Fail(t, "Error starting proxy server")
 	}
 
 	//limitedServer.httpServer.SetKeepAlivesEnabled(false)
@@ -170,8 +166,7 @@ func TestMaxConnections(t *testing.T) {
 func TestIdleClientConnections(t *testing.T) {
 	limitedServer, err := setupNewHTTPServer(0, 100*time.Millisecond)
 	if err != nil {
-		log.Println("Error starting proxy server")
-		t.FailNow()
+		assert.Fail(t, "Error starting proxy server")
 	}
 
 	okFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
@@ -204,14 +199,12 @@ func TestIdleClientConnections(t *testing.T) {
 func TestIdleTargetConnections(t *testing.T) {
 	normalServer, err := setupNewHTTPServer(0, 30*time.Second)
 	if err != nil {
-		log.Println("Error starting proxy server")
-		t.FailNow()
+		assert.Fail(t, "Error starting proxy server: %s", err)
 	}
 
 	impatientServer, err := setupNewHTTPServer(0, 100*time.Millisecond)
 	if err != nil {
-		log.Println("Error starting proxy server")
-		t.FailNow()
+		assert.Fail(t, "Error starting proxy server: %s", err)
 	}
 
 	okForwardFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
@@ -329,6 +322,9 @@ func TestConnectBadToken(t *testing.T) {
 
 // No X-Lantern-Device-Id -> 400
 func TestConnectNoDevice(t *testing.T) {
+	// TODO: Deactivated because this filter is deactivated
+	t.SkipNow()
+
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 400 Bad Request\r\n"
 
@@ -484,6 +480,9 @@ func TestDirectBadToken(t *testing.T) {
 
 // No X-Lantern-Device-Id -> 404
 func TestDirectNoDevice(t *testing.T) {
+	// TODO: Deactivated because this filter is deactivated
+	t.SkipNow()
+
 	connectReq := "GET /%s HTTP/1.1\r\nHost: %s\r\nX-Lantern-Auth-Token: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 404 Not Found\r\n"
 
@@ -586,7 +585,7 @@ func testRoundTrip(t *testing.T, proxy *Server, target *targetHandler, checkerFn
 	addr := proxy.listener.Addr().String()
 	if !proxy.tls {
 		conn, err = net.Dial("tcp", addr)
-		fmt.Printf("%s -> %s (via HTTP) -> %s\n", conn.LocalAddr().String(), addr, target.server.URL)
+		log.Debugf("%s -> %s (via HTTP) -> %s", conn.LocalAddr().String(), addr, target.server.URL)
 		if !assert.NoError(t, err, "should dial proxy server") {
 			t.FailNow()
 		}
@@ -597,14 +596,14 @@ func testRoundTrip(t *testing.T, proxy *Server, target *targetHandler, checkerFn
 			CipherSuites:       preferredCipherSuites,
 			InsecureSkipVerify: true,
 		})
-		fmt.Printf("%s -> %s (via HTTPS) -> %s\n", tlsConn.LocalAddr().String(), addr, target.server.URL)
+		log.Debugf("%s -> %s (via HTTPS) -> %s", tlsConn.LocalAddr().String(), addr, target.server.URL)
 		if !assert.NoError(t, err, "should dial proxy server") {
 			t.FailNow()
 		}
 		conn = tlsConn
 		if !tlsConn.ConnectionState().PeerCertificates[0].Equal(x509cert) {
 			if err := tlsConn.Close(); err != nil {
-				log.Printf("Error closing chained server connection: %s\n", err)
+				log.Errorf("Error closing chained server connection: %s", err)
 			}
 			t.Fatal("Server's certificate didn't match expected")
 		}
@@ -627,12 +626,12 @@ type proxy struct {
 }
 
 func setupNewHTTPServer(maxConns uint64, idleTimeout time.Duration) (*Server, error) {
-	s := NewServer(validToken, maxConns, idleTimeout, false, utils.QUIET)
+	s := NewServer(validToken, maxConns, idleTimeout, true, true)
 	var err error
 	ready := make(chan string)
 	go func(err *error) {
 		if *err = s.ServeHTTP("localhost:0", &ready); err != nil {
-			fmt.Println("Unable to serve: %s", err)
+			log.Errorf("Unable to serve: %s", err)
 		}
 	}(&err)
 	<-ready
@@ -640,12 +639,12 @@ func setupNewHTTPServer(maxConns uint64, idleTimeout time.Duration) (*Server, er
 }
 
 func setupNewHTTPSServer(maxConns uint64, idleTimeout time.Duration) (*Server, error) {
-	s := NewServer(validToken, maxConns, idleTimeout, false, utils.QUIET)
+	s := NewServer(validToken, maxConns, idleTimeout, true, true)
 	var err error
 	ready := make(chan string)
 	go func(err *error) {
 		if *err = s.ServeHTTPS("localhost:0", "key.pem", "cert.pem", &ready); err != nil {
-			fmt.Println("Unable to serve: %s", err)
+			log.Errorf("Unable to serve: %s", err)
 		}
 	}(&err)
 	<-ready
@@ -674,10 +673,10 @@ func (m *targetHandler) Raw(msg string) {
 	m.writer = func(w http.ResponseWriter) {
 		conn, _, _ := w.(http.Hijacker).Hijack()
 		if _, err := conn.Write([]byte(msg)); err != nil {
-			log.Printf("Unable to write to connection: %v\n", err)
+			log.Errorf("Unable to write to connection: %v", err)
 		}
 		if err := conn.Close(); err != nil {
-			log.Printf("Unable to close connection: %v\n", err)
+			log.Errorf("Unable to close connection: %v", err)
 		}
 	}
 }
@@ -711,7 +710,7 @@ func newTargetHandler(msg string, tls bool) (string, *targetHandler) {
 	} else {
 		m.server = httptest.NewServer(&m)
 	}
-	log.Printf("Started target site at %v\n", m.server.URL)
+	log.Debugf("Started target site at %v", m.server.URL)
 	return m.server.URL, &m
 }
 

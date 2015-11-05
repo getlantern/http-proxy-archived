@@ -5,31 +5,29 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/getlantern/golog"
 	"github.com/getlantern/http-proxy/utils"
 )
 
+var log = golog.LoggerFor("commonfilter")
+
 type CommonFilter struct {
-	log        utils.Logger
 	errHandler utils.ErrorHandler
 	next       http.Handler
 
 	localIPs []net.IP
+
+	// Allow tests in localhost, because this filter blocks request to this address
+	testingLocalhost bool
 }
 
 type optSetter func(f *CommonFilter) error
 
-func Logger(l utils.Logger) optSetter {
-	return func(f *CommonFilter) error {
-		f.log = l
-		return nil
-	}
-}
-
-func New(next http.Handler, setters ...optSetter) (*CommonFilter, error) {
+func New(next http.Handler, testingLocalhost bool, setters ...optSetter) (*CommonFilter, error) {
 	f := &CommonFilter{
-		next:       next,
-		log:        utils.NullLogger,
-		errHandler: utils.DefaultHandler,
+		next:             next,
+		errHandler:       utils.DefaultHandler,
+		testingLocalhost: testingLocalhost,
 	}
 
 	for _, s := range setters {
@@ -40,7 +38,7 @@ func New(next http.Handler, setters ...optSetter) (*CommonFilter, error) {
 
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		f.log.Errorf("Error enumerating local addresses: %v\n", err)
+		log.Errorf("Error enumerating local addresses: %v\n", err)
 	}
 	for _, a := range addrs {
 		str := a.String()
@@ -56,18 +54,20 @@ func New(next http.Handler, setters ...optSetter) (*CommonFilter, error) {
 }
 
 func (f *CommonFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	reqAddr, err := net.ResolveTCPAddr("tcp", req.URL.Host)
+	if !f.testingLocalhost {
+		reqAddr, err := net.ResolveTCPAddr("tcp", req.URL.Host)
 
-	// If there was an error resolving is probably because it wasn't an address
-	// in the form localhost:port
-	if err == nil {
-		for _, ip := range f.localIPs {
-			if reqAddr.IP.Equal(ip) {
-				f.errHandler.ServeHTTP(w, req, err)
-				return
+		// If there was an error resolving is probably because it wasn't an address
+		// in the form localhost:port
+		if err == nil {
+			for _, ip := range f.localIPs {
+				if reqAddr.IP.Equal(ip) {
+					f.errHandler.ServeHTTP(w, req, err)
+					return
+				}
 			}
-		}
 
+		}
 	}
 
 	f.next.ServeHTTP(w, req)

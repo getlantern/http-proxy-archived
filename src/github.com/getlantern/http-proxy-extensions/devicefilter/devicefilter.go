@@ -8,31 +8,24 @@ import (
 
 	"github.com/getlantern/measured"
 
+	"github.com/getlantern/golog"
 	"github.com/getlantern/http-proxy-extensions/mimic"
-	"github.com/getlantern/http-proxy/utils"
 )
 
 const (
 	deviceIdHeader = "X-Lantern-Device-Id"
 )
 
+var log = golog.LoggerFor("devicefilter")
+
 type DeviceFilter struct {
-	log  utils.Logger
 	next http.Handler
 }
 
 type optSetter func(f *DeviceFilter) error
 
-func Logger(l utils.Logger) optSetter {
-	return func(f *DeviceFilter) error {
-		f.log = l
-		return nil
-	}
-}
-
 func New(next http.Handler, setters ...optSetter) (*DeviceFilter, error) {
 	f := &DeviceFilter{
-		log:  utils.NullLogger,
 		next: next,
 	}
 	for _, s := range setters {
@@ -45,15 +38,15 @@ func New(next http.Handler, setters ...optSetter) (*DeviceFilter, error) {
 }
 
 func (f *DeviceFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	if f.log.IsLevel(utils.DEBUG) {
+	if log.IsTraceEnabled() {
 		reqStr, _ := httputil.DumpRequest(req, true)
-		f.log.Debugf("DeviceFilter Middleware received request:\n%s", reqStr)
+		log.Tracef("DeviceFilter Middleware received request:\n%s", reqStr)
 	}
 
 	lanternDeviceId := req.Header.Get(deviceIdHeader)
 
 	if lanternDeviceId == "" {
-		f.log.Debugf("No %s header found from %s, mimicking apache\n", deviceIdHeader, req.RemoteAddr)
+		log.Debugf("No %s header found from %s, mimicking apache", deviceIdHeader, req.RemoteAddr)
 		mimic.MimicApache(w, req)
 		return
 	}
