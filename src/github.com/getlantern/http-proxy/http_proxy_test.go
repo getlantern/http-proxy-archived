@@ -555,6 +555,26 @@ func TestDirectOK(t *testing.T) {
 	testRoundTrip(t, tlsProxy, tlsTargetServer, testFail)
 }
 
+func TestInvalidRequest(t *testing.T) {
+	connectResp := "HTTP/1.1 400 Bad Request\r\n"
+	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
+		_, err := conn.Write([]byte("GET HTTP/1.1\r\n\r\n"))
+		if !assert.NoError(t, err, "should write GET request") {
+			t.FailNow()
+		}
+
+		buf := [400]byte{}
+		_, err = conn.Read(buf[:])
+		assert.Contains(t, string(buf[:]), connectResp, "should 400")
+
+	}
+	for i := 0; i < 10; i++ {
+		testRoundTrip(t, httpProxy, tlsTargetServer, testFn)
+		testRoundTrip(t, tlsProxy, tlsTargetServer, testFn)
+	}
+
+}
+
 //
 // Auxiliary functions
 //
