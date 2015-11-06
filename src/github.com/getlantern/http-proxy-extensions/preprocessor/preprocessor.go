@@ -3,7 +3,6 @@ package preprocessor
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -58,16 +57,22 @@ func (c *conn) Read(p []byte) (n int, err error) {
 	if err != nil {
 		return
 	}
-	// we assume a single read will read full http header, which is not the case
+	// On network with extremely small packet size, http header can be
+	// fragmented to multiple IP packets, then a single Read() may not be able
+	// to read the full http header, and ReadRequest() may fail. That would be
+	// very rare.
+	// It may also happen for purposely built clients, pipelined requests and
+	// HTTP2 multiplexing. We know for sure that Lantern client will not issue
+	// such requests, for now.
 	_, e := http.ReadRequest(bufio.NewReader(&buf))
 	if e != nil {
 		// do nothing for network errors. ref (c *conn) serve() in net/http/server.go
 		if e == io.EOF {
 		} else if neterr, ok := e.(net.Error); ok && neterr.Timeout() {
 		} else {
-			log.Debugf("Error read request from %s: %s", c.RemoteAddr().String(), e)
+			log.Debugf("Error parse request from %s: %s", c.RemoteAddr().String(), e)
 			mimic.MimicApacheOnInvalidRequest(c.Conn)
-			return 0, errors.New("Bad request")
+			return 0, e
 		}
 	}
 	return
