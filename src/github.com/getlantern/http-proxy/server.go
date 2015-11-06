@@ -4,6 +4,7 @@ import (
 	"math"
 	"net"
 	"net/http"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -132,23 +133,41 @@ func (s *Server) ServeHTTPS(addr, keyfile, certfile string, chListenOn *chan str
 	return s.doServe(listener, chListenOn)
 }
 
+// connBag is a just bag of connections. You can put a connection in and
+// withdraw it afterwards, or purge it regardless it's withdrawed or not.
+type connBag struct {
+	mu sync.Mutex
+	m  map[string]net.Conn
+}
+
+func (cb *connBag) Put(c net.Conn) {
+	cb.mu.Lock()
+	defer cb.mu.Unlock()
+	cb.m[c.RemoteAddr().String()] = c
+}
+
+func (cb *connBag) Withdraw(remoteAddr string) (c net.Conn) {
+	cb.mu.Lock()
+	defer cb.mu.Unlock()
+	c = cb.m[remoteAddr]
+	delete(cb.m, remoteAddr)
+	return
+}
+
+func (cb *connBag) Purge(remoteAddr string) {
+	cb.mu.Lock()
+	defer cb.mu.Unlock()
+	// non-op if item doesn't exist
+	delete(cb.m, remoteAddr)
+}
+
 func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
-	// A dirty trick to associate a connection with the http.Request it
-	// contains. In "net/http/server.go", handler will be called
-	// immediately after ConnState changed to StateActive, so it's safe to
-	// loop through all elements in a channel to find a match remote addr.
-	q := make(chan net.Conn, 10)
+	cb := connBag{m: make(map[string]net.Conn)}
 
 	proxy := http.HandlerFunc(
 		func(w http.ResponseWriter, req *http.Request) {
-			for c := range q {
-				if c.RemoteAddr().String() == req.RemoteAddr {
-					context.Set(req, "conn", c)
-					break
-				} else {
-					q <- c
-				}
-			}
+			c := cb.Withdraw(req.RemoteAddr)
+			context.Set(req, "conn", c)
 			s.firstHandler.ServeHTTP(w, req)
 		})
 
@@ -171,11 +190,13 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 					limListener.Restart()
 				}
 			case http.StateActive:
-				select {
-				case q <- c:
-				default:
-					log.Error("Oops! the connection queue is full!")
-				}
+				cb.Put(c)
+			case http.StateClosed:
+				// When go server encounters abnormal request, it
+				// will transit to StateClosed directly without
+				// the handler being invoked, hence the connection
+				// will not be withdrawed. Purge it in such case.
+				cb.Purge(c.RemoteAddr().String())
 			}
 		},
 	}
