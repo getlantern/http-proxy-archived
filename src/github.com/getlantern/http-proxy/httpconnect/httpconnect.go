@@ -47,18 +47,16 @@ func New(next http.Handler, setters ...optSetter) (*HTTPConnectHandler, error) {
 }
 
 func (f *HTTPConnectHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	if log.IsTraceEnabled() {
-		reqStr, _ := httputil.DumpRequest(req, true)
-		log.Tracef("HTTPConnectHandler Middleware received request:\n%s", reqStr)
-	}
-
 	// If the request is not HTTP CONNECT, pass along to the next handler
 	if req.Method != "CONNECT" {
 		f.next.ServeHTTP(w, req)
 		return
 	}
 
-	log.Tracef("Proxying CONNECT request")
+	if log.IsTraceEnabled() {
+		reqStr, _ := httputil.DumpRequest(req, true)
+		log.Tracef("HTTPConnectHandler Middleware received request:\n%s", reqStr)
+	}
 
 	f.intercept(w, req)
 }

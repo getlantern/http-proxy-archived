@@ -107,6 +107,14 @@ func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 	f.rewriter.Rewrite(reqClone)
 
+	if log.IsTraceEnabled() {
+		reqStr, _ := httputil.DumpRequest(req, false)
+		log.Tracef("Forwarder Middleware received request:\n%s", reqStr)
+
+		reqStr2, _ := httputil.DumpRequest(reqClone, false)
+		log.Tracef("Forwarder Middleware forwarding rewritten request:\n%s", reqStr2)
+	}
+
 	// Forward the request and get a response
 	start := time.Now().UTC()
 	response, err := f.roundTripper.RoundTrip(reqClone)
