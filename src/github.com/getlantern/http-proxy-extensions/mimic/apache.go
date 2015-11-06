@@ -30,6 +30,12 @@ var (
 	etag         = makeETag()
 )
 
+func MimicApacheOnInvalidRequest(c net.Conn) {
+	defer c.Close()
+	m := apacheMimic{c, nil, ""}
+	m.writeError(nil, badRequestBody)
+}
+
 // MimicApache mimics the behaviour of an unconfigured Apache web server 2.4.7
 // (the one installed by 'apt-get install apache2') running on Ubuntu 14.04.
 // Set 'Host' and 'Port' before calling it.
@@ -121,9 +127,11 @@ func (f *apacheMimic) writeError(header, body *template.Template) {
 		}
 		vars.ContentLength = bodyBuf.Len()
 	}
-	err := header.Execute(&headBuf, vars)
-	if err != nil {
-		panic(fmt.Sprintf("execute template err: %s", err))
+	if header != nil {
+		err := header.Execute(&headBuf, vars)
+		if err != nil {
+			panic(fmt.Sprintf("execute template err: %s", err))
+		}
 	}
 	// ignore any errors writing back to connection
 	_, _ = headBuf.WriteTo(f.conn)
@@ -263,27 +271,27 @@ var badRequestBody = template.Must(template.New("notFound").Parse(
 var optionsHeader = template.Must(template.New("optionsHeader").Parse("HTTP/1.1 200 OK\r\n" +
 	"Date: {{.Date}}\r\n" +
 	"Server: Apache/2.4.7 (Ubuntu)\r\n" +
-	"Allow: POST,OPTIONS,GET,HEAD\r\n" +
+	"Allow: GET,HEAD,POST,OPTIONS\r\n" +
 	"Content-Length: {{.ContentLength}}\r\n" +
 	"Content-Type: text/html\r\n\r\n"))
 
 var optionsHeaderWhenNotFound = template.Must(template.New("optionsHeaderWhenNotFound").Parse("HTTP/1.1 200 OK\r\n" +
 	"Date: {{.Date}}\r\n" +
 	"Server: Apache/2.4.7 (Ubuntu)\r\n" +
-	"Allow: POST,OPTIONS,GET,HEAD\r\n" +
+	"Allow: GET,HEAD,POST,OPTIONS\r\n" +
 	"Content-Length: {{.ContentLength}}\r\n\r\n"))
 
 var optionsHeaderOfLogo = template.Must(template.New("optionsHeaderOfLogo").Parse("HTTP/1.1 200 OK\r\n" +
 	"Date: {{.Date}}\r\n" +
 	"Server: Apache/2.4.7 (Ubuntu)\r\n" +
-	"Allow: POST,OPTIONS,GET,HEAD\r\n" +
+	"Allow: GET,HEAD,POST,OPTIONS\r\n" +
 	"Content-Length: {{.ContentLength}}\r\n" +
 	"Content-Type: image/png\r\n\r\n"))
 
 var methodNotAllowedHeader = template.Must(template.New("methodNotAllowedHeader").Parse("HTTP/1.1 405 Method Not Allowed\r\n" +
 	"Date: {{.Date}}\r\n" +
 	"Server: Apache/2.4.7 (Ubuntu)\r\n" +
-	"Allow: POST,OPTIONS,GET,HEAD\r\n" +
+	"Allow: GET,HEAD,POST,OPTIONS\r\n" +
 	"Content-Length: {{.ContentLength}}\r\n" +
 	"Content-Type: text/html; charset=iso-8859-1\r\n\r\n"))
 
@@ -302,7 +310,7 @@ var methodNotAllowedBody = template.Must(template.New("methodNotAllowed").Parse(
 var notImplementedHeader = template.Must(template.New("notImplementedHeader").Parse("HTTP/1.1 501 Not Implemented\r\n" +
 	"Date: {{.Date}}\r\n" +
 	"Server: Apache/2.4.7 (Ubuntu)\r\n" +
-	"Allow: POST,OPTIONS,GET,HEAD\r\n" +
+	"Allow: GET,HEAD,POST,OPTIONS\r\n" +
 	"Content-Length: {{.ContentLength}}\r\n" +
 	"Connection: close\r\n" +
 	"Content-Type: text/html; charset=iso-8859-1\r\n\r\n"))

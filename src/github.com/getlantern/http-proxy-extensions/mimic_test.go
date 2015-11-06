@@ -18,12 +18,11 @@ import (
 
 const target = "test-data/apache-2.4.7-ubuntu14.04.raw"
 const template = "test-data/apache-2.4.7-ubuntu14.04.tpl"
-const current = "test-data/chained-server.raw"
+const current = "test-data/http-proxy.raw"
 
 type entry struct {
-	method         string
-	path           string
-	withHostHeader bool
+	method string
+	path   string
 }
 
 /*
@@ -33,62 +32,75 @@ For rationale behind these tests, refer following:
 [3] https://github.com/apache/httpd/blob/2.4.17/server/core.c#L4379
 */
 var candidates = []entry{
-	// Without Host header, Apache will return 400
-	{"GET", "/", false},
-	{"GET", "/index.html", false},
-
 	// 200 with default page
-	{"GET", "/", true},
-	{"GET", "/index.html", true},
+	{"GET", "/"},
+	{"GET", "/index.html"},
 
-	{"GET", "/icons/ubuntu-logo.png", true},
+	{"GET", "/icons/ubuntu-logo.png"},
 
 	// 404
-	{"GET", "//cgi-bin/php", true},
-	{"GET", "//cgi-bin/php5", true},
-	{"GET", "//cgi-bin/php-cgi", true},
-	{"GET", "//cgi-bin/php.cgi", true},
-	{"GET", "//cgi-bin/php4", true},
+	{"GET", "//cgi-bin/php"},
+	{"GET", "//cgi-bin/php5"},
+	{"GET", "//cgi-bin/php-cgi"},
+	{"GET", "//cgi-bin/php.cgi"},
+	{"GET", "//cgi-bin/php4"},
 
 	// multiple slashes
-	{"GET", "///cgi-bin/php4", true},
-	{"GET", "//cgi-bin//php4", true},
+	{"GET", "///cgi-bin/php4"},
+	{"GET", "//cgi-bin//php4"},
 
-	{"GET", "/not-existed", true},
-	{"GET", "/end-with-slash/", true},
+	{"GET", "/not-existed"},
+	{"GET", "/end-with-slash/"},
 
-	{"HEAD", "/", true},
-	{"HEAD", "/index.html", true},
-	{"HEAD", "/icons/ubuntu-logo.png", true},
-	{"HEAD", "/not-existed", true},
+	{"HEAD", "/"},
+	{"HEAD", "/index.html"},
+	{"HEAD", "/icons/ubuntu-logo.png"},
+	{"HEAD", "/not-existed"},
 
-	{"POST", "/", true},
-	{"POST", "/index.html", true},
-	{"POST", "/icons/ubuntu-logo.png", true},
-	{"POST", "/not-existed", true},
+	{"POST", "/"},
+	{"POST", "/index.html"},
+	{"POST", "/icons/ubuntu-logo.png"},
+	{"POST", "/not-existed"},
 
-	{"OPTIONS", "/", true},
-	{"OPTIONS", "/index.html", true},
-	{"OPTIONS", "/icons/ubuntu-logo.png", true},
-	{"OPTIONS", "/not-existed", true},
+	{"OPTIONS", "/"},
+	{"OPTIONS", "/index.html"},
+	{"OPTIONS", "/icons/ubuntu-logo.png"},
+	{"OPTIONS", "/not-existed"},
 
-	{"PUT", "/", true},
-	{"PUT", "/index.html", true},
-	{"PUT", "/icons/ubuntu-logo.png", true},
-	{"PUT", "/not-existed", true},
+	{"PUT", "/"},
+	{"PUT", "/index.html"},
+	{"PUT", "/icons/ubuntu-logo.png"},
+	{"PUT", "/not-existed"},
 
-	{"CONNECT", "/", true},
-	{"CONNECT", "/index.html", true},
-	{"CONNECT", "/icons/ubuntu-logo.png", true},
-	{"CONNECT", "/not-existed", true},
+	{"CONNECT", "/"},
+	{"CONNECT", "/index.html"},
+	{"CONNECT", "/icons/ubuntu-logo.png"},
+	{"CONNECT", "/not-existed"},
 
-	{"INVALID", "/", true},
-	{"INVALID", "/index.html", true},
-	{"INVALID", "/not-existed", true},
+	{"INVALID", "/"},
+	{"INVALID", "/index.html"},
+	{"INVALID", "/not-existed"},
+}
+
+type entryWithHeaders struct {
+	method         string
+	path           string
+	withHostHeader bool
+	headers        []string
+}
+
+var invalidRequests = []entryWithHeaders{
+	// Without Host header, Apache will return 400
+	{"GET", "/", false, []string{}},
+	{"GET", "/index.html", false, []string{}},
+
+	// invalid request handled by go server
+	{"GET", "", false, []string{}},
+	{"GET", "/", true, []string{"User-Agent: xxx", "User-Agent: xxx"}},
 }
 
 func TestMimicApache(t *testing.T) {
-	s := proxy.NewServer("anytoken", 100000, 30*time.Second, false, false)
+	s := proxy.NewServer("anytoken", 100000, 30*time.Second, true, false)
 	chListenOn := make(chan string)
 	go func() {
 		err := s.ServeHTTP(":0", &chListenOn)
@@ -124,24 +136,34 @@ func compare(t *testing.T, buf *bytes.Buffer, file string) {
 func request(t *testing.T, addr string) *bytes.Buffer {
 	var buf bytes.Buffer
 	for _, c := range candidates {
-		conn, err := net.Dial("tcp", addr)
-		if assert.NoError(t, err, "should connect") {
-			defer conn.Close()
-			req := c.method + " " + c.path + " HTTP/1.1\n"
-			buf.WriteString(req)
-			buf.WriteString("--------------------\n")
-			if c.withHostHeader {
-				req = req + "Host: " + addr + "\n"
-			}
-			_, err := conn.Write([]byte(req + "\n"))
-			if assert.NoError(t, err, "should write") {
-				_, err := io.Copy(&buf, conn)
-				assert.NoError(t, err, "should copy")
-				buf.WriteString("====================\n\n")
-			}
+		requestItem(t, &buf, addr, c.method, c.path, []string{"Host: " + addr})
+	}
+	for _, r := range invalidRequests {
+		if r.withHostHeader {
+			r.headers = append(r.headers, "Host: "+addr)
 		}
+		requestItem(t, &buf, addr, "GET", r.path, r.headers)
 	}
 	return &buf
+}
+
+func requestItem(t *testing.T, buf *bytes.Buffer, addr, method, path string, headers []string) {
+	conn, err := net.Dial("tcp", addr)
+	if assert.NoError(t, err, "should connect") {
+		defer conn.Close()
+		req := method + " " + path + " HTTP/1.1\n"
+		buf.WriteString(req)
+		buf.WriteString("--------------------\n")
+		for _, h := range headers {
+			req = req + h + "\n"
+		}
+		_, err := conn.Write([]byte(req + "\n"))
+		if assert.NoError(t, err, "should write") {
+			_, err := io.Copy(buf, conn)
+			assert.NoError(t, err, "should copy")
+			buf.WriteString("====================\n\n")
+		}
+	}
 }
 
 func normalize(in *bytes.Buffer) *bytes.Buffer {

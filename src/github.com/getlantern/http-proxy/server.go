@@ -13,6 +13,7 @@ import (
 
 	// "github.com/getlantern/http-proxy-extensions/devicefilter"
 	"github.com/getlantern/http-proxy-extensions/mimic"
+	"github.com/getlantern/http-proxy-extensions/preprocessor"
 	// "github.com/getlantern/http-proxy-extensions/profilter"
 	"github.com/getlantern/http-proxy-extensions/tokenfilter"
 	"github.com/getlantern/http-proxy/commonfilter"
@@ -153,16 +154,20 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 		})
 
 	limListener := newLimitedListener(listener, &s.numConns, s.idleTimeout)
+	preListener := preprocessor.NewListener(limListener)
 
 	if s.enableReports {
-		mListener := measured.Listener(limListener, 30*time.Second)
+		mListener := measured.Listener(preListener, 30*time.Second)
 		s.listener = mListener
 	} else {
-		s.listener = limListener
+		s.listener = preListener
 	}
 
 	s.httpServer = http.Server{Handler: proxy,
 		ConnState: func(c net.Conn, state http.ConnState) {
+			if sc, ok := c.(preprocessor.StatefulConn); ok {
+				sc.SetState(state)
+			}
 			switch state {
 			case http.StateNew:
 				if atomic.LoadUint64(&s.numConns) >= s.maxConns {
