@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/gorilla/context"
+
 	"github.com/getlantern/golog"
 )
 
@@ -74,21 +76,18 @@ func (cb *connBag) Purge(remoteAddr string) {
 }
 
 func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
-	//cb := connBag{m: make(map[string]net.Conn)}
+	cb := connBag{m: make(map[string]net.Conn)}
 
 	proxy := http.HandlerFunc(
 		func(w http.ResponseWriter, req *http.Request) {
-			/*
-				c := cb.Withdraw(req.RemoteAddr)
-				context.Set(req, "conn", c)
-			*/
+			c := cb.Withdraw(req.RemoteAddr)
+			context.Set(req, "conn", c)
 			s.handler.ServeHTTP(w, req)
 		})
 
 	s.listener = listener
-
 	/*
-		limListener := newLimitedListener(listener, &s.numConns, s.idleTimeout)
+		limListener := newLimitedListener(listener, &s.numConns, time.Duration(30)*time.Second)
 		preListener := preprocessor.NewListener(limListener)
 
 		if s.enableReports {
@@ -98,18 +97,18 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 			s.listener = preListener
 		}
 	*/
-	s.httpServer = http.Server{Handler: proxy} /*
+	s.httpServer = http.Server{
+		Handler: proxy,
 		ConnState: func(c net.Conn, state http.ConnState) {
-			if sc, ok := c.(preprocessor.StatefulConn); ok {
-				sc.SetState(state)
-			}
 			switch state {
 			case http.StateNew:
-				if atomic.LoadUint64(&s.numConns) >= s.maxConns {
-					limListener.Stop()
-				} else if limListener.IsStopped() {
-					limListener.Restart()
-				}
+				/*
+					if atomic.LoadUint64(&s.numConns) >= s.maxConns {
+						limListener.Stop()
+					} else if limListener.IsStopped() {
+						limListener.Restart()
+					}
+				*/
 			case http.StateActive:
 				cb.Put(c)
 			case http.StateClosed:
@@ -120,20 +119,19 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 				cb.Purge(c.RemoteAddr().String())
 			}
 		},
-	*/
+	}
 
+	addr := s.listener.Addr().String()
 	/*
-		addr := s.listener.Addr().String()
 		host, port, err := net.SplitHostPort(addr)
 		if err != nil {
 			panic("should not happen")
 		}
-		mimic.Host = host
-		mimic.Port = port
-		if chListenOn != nil {
-			*chListenOn <- addr
-		}
 	*/
+
+	if chListenOn != nil {
+		*chListenOn <- addr
+	}
 
 	return s.httpServer.Serve(s.listener)
 }
