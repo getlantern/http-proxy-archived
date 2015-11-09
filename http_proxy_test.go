@@ -50,6 +50,10 @@ var (
 	}
 )
 
+func init() {
+	testingLocal = true
+}
+
 func TestMain(m *testing.M) {
 	flag.Parse()
 	var err error
