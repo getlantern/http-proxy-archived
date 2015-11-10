@@ -8,6 +8,7 @@ import (
 	"github.com/getlantern/golog"
 	"github.com/getlantern/measured"
 
+	"github.com/getlantern/http-proxy"
 	"github.com/getlantern/http-proxy/logging"
 	"github.com/getlantern/http-proxy/utils"
 )
@@ -56,14 +57,10 @@ func main() {
 			defer measured.Stop()
 		}
 	}
+	idleTimeout := time.Duration(*idleClose) * time.Second
+	firstHandler := http_proxy.DefaultHandlers(idleTimeout)
+	server := http_proxy.NewServer(firstHandler, *maxConns, idleTimeout, *enableReports)
 
-	server := NewServer(
-		*token,
-		*maxConns,
-		time.Duration(*idleClose)*time.Second,
-		*enableFilters,
-		*enableReports,
-	)
 	if *https {
 		err = server.ServeHTTPS(*addr, *keyfile, *certfile, nil)
 	} else {

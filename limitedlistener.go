@@ -1,8 +1,9 @@
-package main
+package http_proxy
 
 import (
 	"errors"
 	"net"
+	"net/http"
 	"sync/atomic"
 	"time"
 
@@ -12,7 +13,8 @@ import (
 type limitedListener struct {
 	net.Listener
 
-	numConns    *uint64
+	maxConns    uint64
+	numConns    uint64
 	idleTimeout time.Duration
 
 	stopped int32
@@ -20,12 +22,12 @@ type limitedListener struct {
 	restart chan bool
 }
 
-func newLimitedListener(l net.Listener, numConns *uint64, idleTimeout time.Duration) *limitedListener {
+func NewLimitedListener(l net.Listener, maxConns uint64, idleTimeout time.Duration) net.Listener {
 	listener := &limitedListener{
 		Listener:    l,
 		stop:        make(chan bool, 1),
 		restart:     make(chan bool),
-		numConns:    numConns,
+		maxConns:    maxConns,
 		idleTimeout: idleTimeout,
 	}
 
@@ -44,11 +46,9 @@ func (sl *limitedListener) Accept() (net.Conn, error) {
 		return nil, err
 	}
 
-	atomic.AddUint64(sl.numConns, 1)
-	log.Tracef("Accepted a new connection, now we have %v in total", *sl.numConns)
-	lc := &LimitedConn{
-		counter: sl.numConns,
-	}
+	atomic.AddUint64(&sl.numConns, 1)
+	log.Tracef("Accepted a new connection, %v in total now, %v max allowed", sl.numConns, sl.maxConns)
+	lc := &LimitedConn{listener: sl}
 	lc.Conn = idletiming.Conn(conn, sl.idleTimeout, func() {
 		lc.Close()
 	})
@@ -76,8 +76,26 @@ func (sl *limitedListener) Restart() {
 
 type LimitedConn struct {
 	net.Conn
-	counter *uint64
-	closed  uint32
+	listener *limitedListener
+	closed   uint32
+}
+
+func (c *LimitedConn) OnState(s http.ConnState) {
+	l := c.listener
+	log.Tracef("OnState(%s), numConns = %v, maxConns = %v", s, l.numConns, l.maxConns)
+	if sc, ok := c.Conn.(StateAware); ok {
+		sc.OnState(s)
+	}
+	if s != http.StateNew {
+		return
+	}
+	if atomic.LoadUint64(&l.numConns) >= l.maxConns {
+		log.Tracef("numConns %v >= maxConns %v, stop accepting new connections", l.numConns, l.maxConns)
+		l.Stop()
+	} else if l.IsStopped() {
+		log.Tracef("numConns %v < maxConns %v, accept new connections again", l.numConns, l.maxConns)
+		l.Restart()
+	}
 }
 
 func (c *LimitedConn) Close() (err error) {
@@ -86,7 +104,7 @@ func (c *LimitedConn) Close() (err error) {
 	}
 
 	// Substract 1 by adding the two-complement of -1
-	atomic.AddUint64(c.counter, ^uint64(0))
-	log.Tracef("Closed a connection and left %v remaining", *c.counter)
+	atomic.AddUint64(&c.listener.numConns, ^uint64(0))
+	log.Tracef("Closed a connection and left %v remaining", c.listener.numConns)
 	return c.Conn.Close()
 }

@@ -1,51 +1,76 @@
-package main
+package http_proxy
 
 import (
 	"math"
 	"net"
 	"net/http"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/gorilla/context"
 
+	"github.com/getlantern/golog"
 	"github.com/getlantern/measured"
 
 	// "github.com/getlantern/http-proxy-lantern/devicefilter"
-	"github.com/getlantern/http-proxy-lantern/mimic"
-	"github.com/getlantern/http-proxy-lantern/preprocessor"
+	// "github.com/getlantern/http-proxy-lantern/preprocessor"
 	// "github.com/getlantern/http-proxy-lantern/profilter"
-	"github.com/getlantern/http-proxy-lantern/tokenfilter"
+	//"github.com/getlantern/http-proxy-lantern/tokenfilter"
 	"github.com/getlantern/http-proxy/commonfilter"
 	"github.com/getlantern/http-proxy/forward"
 	"github.com/getlantern/http-proxy/httpconnect"
 )
 
+type measuredStateAwareConn struct {
+	StateAware
+	*measured.Conn
+}
+
+func (c measuredStateAwareConn) OnState(s http.ConnState) {
+	if sc, ok := c.Conn.Conn.(StateAware); ok {
+		sc.OnState(s)
+	}
+}
+
+type stateAwareMeasuredListener struct {
+	StateAware
+	*measured.MeasuredListener
+}
+
+func (l stateAwareMeasuredListener) Accept() (c net.Conn, err error) {
+	c, err = l.MeasuredListener.Accept()
+	if err != nil {
+		return nil, err
+	}
+	return measuredStateAwareConn{Conn: c.(*measured.Conn)}, err
+}
+
+func StateAwaredMeasuredListener(l net.Listener, reportInterval time.Duration) net.Listener {
+	return stateAwareMeasuredListener{MeasuredListener: measured.Listener(l, reportInterval)}
+}
+
 var (
+	log          = golog.LoggerFor("http-proxy")
 	testingLocal = false
 )
 
-type Server struct {
-	firstHandler http.Handler
-	httpServer   http.Server
-	tls          bool
-
-	listener net.Listener
-
-	maxConns uint64
-	numConns uint64
-
-	idleTimeout time.Duration
-
-	enableReports bool
+// StateAware is an interface that aware of HTTP state changes
+type StateAware interface {
+	OnState(s http.ConnState)
 }
 
-func NewServer(token string, maxConns uint64, idleTimeout time.Duration, enableFilters, enableReports bool) *Server {
-	if maxConns == 0 {
-		maxConns = math.MaxUint64
-	}
+type Server struct {
+	firstHandler  http.Handler
+	httpServer    http.Server
+	tls           bool
+	enableReports bool
+	maxConns      uint64
+	idleTimeout   time.Duration
 
+	moreListeners func(net.Listener) net.Listener
+}
+
+func DefaultHandlers(idleTimeout time.Duration) http.Handler {
 	// The following middleware architecture can be seen as a chain of
 	// filters that is run from last to first.
 	// Don't forget to check Oxy and Gorilla's handlers for middleware.
@@ -68,50 +93,24 @@ func NewServer(token string, maxConns uint64, idleTimeout time.Duration, enableF
 		connectHandler,
 		testingLocal,
 	)
+	return commonFilter
+}
 
-	var firstHandler http.Handler
-	if !enableFilters {
-		firstHandler = commonFilter
-	} else {
-		// Temporarily remove deviceFilter and lanternPro.  These need changes in the client
-		// that will come after the proxy is well tested.
-		/*
-			// Identifies Lantern Pro users (currently NOOP)
-			lanternPro, _ := profilter.New(
-				commonFilter,
-				profilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
-			)
-			// Returns a 404 to requests without the proper token.  Removes the
-			// header before continuing.
-			tokenFilter, _ := tokenfilter.New(
-				lanternPro,
-				tokenfilter.TokenSetter(token),
-				tokenfilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
-			)
-			// Extracts the user ID and attaches the matching client to the request
-			// context.  Returns a 404 to requests without the UID.  Removes the
-			// header before continuing.
-			deviceFilter, _ := devicefilter.New(
-				tokenFilter,
-				devicefilter.Logger(utils.NewTimeLogger(&stdWriter, logLevel)),
-			)
-			firstHandler = deviceFilter
-		*/
-		tokenFilter, _ := tokenfilter.New(
-			commonFilter,
-			tokenfilter.TokenSetter(token),
-		)
-		firstHandler = tokenFilter
+func NewServer(firstHandler http.Handler, maxConns uint64, idleTimeout time.Duration, enableReports bool) *Server {
+	if maxConns == 0 {
+		maxConns = math.MaxUint64
 	}
-
 	server := &Server{
 		firstHandler:  firstHandler,
-		maxConns:      maxConns,
-		numConns:      0,
-		idleTimeout:   idleTimeout,
 		enableReports: enableReports,
+		maxConns:      maxConns,
+		idleTimeout:   idleTimeout,
 	}
 	return server
+}
+
+func (s *Server) DecorateListener(f func(l net.Listener) net.Listener) {
+	s.moreListeners = f
 }
 
 func (s *Server) ServeHTTP(addr string, chListenOn *chan string) error {
@@ -172,30 +171,12 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 			s.firstHandler.ServeHTTP(w, req)
 		})
 
-	limListener := newLimitedListener(listener, &s.numConns, s.idleTimeout)
-	preListener := preprocessor.NewListener(limListener)
-
-	if s.enableReports {
-		mListener := measured.Listener(preListener, 30*time.Second)
-		s.listener = mListener
-	} else {
-		s.listener = preListener
-	}
+	// preListener := preprocessor.NewListener(limListener)
 
 	s.httpServer = http.Server{Handler: proxy,
 		ConnState: func(c net.Conn, state http.ConnState) {
-			if sc, ok := c.(preprocessor.StatefulConn); ok {
-				sc.SetState(state)
-			}
+			c.(StateAware).OnState(state)
 			switch state {
-			case http.StateNew:
-				if atomic.LoadUint64(&s.numConns) >= s.maxConns {
-					log.Tracef("numConns %v >= maxConns %v, stop accepting new connections", s.numConns, s.maxConns)
-					limListener.Stop()
-				} else if limListener.IsStopped() {
-					log.Tracef("numConns %v < maxConns %v, accept new connections again", s.numConns, s.maxConns)
-					limListener.Restart()
-				}
 			case http.StateActive:
 				cb.Put(c)
 			case http.StateClosed:
@@ -208,16 +189,22 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 		},
 	}
 
-	addr := s.listener.Addr().String()
-	host, port, err := net.SplitHostPort(addr)
-	if err != nil {
-		panic("should not happen")
+	var firstListener net.Listener
+	limListener := NewLimitedListener(listener, s.maxConns, s.idleTimeout)
+	if s.enableReports {
+		firstListener = StateAwaredMeasuredListener(limListener, 30*time.Second)
+	} else {
+		firstListener = limListener
 	}
-	mimic.Host = host
-	mimic.Port = port
+	if s.moreListeners != nil {
+		firstListener = s.moreListeners(firstListener)
+	}
+
+	addr := firstListener.Addr().String()
+	s.httpServer.Addr = addr
 	if chListenOn != nil {
 		*chListenOn <- addr
 	}
 
-	return s.httpServer.Serve(s.listener)
+	return s.httpServer.Serve(firstListener)
 }
