@@ -21,34 +21,6 @@ import (
 	"github.com/getlantern/http-proxy/httpconnect"
 )
 
-type measuredStateAwareConn struct {
-	StateAware
-	*measured.Conn
-}
-
-func (c measuredStateAwareConn) OnState(s http.ConnState) {
-	if sc, ok := c.Conn.Conn.(StateAware); ok {
-		sc.OnState(s)
-	}
-}
-
-type stateAwareMeasuredListener struct {
-	StateAware
-	*measured.MeasuredListener
-}
-
-func (l stateAwareMeasuredListener) Accept() (c net.Conn, err error) {
-	c, err = l.MeasuredListener.Accept()
-	if err != nil {
-		return nil, err
-	}
-	return measuredStateAwareConn{Conn: c.(*measured.Conn)}, err
-}
-
-func StateAwaredMeasuredListener(l net.Listener, reportInterval time.Duration) net.Listener {
-	return stateAwareMeasuredListener{MeasuredListener: measured.Listener(l, reportInterval)}
-}
-
 var (
 	log          = golog.LoggerFor("http-proxy")
 	testingLocal = false
@@ -57,17 +29,6 @@ var (
 // StateAware is an interface that aware of HTTP state changes
 type StateAware interface {
 	OnState(s http.ConnState)
-}
-
-type Server struct {
-	firstHandler  http.Handler
-	httpServer    http.Server
-	tls           bool
-	enableReports bool
-	maxConns      uint64
-	idleTimeout   time.Duration
-
-	moreListeners func(net.Listener) net.Listener
 }
 
 func DefaultHandlers(idleTimeout time.Duration) http.Handler {
@@ -94,6 +55,17 @@ func DefaultHandlers(idleTimeout time.Duration) http.Handler {
 		testingLocal,
 	)
 	return commonFilter
+}
+
+type Server struct {
+	firstHandler  http.Handler
+	httpServer    http.Server
+	tls           bool
+	enableReports bool
+	maxConns      uint64
+	idleTimeout   time.Duration
+
+	moreListeners func(net.Listener) net.Listener
 }
 
 func NewServer(firstHandler http.Handler, maxConns uint64, idleTimeout time.Duration, enableReports bool) *Server {
@@ -131,34 +103,6 @@ func (s *Server) ServeHTTPS(addr, keyfile, certfile string, chListenOn *chan str
 	s.tls = true
 	log.Debugf("Listen https on %s", addr)
 	return s.doServe(listener, chListenOn)
-}
-
-// connBag is a just bag of connections. You can put a connection in and
-// withdraw it afterwards, or purge it regardless it's withdrawed or not.
-type connBag struct {
-	mu sync.Mutex
-	m  map[string]net.Conn
-}
-
-func (cb *connBag) Put(c net.Conn) {
-	cb.mu.Lock()
-	defer cb.mu.Unlock()
-	cb.m[c.RemoteAddr().String()] = c
-}
-
-func (cb *connBag) Withdraw(remoteAddr string) (c net.Conn) {
-	cb.mu.Lock()
-	defer cb.mu.Unlock()
-	c = cb.m[remoteAddr]
-	delete(cb.m, remoteAddr)
-	return
-}
-
-func (cb *connBag) Purge(remoteAddr string) {
-	cb.mu.Lock()
-	defer cb.mu.Unlock()
-	// non-op if item doesn't exist
-	delete(cb.m, remoteAddr)
 }
 
 func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
@@ -207,4 +151,64 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 	}
 
 	return s.httpServer.Serve(firstListener)
+}
+
+func (s *Server) Addr() string {
+	return s.httpServer.Addr
+}
+
+// connBag is a just bag of connections. You can put a connection in and
+// withdraw it afterwards, or purge it regardless it's withdrawed or not.
+type connBag struct {
+	mu sync.Mutex
+	m  map[string]net.Conn
+}
+
+func (cb *connBag) Put(c net.Conn) {
+	cb.mu.Lock()
+	defer cb.mu.Unlock()
+	cb.m[c.RemoteAddr().String()] = c
+}
+
+func (cb *connBag) Withdraw(remoteAddr string) (c net.Conn) {
+	cb.mu.Lock()
+	defer cb.mu.Unlock()
+	c = cb.m[remoteAddr]
+	delete(cb.m, remoteAddr)
+	return
+}
+
+func (cb *connBag) Purge(remoteAddr string) {
+	cb.mu.Lock()
+	defer cb.mu.Unlock()
+	// non-op if item doesn't exist
+	delete(cb.m, remoteAddr)
+}
+
+type measuredStateAwareConn struct {
+	StateAware
+	*measured.Conn
+}
+
+func (c measuredStateAwareConn) OnState(s http.ConnState) {
+	if sc, ok := c.Conn.Conn.(StateAware); ok {
+		sc.OnState(s)
+	}
+}
+
+type stateAwareMeasuredListener struct {
+	StateAware
+	*measured.MeasuredListener
+}
+
+func (l stateAwareMeasuredListener) Accept() (c net.Conn, err error) {
+	c, err = l.MeasuredListener.Accept()
+	if err != nil {
+		return nil, err
+	}
+	return measuredStateAwareConn{Conn: c.(*measured.Conn)}, err
+}
+
+func StateAwaredMeasuredListener(l net.Listener, reportInterval time.Duration) net.Listener {
+	return stateAwareMeasuredListener{MeasuredListener: measured.Listener(l, reportInterval)}
 }
