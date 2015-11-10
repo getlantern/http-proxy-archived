@@ -5,18 +5,13 @@ import (
 	"net"
 	"net/http"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/gorilla/context"
 
 	"github.com/getlantern/golog"
-	"github.com/getlantern/measured"
 
-	// "github.com/getlantern/http-proxy-lantern/devicefilter"
-	"github.com/getlantern/http-proxy-lantern/mimic"
-	"github.com/getlantern/http-proxy-lantern/preprocessor"
-	// "github.com/getlantern/http-proxy-lantern/profilter"
+	"github.com/getlantern/http-proxy/listeners"
 )
 
 var (
@@ -25,34 +20,27 @@ var (
 )
 
 type Server struct {
-	handler    http.Handler
-	httpServer http.Server
-	tls        bool
-
-	listener net.Listener
-
-	maxConns uint64
-	numConns uint64
-
-	idleTimeout time.Duration
-
-	enableReports bool
+	handler       http.Handler
+	httpServer    http.Server
+	tls           bool
+	moreListeners func(net.Listener) net.Listener
 }
 
 func NewServer(handler http.Handler) *Server {
 	maxConns := uint64(0)
-	idleTimeout := time.Duration(30) * time.Second
 	if maxConns == 0 {
 		maxConns = math.MaxUint64
 	}
 
 	server := &Server{
-		handler:     handler,
-		maxConns:    maxConns,
-		numConns:    0,
-		idleTimeout: idleTimeout,
+		handler: handler,
 	}
+
 	return server
+}
+
+func (s *Server) DecorateListener(f func(l net.Listener) net.Listener) {
+	s.moreListeners = f
 }
 
 func (s *Server) ServeHTTP(addr string, chListenOn *chan string) error {
@@ -113,30 +101,12 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 			s.handler.ServeHTTP(w, req)
 		})
 
-	limListener := newLimitedListener(listener, &s.numConns, s.idleTimeout)
-	preListener := preprocessor.NewListener(limListener)
-
-	if s.enableReports {
-		mListener := measured.Listener(preListener, 30*time.Second)
-		s.listener = mListener
-	} else {
-		s.listener = preListener
-	}
+	// preListener := preprocessor.NewListener(limListener)
 
 	s.httpServer = http.Server{Handler: proxy,
 		ConnState: func(c net.Conn, state http.ConnState) {
-			if sc, ok := c.(preprocessor.StatefulConn); ok {
-				sc.SetState(state)
-			}
+			c.(listeners.StateAware).OnState(state)
 			switch state {
-			case http.StateNew:
-				if atomic.LoadUint64(&s.numConns) >= s.maxConns {
-					log.Tracef("numConns %v >= maxConns %v, stop accepting new connections", s.numConns, s.maxConns)
-					limListener.Stop()
-				} else if limListener.IsStopped() {
-					log.Tracef("numConns %v < maxConns %v, accept new connections again", s.numConns, s.maxConns)
-					limListener.Restart()
-				}
 			case http.StateActive:
 				cb.Put(c)
 			case http.StateClosed:
@@ -149,16 +119,22 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 		},
 	}
 
-	addr := s.listener.Addr().String()
-	host, port, err := net.SplitHostPort(addr)
-	if err != nil {
-		panic("should not happen")
+	var firstListener net.Listener
+	limListener := listeners.NewLimitedListener(listener, 0, 30*time.Second)
+	if true {
+		firstListener = listeners.StateAwaredMeasuredListener(limListener, 30*time.Second)
+	} else {
+		firstListener = limListener
 	}
-	mimic.Host = host
-	mimic.Port = port
+	if s.moreListeners != nil {
+		firstListener = s.moreListeners(firstListener)
+	}
+
+	addr := firstListener.Addr().String()
+	s.httpServer.Addr = addr
 	if chListenOn != nil {
 		*chListenOn <- addr
 	}
 
-	return s.httpServer.Serve(s.listener)
+	return s.httpServer.Serve(firstListener)
 }
