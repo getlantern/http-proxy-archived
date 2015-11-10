@@ -5,29 +5,80 @@
 ## Run
 
 First get dependencies:
+
 ```
 go get -t
 ```
+
 Then run with:
 
 ```
-test/run-server.sh
+go run http_proxy.go
 ```
+
+## Build your own Proxy
+
+This proxy is built around the classical *Middleware* pattern.  You can see examples in the `forward` and `httpconnect` packges.  They can be chained together forming a series of filters.
+
+See this code snippet:
+
+``` go
+// Middleware: Forward HTTP Messages
+forwarder, err := forward.New(nil, forward.IdleTimeoutSetter(time.Duration(*idleClose)*time.Second))
+if err != nil {
+	log.Error(err)
+}
+
+// Middleware: Handle HTTP CONNECT
+httpConnect, err := httpconnect.New(forwarder, httpconnect.IdleTimeoutSetter(time.Duration(*idleClose)*time.Second))
+if err != nil {
+	log.Error(err)
+}
+
+...
+```
+
+Additionally, this proxy uses the concept of *connection wrappers*, which work as a series of wrappers over the listeners generating the connections, and the connections themselves.
+
+The following is an extract of the default listeners you can find in this proxy.  You need to provide functions that take the previous listener and produce a new one, wrapping it in the process.  Note that the generated connections must implement `StateAwareConn`.  See more examples in `listeners`.
+
+``` go
+srv.AddListenerWrappers(
+	// Limit max number of simultaneous connections
+	func(ls net.Listener) net.Listener {
+		return listeners.NewLimitedListener(ls, *maxConns)
+	},
+
+    // Close connections after 30 seconds of no activity
+	func(ls net.Listener) net.Listener {
+		return listeners.NewIdleConnListener(ls, time.Duration(*idleClose)*time.Second)
+	},
+)
+```
+
 
 ## Test
 
+### Run tests
+
+```
+go test
+```
+
+Use this for verbose output:
+
+```
+TRACE=1 go test
+```
+
+### Manual testing
+
 *Keep in mind that cURL doesn't support tunneling through an HTTPS proxy, so if you use the -https option you have to use other tools for testing.
-
-Without the header, it will respond `404 Not Found`. In order to avoid this and test it as a normal proxy, use the `-disableFilters` flag.*
-
-You can either use the proxy as a regular HTTP proxy or with Lantern-specific extensions.
-
-### Testing as a regular HTTP proxy
 
 Run the server as follows:
 
 ```
-test/run-server.sh
+go run http_proxy.go
 ```
 
 Test direct proxying with cURL:
@@ -43,20 +94,3 @@ Test HTTP connect with cURL:
 curl -kpvx localhost:8080 http://www.google.com/humans.txt
 curl -kpvx localhost:8080 https://www.google.com/humans.txt
 ```
-
-### Testing with Lantern extensions and configuration
-
-Run the server with:
-
-```
-test/run-server.sh -https -enablefilters -enablereports -token=<your-token>
-```
-
-You have two options to test it: the Lantern client or [checkfallbacks](https://github.com/getlantern/lantern/tree/valencia/src/github.com/getlantern/checkfallbacks).
-
-Keep in mind that they will need to send some headers in order to avoid receiving 404 messages (the chained server response if you aren't providing them).
-
-Currently, the only header you need to add is `X-Lantern-Device-Id`.
-
-If you are using checkfallbacks, make sure that both the certificate and the token are correct.  A 404 will be the reply otherwise.  Running the server with `-debug` may help you troubleshooting those scenarios.
-
