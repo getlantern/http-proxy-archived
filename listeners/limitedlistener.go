@@ -2,6 +2,7 @@ package listeners
 
 import (
 	"errors"
+	"math"
 	"net"
 	"net/http"
 	"sync/atomic"
@@ -27,13 +28,17 @@ type limitedListener struct {
 	restart chan bool
 }
 
-func NewLimitedListener(l net.Listener, maxConns uint64, idleTimeout time.Duration) net.Listener {
+func NewLimitedListener(l net.Listener, maxConns uint64) net.Listener {
+	if maxConns <= 0 {
+		maxConns = math.MaxUint64
+	}
+
 	listener := &limitedListener{
 		Listener:    l,
 		stop:        make(chan bool, 1),
 		restart:     make(chan bool),
 		maxConns:    maxConns,
-		idleTimeout: idleTimeout,
+		idleTimeout: 30 * time.Second,
 	}
 
 	return listener

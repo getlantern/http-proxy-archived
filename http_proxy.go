@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"net"
 	"os"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/getlantern/http-proxy/commonfilter"
 	"github.com/getlantern/http-proxy/forward"
 	"github.com/getlantern/http-proxy/httpconnect"
+	"github.com/getlantern/http-proxy/listeners"
 	"github.com/getlantern/http-proxy/logging"
 	"github.com/getlantern/http-proxy/server"
 )
@@ -36,12 +38,14 @@ func main() {
 		return
 	}
 
+	// Logging
 	// TODO: use real parameters
 	err = logging.Init("instanceid", "version", "releasedate", "")
 	if err != nil {
 		log.Error(err)
 	}
 
+	// Middleware
 	forwarder, err := forward.New(nil, forward.IdleTimeoutSetter(time.Duration(*idleClose)*time.Second))
 	if err != nil {
 		log.Error(err)
@@ -57,8 +61,20 @@ func main() {
 		log.Error(err)
 	}
 
+	// Create server
 	srv := server.NewServer(commonHandler)
 
+	// Add net.Conn wrappers
+	srv.AddConnWrappers(
+		func(ls net.Listener) net.Listener {
+			return listeners.NewLimitedListener(ls, 0)
+		},
+		func(ls net.Listener) net.Listener {
+			return listeners.NewMeasuredListener(ls, time.Second*120)
+		},
+	)
+
+	// Serve HTTP/S
 	if *https {
 		err = srv.ServeHTTPS(*addr, *keyfile, *certfile, nil)
 	} else {
