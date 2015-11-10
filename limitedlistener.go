@@ -45,7 +45,7 @@ func (sl *limitedListener) Accept() (net.Conn, error) {
 	}
 
 	atomic.AddUint64(sl.numConns, 1)
-	log.Tracef("counter = %v after increment", *sl.numConns)
+	log.Tracef("Accepted a new connection, now we have %v in total", *sl.numConns)
 	lc := &LimitedConn{
 		counter: sl.numConns,
 	}
@@ -87,6 +87,6 @@ func (c *LimitedConn) Close() (err error) {
 
 	// Substract 1 by adding the two-complement of -1
 	atomic.AddUint64(c.counter, ^uint64(0))
-	log.Tracef("counter = %v after decrement", *c.counter)
+	log.Tracef("Closed a connection and left %v remaining", *c.counter)
 	return c.Conn.Close()
 }
