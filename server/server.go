@@ -19,9 +19,12 @@ var (
 type listenerGenerator func(net.Listener) net.Listener
 
 type Server struct {
+	Addr net.Addr
+	Tls  bool
+
 	handler            http.Handler
+	listener           net.Listener
 	httpServer         http.Server
-	tls                bool
 	listenerGenerators []listenerGenerator
 }
 
@@ -44,7 +47,7 @@ func (s *Server) ServeHTTP(addr string, chListenOn *chan string) error {
 	if err != nil {
 		return err
 	}
-	s.tls = false
+	s.Tls = false
 	log.Debugf("Listen http on %s", addr)
 	return s.doServe(listener, chListenOn)
 }
@@ -54,7 +57,7 @@ func (s *Server) ServeHTTPS(addr, keyfile, certfile string, chListenOn *chan str
 	if err != nil {
 		return err
 	}
-	s.tls = true
+	s.Tls = true
 	log.Debugf("Listen https on %s", addr)
 	return s.doServe(listener, chListenOn)
 }
@@ -94,11 +97,13 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 		newlis := li(*firstListener)
 		firstListener = &newlis
 	}
+	s.listener = *firstListener
 
-	addr := (*firstListener).Addr().String()
-	s.httpServer.Addr = addr
+	s.Addr = s.listener.Addr()
+	addrStr := s.Addr.String()
+	s.httpServer.Addr = addrStr
 	if chListenOn != nil {
-		*chListenOn <- addr
+		*chListenOn <- addrStr
 	}
 
 	return s.httpServer.Serve(*firstListener)

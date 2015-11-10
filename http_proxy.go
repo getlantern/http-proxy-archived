@@ -19,7 +19,7 @@ import (
 
 var (
 	testingLocal = false
-	log          = golog.LoggerFor("main")
+	log          = golog.LoggerFor("http-proxy")
 
 	help      = flag.Bool("help", false, "Get usage help")
 	keyfile   = flag.String("key", "", "Private key file name")
@@ -69,7 +69,7 @@ func main() {
 	// Create server
 	srv := server.NewServer(commonHandler)
 
-	// Add net.Listener wrappers
+	// Add net.Listener wrappers for inbound connections
 	srv.AddListenerWrappers(
 		// Limit max number of simultaneous connections
 		func(ls net.Listener) net.Listener {
