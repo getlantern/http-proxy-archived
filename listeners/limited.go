@@ -15,6 +15,7 @@ var (
 	log = golog.LoggerFor("listeners")
 )
 
+// Wrap listener
 type limitedListener struct {
 	net.Listener
 
@@ -32,15 +33,14 @@ func NewLimitedListener(l net.Listener, maxConns uint64) net.Listener {
 		maxConns = math.MaxUint64
 	}
 
-	listener := &limitedListener{
+	return &limitedListener{
 		Listener:    l,
+		stopped:     0,
 		stop:        make(chan bool, 1),
 		restart:     make(chan bool),
 		maxConns:    maxConns,
 		idleTimeout: 30 * time.Second,
 	}
-
-	return listener
 }
 
 func (sl *limitedListener) Accept() (net.Conn, error) {
@@ -86,6 +86,7 @@ func (sl *limitedListener) Restart() {
 	}
 }
 
+// Wrap connection
 type LimitedConn struct {
 	net.Conn
 	listener *limitedListener

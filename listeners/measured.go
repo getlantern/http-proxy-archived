@@ -8,15 +8,8 @@ import (
 	"github.com/getlantern/measured"
 )
 
-type measuredStateAwareConn struct {
-	StateAware
-	*measured.Conn
-}
-
-func (c measuredStateAwareConn) OnState(s http.ConnState) {}
-
+// Wrap listener
 type stateAwareMeasuredListener struct {
-	StateAware
 	*measured.MeasuredListener
 }
 
@@ -25,7 +18,7 @@ func (l stateAwareMeasuredListener) Accept() (c net.Conn, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return measuredStateAwareConn{Conn: c.(*measured.Conn)}, err
+	return stateAwareMeasuredConn{Conn: c.(*measured.Conn)}, err
 }
 
 func NewMeasuredListener(l net.Listener, reportInterval time.Duration) net.Listener {
@@ -33,3 +26,10 @@ func NewMeasuredListener(l net.Listener, reportInterval time.Duration) net.Liste
 		MeasuredListener: measured.Listener(l, reportInterval),
 	}
 }
+
+// Wrap connection
+type stateAwareMeasuredConn struct {
+	*measured.Conn
+}
+
+func (c stateAwareMeasuredConn) OnState(s http.ConnState) {}

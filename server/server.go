@@ -23,9 +23,9 @@ type Server struct {
 	Tls  bool
 
 	handler            http.Handler
-	listener           net.Listener
 	httpServer         http.Server
 	listenerGenerators []listenerGenerator
+	listeners          []*net.Listener
 }
 
 func NewServer(handler http.Handler) *Server {
@@ -74,7 +74,8 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 
 	s.httpServer = http.Server{Handler: proxy,
 		ConnState: func(c net.Conn, state http.ConnState) {
-			awareconn, ok := c.(listeners.StateAware)
+			awareconn, ok := c.(listeners.StateAwareConn)
+
 			if ok {
 				awareconn.OnState(state)
 			}
@@ -95,11 +96,11 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 	firstListener := &listener
 	for _, li := range s.listenerGenerators {
 		newlis := li(*firstListener)
+		s.listeners = append(s.listeners, &newlis)
 		firstListener = &newlis
 	}
-	s.listener = *firstListener
 
-	s.Addr = s.listener.Addr()
+	s.Addr = (*firstListener).Addr()
 	addrStr := s.Addr.String()
 	s.httpServer.Addr = addrStr
 	if chListenOn != nil {
