@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"net"
 	"sync/atomic"
 	"time"
@@ -39,18 +40,20 @@ func (sl *limitedListener) Accept() (net.Conn, error) {
 	}
 
 	conn, err := sl.Listener.Accept()
-	atomic.AddUint64(sl.numConns, 1)
+	if err != nil {
+		return nil, err
+	}
 
-	idleConn := idletiming.Conn(conn, sl.idleTimeout, func() {
-		if conn != nil {
-			conn.Close()
-		}
+	atomic.AddUint64(sl.numConns, 1)
+	log.Tracef("counter = %v after increment", *sl.numConns)
+	lc := &LimitedConn{
+		counter: sl.numConns,
+	}
+	lc.Conn = idletiming.Conn(conn, sl.idleTimeout, func() {
+		lc.Close()
 	})
 
-	return &LimitedConn{
-		Conn:    idleConn,
-		counter: sl.numConns,
-	}, err
+	return lc, err
 }
 
 func (sl *limitedListener) IsStopped() bool {
@@ -74,10 +77,16 @@ func (sl *limitedListener) Restart() {
 type LimitedConn struct {
 	net.Conn
 	counter *uint64
+	closed  uint32
 }
 
 func (c *LimitedConn) Close() (err error) {
+	if atomic.SwapUint32(&c.closed, 1) == 1 {
+		return errors.New("network connection already closed")
+	}
+
 	// Substract 1 by adding the two-complement of -1
 	atomic.AddUint64(c.counter, ^uint64(0))
+	log.Tracef("counter = %v after decrement", *c.counter)
 	return c.Conn.Close()
 }
