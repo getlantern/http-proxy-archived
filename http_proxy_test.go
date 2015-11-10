@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/getlantern/idletiming"
 	"github.com/getlantern/keyman"
 	"github.com/getlantern/measured"
 	"github.com/getlantern/testify/assert"
@@ -88,7 +87,6 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-/*
 func TestMaxConnections(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\n\r\n"
 
@@ -127,7 +125,7 @@ func TestMaxConnections(t *testing.T) {
 		go testRoundTrip(t, limitedServer, httpTargetServer, okFn)
 	}
 
-	time.Sleep(time.Millisecond * 100)
+	time.Sleep(time.Millisecond * 10)
 
 	for i := 0; i < 5; i++ {
 		go testRoundTrip(t, limitedServer, httpTargetServer, waitFn)
@@ -139,7 +137,6 @@ func TestMaxConnections(t *testing.T) {
 		go testRoundTrip(t, limitedServer, httpTargetServer, okFn)
 	}
 }
-*/
 
 func TestIdleClientConnections(t *testing.T) {
 	limitedServer, err := setupNewHTTPServer(0, 100*time.Millisecond)
@@ -149,7 +146,7 @@ func TestIdleClientConnections(t *testing.T) {
 
 	okFn := func(conn net.Conn, proxy *server.Server, targetURL *url.URL) {
 		time.Sleep(time.Millisecond * 90)
-		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
+		conn.Write([]byte("GET / HTTP/1.1\r\nHost: www.google.com\r\n\r\n"))
 
 		var buf [400]byte
 		_, err := conn.Read(buf[:])
@@ -159,7 +156,7 @@ func TestIdleClientConnections(t *testing.T) {
 
 	idleFn := func(conn net.Conn, proxy *server.Server, targetURL *url.URL) {
 		time.Sleep(time.Millisecond * 110)
-		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
+		conn.Write([]byte("GET / HTTP/1.1\r\nHost: www.google.com\r\n\r\n"))
 
 		var buf [400]byte
 		_, err := conn.Read(buf[:])
@@ -424,7 +421,7 @@ type proxy struct {
 	addr     string
 }
 
-func createStandardServer(maxConns uint64, idleTimeout time.Duration) *server.Server {
+func basicServer(maxConns uint64, idleTimeout time.Duration) *server.Server {
 
 	// Middleware: Forward HTTP Messages
 	forwarder, err := forward.New(nil, forward.IdleTimeoutSetter(idleTimeout))
@@ -453,12 +450,9 @@ func createStandardServer(maxConns uint64, idleTimeout time.Duration) *server.Se
 		func(ls net.Listener) net.Listener {
 			return listeners.NewLimitedListener(ls, maxConns)
 		},
-
 		// Close connections after 30 seconds of no activity
 		func(ls net.Listener) net.Listener {
-			return idletiming.Listener(ls, idleTimeout, func(c net.Conn) {
-				c.Close()
-			})
+			return listeners.NewIdleConnListener(ls, idleTimeout)
 		},
 	)
 
@@ -466,7 +460,7 @@ func createStandardServer(maxConns uint64, idleTimeout time.Duration) *server.Se
 }
 
 func setupNewHTTPServer(maxConns uint64, idleTimeout time.Duration) (*server.Server, error) {
-	s := createStandardServer(maxConns, idleTimeout)
+	s := basicServer(maxConns, idleTimeout)
 	var err error
 	ready := make(chan string)
 	go func(err *error) {
@@ -479,7 +473,7 @@ func setupNewHTTPServer(maxConns uint64, idleTimeout time.Duration) (*server.Ser
 }
 
 func setupNewHTTPSServer(maxConns uint64, idleTimeout time.Duration) (*server.Server, error) {
-	s := createStandardServer(maxConns, idleTimeout)
+	s := basicServer(maxConns, idleTimeout)
 	var err error
 	ready := make(chan string)
 	go func(err *error) {

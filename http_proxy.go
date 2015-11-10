@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/getlantern/golog"
-	"github.com/getlantern/idletiming"
+	//	"github.com/getlantern/idletiming"
 
 	"github.com/getlantern/http-proxy/commonfilter"
 	"github.com/getlantern/http-proxy/forward"
@@ -73,14 +73,11 @@ func main() {
 	srv.AddListenerWrappers(
 		// Limit max number of simultaneous connections
 		func(ls net.Listener) net.Listener {
-			return listeners.NewLimitedListener(ls, 0)
+			return listeners.NewLimitedListener(ls, *maxConns)
 		},
-
 		// Close connections after 30 seconds of no activity
 		func(ls net.Listener) net.Listener {
-			return idletiming.Listener(ls, time.Second*30, func(c net.Conn) {
-				c.Close()
-			})
+			return listeners.NewIdleConnListener(ls, time.Duration(*idleClose)*time.Second)
 		},
 	)
 

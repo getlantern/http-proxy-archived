@@ -15,7 +15,6 @@ var (
 	log = golog.LoggerFor("listeners")
 )
 
-// Wrap listener
 type limitedListener struct {
 	net.Listener
 
@@ -86,7 +85,6 @@ func (sl *limitedListener) Restart() {
 	}
 }
 
-// Wrap connection
 type LimitedConn struct {
 	net.Conn
 	listener *limitedListener
