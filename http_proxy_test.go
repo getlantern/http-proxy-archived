@@ -555,7 +555,7 @@ func TestDirectOK(t *testing.T) {
 }
 
 func TestInvalidRequest(t *testing.T) {
-	connectResp := "HTTP/1.1 400 Bad Request\r\n"
+	connectResp := "<title>400 Bad Request</title>\n"
 	testFn := func(conn net.Conn, proxy *Server, targetURL *url.URL) {
 		_, err := conn.Write([]byte("GET HTTP/1.1\r\n\r\n"))
 		if !assert.NoError(t, err, "should write GET request") {

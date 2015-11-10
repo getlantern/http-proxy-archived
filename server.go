@@ -12,10 +12,11 @@ import (
 
 	"github.com/getlantern/measured"
 
-	// "github.com/getlantern/http-proxy-extensions/devicefilter"
-	"github.com/getlantern/http-proxy-extensions/mimic"
-	// "github.com/getlantern/http-proxy-extensions/profilter"
-	"github.com/getlantern/http-proxy-extensions/tokenfilter"
+	// "github.com/getlantern/http-proxy-lantern/devicefilter"
+	"github.com/getlantern/http-proxy-lantern/mimic"
+	"github.com/getlantern/http-proxy-lantern/preprocessor"
+	// "github.com/getlantern/http-proxy-lantern/profilter"
+	"github.com/getlantern/http-proxy-lantern/tokenfilter"
 	"github.com/getlantern/http-proxy/commonfilter"
 	"github.com/getlantern/http-proxy/forward"
 	"github.com/getlantern/http-proxy/httpconnect"
@@ -42,7 +43,7 @@ type Server struct {
 
 func NewServer(token string, maxConns uint64, idleTimeout time.Duration, enableFilters, enableReports bool) *Server {
 	if maxConns == 0 {
-		maxConns = math.MaxInt64
+		maxConns = math.MaxUint64
 	}
 
 	// The following middleware architecture can be seen as a chain of
@@ -172,21 +173,27 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 		})
 
 	limListener := newLimitedListener(listener, &s.numConns, s.idleTimeout)
+	preListener := preprocessor.NewListener(limListener)
 
 	if s.enableReports {
-		mListener := measured.Listener(limListener, 30*time.Second)
+		mListener := measured.Listener(preListener, 30*time.Second)
 		s.listener = mListener
 	} else {
-		s.listener = limListener
+		s.listener = preListener
 	}
 
 	s.httpServer = http.Server{Handler: proxy,
 		ConnState: func(c net.Conn, state http.ConnState) {
+			if sc, ok := c.(preprocessor.StatefulConn); ok {
+				sc.SetState(state)
+			}
 			switch state {
 			case http.StateNew:
 				if atomic.LoadUint64(&s.numConns) >= s.maxConns {
+					log.Tracef("numConns %v >= maxConns %v, stop accepting new connections", s.numConns, s.maxConns)
 					limListener.Stop()
 				} else if limListener.IsStopped() {
+					log.Tracef("numConns %v < maxConns %v, accept new connections again", s.numConns, s.maxConns)
 					limListener.Restart()
 				}
 			case http.StateActive:
