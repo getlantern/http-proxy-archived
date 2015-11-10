@@ -13,11 +13,7 @@ type measuredStateAwareConn struct {
 	*measured.Conn
 }
 
-func (c measuredStateAwareConn) OnState(s http.ConnState) {
-	if sc, ok := c.Conn.Conn.(StateAware); ok {
-		sc.OnState(s)
-	}
-}
+func (c measuredStateAwareConn) OnState(s http.ConnState) {}
 
 type stateAwareMeasuredListener struct {
 	StateAware

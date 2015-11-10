@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/getlantern/golog"
-	"github.com/getlantern/idletiming"
 )
 
 var (
@@ -58,12 +57,8 @@ func (sl *limitedListener) Accept() (net.Conn, error) {
 
 	atomic.AddUint64(&sl.numConns, 1)
 	log.Tracef("Accepted a new connection, %v in total now, %v max allowed", sl.numConns, sl.maxConns)
-	lc := &LimitedConn{listener: sl}
-	lc.Conn = idletiming.Conn(conn, sl.idleTimeout, func() {
-		lc.Close()
-	})
 
-	return lc, err
+	return &LimitedConn{Conn: conn, listener: sl}, err
 }
 
 func (sl *limitedListener) IsStopped() bool {
@@ -93,12 +88,11 @@ type LimitedConn struct {
 func (c *LimitedConn) OnState(s http.ConnState) {
 	l := c.listener
 	log.Tracef("OnState(%s), numConns = %v, maxConns = %v", s, l.numConns, l.maxConns)
-	if sc, ok := c.Conn.(StateAware); ok {
-		sc.OnState(s)
-	}
+
 	if s != http.StateNew {
 		return
 	}
+
 	if atomic.LoadUint64(&l.numConns) >= l.maxConns {
 		log.Tracef("numConns %v >= maxConns %v, stop accepting new connections", l.numConns, l.maxConns)
 		l.Stop()

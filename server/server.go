@@ -33,7 +33,7 @@ func NewServer(handler http.Handler) *Server {
 	return server
 }
 
-func (s *Server) AddConnWrappers(listenerGens ...listenerGenerator) {
+func (s *Server) AddListenerWrappers(listenerGens ...listenerGenerator) {
 	for _, g := range listenerGens {
 		s.listenerGenerators = append(s.listenerGenerators, g)
 	}

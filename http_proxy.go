@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/getlantern/golog"
+	"github.com/getlantern/idletiming"
 
 	"github.com/getlantern/http-proxy/commonfilter"
 	"github.com/getlantern/http-proxy/forward"
@@ -45,17 +46,21 @@ func main() {
 		log.Error(err)
 	}
 
-	// Middleware
+	// Middleware (runs in reverse order as they are added)
+
+	// Middleware: Forward HTTP Messages
 	forwarder, err := forward.New(nil, forward.IdleTimeoutSetter(time.Duration(*idleClose)*time.Second))
 	if err != nil {
 		log.Error(err)
 	}
 
+	// Middleware: Handle HTTP CONNECT
 	httpConnect, err := httpconnect.New(forwarder, httpconnect.IdleTimeoutSetter(time.Duration(*idleClose)*time.Second))
 	if err != nil {
 		log.Error(err)
 	}
 
+	// Middleware: Common request filter
 	commonHandler, err := commonfilter.New(httpConnect, testingLocal)
 	if err != nil {
 		log.Error(err)
@@ -64,13 +69,18 @@ func main() {
 	// Create server
 	srv := server.NewServer(commonHandler)
 
-	// Add net.Conn wrappers
-	srv.AddConnWrappers(
+	// Add net.Listener wrappers
+	srv.AddListenerWrappers(
+		// Limit max number of simultaneous connections
 		func(ls net.Listener) net.Listener {
 			return listeners.NewLimitedListener(ls, 0)
 		},
+
+		// Close connections after 30 seconds of no activity
 		func(ls net.Listener) net.Listener {
-			return listeners.NewMeasuredListener(ls, time.Second*120)
+			return idletiming.Listener(ls, time.Second*30, func(c net.Conn) {
+				c.Close()
+			})
 		},
 	)
 

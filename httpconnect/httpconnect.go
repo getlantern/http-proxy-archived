@@ -14,7 +14,7 @@ import (
 	"github.com/getlantern/idletiming"
 )
 
-var log = golog.LoggerFor("tokenfilter")
+var log = golog.LoggerFor("httpconnect")
 
 type HTTPConnectHandler struct {
 	errHandler utils.ErrorHandler
