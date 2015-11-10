@@ -30,6 +30,6 @@ func (l stateAwareMeasuredListener) Accept() (c net.Conn, err error) {
 
 func NewMeasuredListener(l net.Listener, reportInterval time.Duration) net.Listener {
 	return stateAwareMeasuredListener{
-		MeasuredListener: (measured.Listener(l, reportInterval)).(*measured.MeasuredListener),
+		MeasuredListener: measured.Listener(l, reportInterval),
 	}
 }
