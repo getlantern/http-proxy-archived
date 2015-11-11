@@ -14,12 +14,12 @@ type stateAwareMeasuredListener struct {
 }
 
 func NewMeasuredListener(l net.Listener, reportInterval time.Duration) net.Listener {
-	return stateAwareMeasuredListener{
+	return &stateAwareMeasuredListener{
 		MeasuredListener: *measured.Listener(l, reportInterval),
 	}
 }
 
-func (l stateAwareMeasuredListener) Accept() (c net.Conn, err error) {
+func (l *stateAwareMeasuredListener) Accept() (c net.Conn, err error) {
 	c, err = l.MeasuredListener.Accept()
 	if err != nil {
 		return nil, err
@@ -37,7 +37,7 @@ type stateAwareMeasuredConn struct {
 	measured.Conn
 }
 
-func (c stateAwareMeasuredConn) OnState(s http.ConnState) {
+func (c *stateAwareMeasuredConn) OnState(s http.ConnState) {
 	if c.StateAwareConn != nil {
 		c.StateAwareConn.OnState(s)
 	}

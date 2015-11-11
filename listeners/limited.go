@@ -49,7 +49,7 @@ func (sl *limitedListener) Accept() (net.Conn, error) {
 	default:
 	}
 
-	conn, err := sl.Listener.Accept()
+	c, err := sl.Listener.Accept()
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,12 @@ func (sl *limitedListener) Accept() (net.Conn, error) {
 		}
 	}
 
-	return &LimitedConn{Conn: conn, listener: sl}, err
+	sac, _ := c.(StateAwareConn)
+	return &limitedConn{
+		StateAwareConn: sac,
+		Conn:           c,
+		listener:       sl,
+	}, err
 }
 
 func (sl *limitedListener) IsStopped() bool {
@@ -85,13 +90,14 @@ func (sl *limitedListener) Restart() {
 	}
 }
 
-type LimitedConn struct {
+type limitedConn struct {
+	StateAwareConn
 	net.Conn
 	listener *limitedListener
 	closed   uint32
 }
 
-func (c *LimitedConn) OnState(s http.ConnState) {
+func (c *limitedConn) OnState(s http.ConnState) {
 	l := c.listener
 	if log.IsTraceEnabled() {
 		if l.maxConns == math.MaxUint64 {
@@ -101,32 +107,35 @@ func (c *LimitedConn) OnState(s http.ConnState) {
 		}
 	}
 
-	if s != http.StateNew {
-		return
+	if s == http.StateNew {
+		if atomic.LoadUint64(&l.numConns) >= l.maxConns {
+			if log.IsTraceEnabled() {
+				if l.maxConns == math.MaxUint64 {
+					log.Tracef("numConns %v (unlimited connections), stop accepting new connections", l.numConns)
+				} else {
+					log.Tracef("numConns %v >= maxConns %v, stop accepting new connections", l.numConns, l.maxConns)
+				}
+			}
+			l.Stop()
+		} else if l.IsStopped() {
+			if log.IsTraceEnabled() {
+				if l.maxConns == math.MaxUint64 {
+					log.Tracef("numConns %v < maxConns (unlimited connections), accept new connections again", l.numConns)
+				} else {
+					log.Tracef("numConns %v < maxConns %v, accept new connections again", l.numConns, l.maxConns)
+				}
+			}
+			l.Restart()
+		}
 	}
 
-	if atomic.LoadUint64(&l.numConns) >= l.maxConns {
-		if log.IsTraceEnabled() {
-			if l.maxConns == math.MaxUint64 {
-				log.Tracef("numConns %v (unlimited connections), stop accepting new connections", l.numConns)
-			} else {
-				log.Tracef("numConns %v >= maxConns %v, stop accepting new connections", l.numConns, l.maxConns)
-			}
-		}
-		l.Stop()
-	} else if l.IsStopped() {
-		if log.IsTraceEnabled() {
-			if l.maxConns == math.MaxUint64 {
-				log.Tracef("numConns %v < maxConns (unlimited connections), accept new connections again", l.numConns)
-			} else {
-				log.Tracef("numConns %v < maxConns %v, accept new connections again", l.numConns, l.maxConns)
-			}
-		}
-		l.Restart()
+	// Pass down to wrapped connections
+	if c.StateAwareConn != nil {
+		c.StateAwareConn.OnState(s)
 	}
 }
 
-func (c *LimitedConn) Close() (err error) {
+func (c *limitedConn) Close() (err error) {
 	if atomic.SwapUint32(&c.closed, 1) == 1 {
 		return errors.New("network connection already closed")
 	}
