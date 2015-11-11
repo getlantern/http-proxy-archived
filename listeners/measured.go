@@ -8,9 +8,15 @@ import (
 	"github.com/getlantern/measured"
 )
 
-// Wrap listener
+// Wrapped stateAwareMeasuredListener that genrates the wrapped stateAwareMeasuredConn
 type stateAwareMeasuredListener struct {
-	*measured.MeasuredListener
+	measured.MeasuredListener
+}
+
+func NewMeasuredListener(l net.Listener, reportInterval time.Duration) net.Listener {
+	return stateAwareMeasuredListener{
+		MeasuredListener: *measured.Listener(l, reportInterval),
+	}
 }
 
 func (l stateAwareMeasuredListener) Accept() (c net.Conn, err error) {
@@ -18,18 +24,21 @@ func (l stateAwareMeasuredListener) Accept() (c net.Conn, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return stateAwareMeasuredConn{Conn: c.(*measured.Conn)}, err
+	sac, _ := c.(*measured.Conn).Conn.(StateAwareConn)
+	return &stateAwareMeasuredConn{
+		StateAwareConn: sac,
+		Conn:           *c.(*measured.Conn),
+	}, err
 }
 
-func NewMeasuredListener(l net.Listener, reportInterval time.Duration) net.Listener {
-	return stateAwareMeasuredListener{
-		MeasuredListener: measured.Listener(l, reportInterval),
+// Wrapped MeasuredConn that supports OnState
+type stateAwareMeasuredConn struct {
+	StateAwareConn
+	measured.Conn
+}
+
+func (c stateAwareMeasuredConn) OnState(s http.ConnState) {
+	if c.StateAwareConn != nil {
+		c.StateAwareConn.OnState(s)
 	}
 }
-
-// Wrap connection
-type stateAwareMeasuredConn struct {
-	*measured.Conn
-}
-
-func (c stateAwareMeasuredConn) OnState(s http.ConnState) {}

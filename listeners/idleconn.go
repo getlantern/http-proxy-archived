@@ -21,12 +21,6 @@ func NewIdleConnListener(l net.Listener, timeout time.Duration) net.Listener {
 	}
 }
 
-// Wrapped IdleTimingConn that supports OnState
-type idleConn struct {
-	StateAwareConn
-	idletiming.IdleTimingConn
-}
-
 func (l *idleConnListener) Accept() (c net.Conn, err error) {
 	conn, err := l.Listener.Accept()
 	if err != nil {
@@ -46,6 +40,12 @@ func (l *idleConnListener) Accept() (c net.Conn, err error) {
 		StateAwareConn: sac,
 		IdleTimingConn: *iConn,
 	}, err
+}
+
+// Wrapped IdleTimingConn that supports OnState
+type idleConn struct {
+	StateAwareConn
+	idletiming.IdleTimingConn
 }
 
 func (c *idleConn) OnState(s http.ConnState) {
