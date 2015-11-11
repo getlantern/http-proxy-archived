@@ -12,12 +12,9 @@ import (
 
 	"github.com/getlantern/measured"
 
-	// "github.com/getlantern/http-proxy-lantern/devicefilter"
 	"github.com/getlantern/http-proxy-lantern/mimic"
 	"github.com/getlantern/http-proxy-lantern/preprocessor"
-	// "github.com/getlantern/http-proxy-lantern/profilter"
 	"github.com/getlantern/http-proxy-lantern/tokenfilter"
-	"github.com/getlantern/http-proxy/commonfilter"
 	"github.com/getlantern/http-proxy/forward"
 	"github.com/getlantern/http-proxy/httpconnect"
 )
@@ -62,16 +59,9 @@ func NewServer(token string, maxConns uint64, idleTimeout time.Duration, enableF
 		httpconnect.IdleTimeoutSetter(idleTimeout),
 	)
 
-	// Catches any request before reaching the CONNECT middleware or
-	// the forwarder
-	commonFilter, _ := commonfilter.New(
-		connectHandler,
-		testingLocal,
-	)
-
 	var firstHandler http.Handler
 	if !enableFilters {
-		firstHandler = commonFilter
+		firstHandler = connectHandler
 	} else {
 		// Temporarily remove deviceFilter and lanternPro.  These need changes in the client
 		// that will come after the proxy is well tested.
@@ -98,7 +88,7 @@ func NewServer(token string, maxConns uint64, idleTimeout time.Duration, enableF
 			firstHandler = deviceFilter
 		*/
 		tokenFilter, _ := tokenfilter.New(
-			commonFilter,
+			connectHandler,
 			tokenfilter.TokenSetter(token),
 		)
 		firstHandler = tokenFilter
