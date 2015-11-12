@@ -16,13 +16,21 @@ type CommonFilter struct {
 	errHandler utils.ErrorHandler
 	next       http.Handler
 
-	localIPs []net.IP
+	localIPs   []net.IP
+	exceptions []string
 
 	// Allow tests in localhost, because this filter blocks request to this address
 	testingLocalhost bool
 }
 
 type optSetter func(f *CommonFilter) error
+
+func SetException(addr string) optSetter {
+	return func(f *CommonFilter) error {
+		f.exceptions = append(f.exceptions, addr)
+		return nil
+	}
+}
 
 func New(next http.Handler, testingLocalhost bool, setters ...optSetter) (*CommonFilter, error) {
 	f := &CommonFilter{
@@ -55,7 +63,7 @@ func New(next http.Handler, testingLocalhost bool, setters ...optSetter) (*Commo
 }
 
 func (f *CommonFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	if !f.testingLocalhost {
+	if !f.testingLocalhost && !f.isException(req.URL.Host) {
 		reqAddr, err := net.ResolveTCPAddr("tcp", req.URL.Host)
 
 		// If there was an error resolving is probably because it wasn't an address
@@ -76,4 +84,13 @@ func (f *CommonFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	} else {
 		f.next.ServeHTTP(w, req)
 	}
+}
+
+func (f *CommonFilter) isException(addr string) bool {
+	for _, a := range f.exceptions {
+		if a == addr {
+			return true
+		}
+	}
+	return false
 }
