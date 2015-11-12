@@ -49,6 +49,7 @@ func New(next http.Handler, testingLocalhost bool, setters ...optSetter) (*Commo
 	if err != nil {
 		log.Errorf("Error enumerating local addresses: %v\n", err)
 	}
+
 	for _, a := range addrs {
 		str := a.String()
 		idx := strings.Index(str, "/")
@@ -64,11 +65,15 @@ func New(next http.Handler, testingLocalhost bool, setters ...optSetter) (*Commo
 
 func (f *CommonFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if !f.testingLocalhost && !f.isException(req.URL.Host) {
-		reqAddr, err := net.ResolveTCPAddr("tcp", req.URL.Host)
+		reqAddr, err := net.ResolveTCPAddr("tcp", req.Host)
 
 		// If there was an error resolving is probably because it wasn't an address
 		// in the form localhost:port
 		if err == nil {
+			if reqAddr.IP.IsLoopback() {
+				f.errHandler.ServeHTTP(w, req, err)
+				return
+			}
 			for _, ip := range f.localIPs {
 				if reqAddr.IP.Equal(ip) {
 					f.errHandler.ServeHTTP(w, req, err)
