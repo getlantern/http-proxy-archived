@@ -463,8 +463,11 @@ func setupNewHTTPServer(maxConns uint64, idleTimeout time.Duration) (*server.Ser
 	s := basicServer(maxConns, idleTimeout)
 	var err error
 	ready := make(chan string)
+	wait := func(addr string) {
+		ready <- addr
+	}
 	go func(err *error) {
-		if *err = s.ServeHTTP("localhost:0", &ready); err != nil {
+		if *err = s.ServeHTTP("localhost:0", wait); err != nil {
 			log.Errorf("Unable to serve: %s", err)
 		}
 	}(&err)
@@ -476,8 +479,11 @@ func setupNewHTTPSServer(maxConns uint64, idleTimeout time.Duration) (*server.Se
 	s := basicServer(maxConns, idleTimeout)
 	var err error
 	ready := make(chan string)
+	wait := func(addr string) {
+		ready <- addr
+	}
 	go func(err *error) {
-		if *err = s.ServeHTTPS("localhost:0", "key.pem", "cert.pem", &ready); err != nil {
+		if *err = s.ServeHTTPS("localhost:0", "key.pem", "cert.pem", wait); err != nil {
 			log.Errorf("Unable to serve: %s", err)
 		}
 	}(&err)

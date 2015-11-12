@@ -1,6 +1,7 @@
 package httpconnect
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -49,7 +50,11 @@ func New(next http.Handler, setters ...optSetter) (*HTTPConnectHandler, error) {
 func (f *HTTPConnectHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// If the request is not HTTP CONNECT, pass along to the next handler
 	if req.Method != "CONNECT" {
-		f.next.ServeHTTP(w, req)
+		if f.next == nil {
+			f.errHandler.ServeHTTP(w, req, errors.New("Next handler is not defined (nil)"))
+		} else {
+			f.next.ServeHTTP(w, req)
+		}
 		return
 	}
 

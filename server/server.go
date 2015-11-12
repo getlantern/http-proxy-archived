@@ -42,27 +42,27 @@ func (s *Server) AddListenerWrappers(listenerGens ...listenerGenerator) {
 	}
 }
 
-func (s *Server) ServeHTTP(addr string, chListenOn *chan string) error {
+func (s *Server) ServeHTTP(addr string, readyCb func(addr string)) error {
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
 	}
 	s.Tls = false
 	log.Debugf("Listen http on %s", addr)
-	return s.doServe(listener, chListenOn)
+	return s.doServe(listener, readyCb)
 }
 
-func (s *Server) ServeHTTPS(addr, keyfile, certfile string, chListenOn *chan string) error {
+func (s *Server) ServeHTTPS(addr, keyfile, certfile string, readyCb func(addr string)) error {
 	listener, err := listenTLS(addr, keyfile, certfile)
 	if err != nil {
 		return err
 	}
 	s.Tls = true
 	log.Debugf("Listen https on %s", addr)
-	return s.doServe(listener, chListenOn)
+	return s.doServe(listener, readyCb)
 }
 
-func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
+func (s *Server) doServe(listener net.Listener, readyCb func(addr string)) error {
 	cb := connBag{m: make(map[string]net.Conn)}
 
 	proxy := http.HandlerFunc(
@@ -103,8 +103,9 @@ func (s *Server) doServe(listener net.Listener, chListenOn *chan string) error {
 	s.Addr = (*firstListener).Addr()
 	addrStr := s.Addr.String()
 	s.httpServer.Addr = addrStr
-	if chListenOn != nil {
-		*chListenOn <- addrStr
+
+	if readyCb != nil {
+		readyCb(addrStr)
 	}
 
 	return s.httpServer.Serve(*firstListener)

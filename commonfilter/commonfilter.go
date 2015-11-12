@@ -1,6 +1,7 @@
 package commonfilter
 
 import (
+	"errors"
 	"net"
 	"net/http"
 	"strings"
@@ -70,5 +71,9 @@ func (f *CommonFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	f.next.ServeHTTP(w, req)
+	if f.next == nil {
+		f.errHandler.ServeHTTP(w, req, errors.New("Next handler is not defined (nil)"))
+	} else {
+		f.next.ServeHTTP(w, req)
+	}
 }
