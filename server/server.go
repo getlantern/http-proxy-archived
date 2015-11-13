@@ -63,7 +63,7 @@ func (s *Server) ServeHTTPS(addr, keyfile, certfile string, readyCb func(addr st
 }
 
 func (s *Server) doServe(listener net.Listener, readyCb func(addr string)) error {
-	cb := connBag{m: make(map[string]net.Conn)}
+	cb := NewConnBag()
 
 	proxy := http.HandlerFunc(
 		func(w http.ResponseWriter, req *http.Request) {
@@ -74,15 +74,15 @@ func (s *Server) doServe(listener net.Listener, readyCb func(addr string)) error
 
 	s.httpServer = http.Server{Handler: proxy,
 		ConnState: func(c net.Conn, state http.ConnState) {
-			awareconn, ok := c.(listeners.StateAwareConn)
+			wconn, ok := c.(listeners.WrapConn)
 
 			if ok {
-				awareconn.OnState(state)
+				wconn.OnState(state)
 			}
 
 			switch state {
 			case http.StateActive:
-				cb.Put(c)
+				cb.Put(wconn)
 			case http.StateClosed:
 				// When go server encounters abnormal request, it
 				// will transit to StateClosed directly without

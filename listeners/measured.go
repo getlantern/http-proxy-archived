@@ -8,7 +8,7 @@ import (
 	"github.com/getlantern/measured"
 )
 
-// Wrapped stateAwareMeasuredListener that genrates the wrapped stateAwareMeasuredConn
+// Wrapped stateAwareMeasuredListener that genrates the wrapped wrapMeasuredConn
 type stateAwareMeasuredListener struct {
 	measured.MeasuredListener
 }
@@ -24,21 +24,33 @@ func (l *stateAwareMeasuredListener) Accept() (c net.Conn, err error) {
 	if err != nil {
 		return nil, err
 	}
-	sac, _ := c.(*measured.Conn).Conn.(StateAwareConn)
-	return &stateAwareMeasuredConn{
-		StateAwareConn: sac,
-		Conn:           *c.(*measured.Conn),
+	sac, _ := c.(*measured.Conn).Conn.(WrapConnEmbeddable)
+	return &wrapMeasuredConn{
+		WrapConnEmbeddable: sac,
+		Conn:               *c.(*measured.Conn),
 	}, err
 }
 
 // Wrapped MeasuredConn that supports OnState
-type stateAwareMeasuredConn struct {
-	StateAwareConn
+type wrapMeasuredConn struct {
+	WrapConnEmbeddable
 	measured.Conn
 }
 
-func (c *stateAwareMeasuredConn) OnState(s http.ConnState) {
-	if c.StateAwareConn != nil {
-		c.StateAwareConn.OnState(s)
+func (c *wrapMeasuredConn) OnState(s http.ConnState) {
+	if c.WrapConnEmbeddable != nil {
+		c.WrapConnEmbeddable.OnState(s)
+	}
+}
+
+// Responds to the "measured" message type
+func (c *wrapMeasuredConn) ControlMessage(msgType string, data interface{}) {
+	if msgType == "measured" {
+		c.Conn.ID = data.(string)
+	}
+
+	// Pass it down too, just in case other wrapper does something with
+	if c.WrapConnEmbeddable != nil {
+		c.WrapConnEmbeddable.ControlMessage(msgType, data)
 	}
 }

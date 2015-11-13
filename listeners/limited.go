@@ -64,11 +64,11 @@ func (sl *limitedListener) Accept() (net.Conn, error) {
 		}
 	}
 
-	sac, _ := c.(StateAwareConn)
+	sac, _ := c.(WrapConnEmbeddable)
 	return &limitedConn{
-		StateAwareConn: sac,
-		Conn:           c,
-		listener:       sl,
+		WrapConnEmbeddable: sac,
+		Conn:               c,
+		listener:           sl,
 	}, err
 }
 
@@ -91,10 +91,21 @@ func (sl *limitedListener) Restart() {
 }
 
 type limitedConn struct {
-	StateAwareConn
+	WrapConnEmbeddable
 	net.Conn
 	listener *limitedListener
 	closed   uint32
+}
+
+func (c *limitedConn) Close() (err error) {
+	if atomic.SwapUint32(&c.closed, 1) == 1 {
+		return errors.New("network connection already closed")
+	}
+
+	// Substract 1 by adding the two-complement of -1
+	atomic.AddUint64(&c.listener.numConns, ^uint64(0))
+	log.Tracef("Closed a connection and left %v remaining", c.listener.numConns)
+	return c.Conn.Close()
 }
 
 func (c *limitedConn) OnState(s http.ConnState) {
@@ -130,18 +141,14 @@ func (c *limitedConn) OnState(s http.ConnState) {
 	}
 
 	// Pass down to wrapped connections
-	if c.StateAwareConn != nil {
-		c.StateAwareConn.OnState(s)
+	if c.WrapConnEmbeddable != nil {
+		c.WrapConnEmbeddable.OnState(s)
 	}
 }
 
-func (c *limitedConn) Close() (err error) {
-	if atomic.SwapUint32(&c.closed, 1) == 1 {
-		return errors.New("network connection already closed")
+func (c *limitedConn) ControlMessage(msgType string, data interface{}) {
+	// Simply pass down the control message to the wrapped connection
+	if c.WrapConnEmbeddable != nil {
+		c.WrapConnEmbeddable.ControlMessage(msgType, data)
 	}
-
-	// Substract 1 by adding the two-complement of -1
-	atomic.AddUint64(&c.listener.numConns, ^uint64(0))
-	log.Tracef("Closed a connection and left %v remaining", c.listener.numConns)
-	return c.Conn.Close()
 }

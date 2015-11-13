@@ -35,21 +35,28 @@ func (l *idleConnListener) Accept() (c net.Conn, err error) {
 		},
 	)
 
-	sac, _ := conn.(StateAwareConn)
+	sac, _ := conn.(WrapConnEmbeddable)
 	return &idleConn{
-		StateAwareConn: sac,
-		IdleTimingConn: *iConn,
+		WrapConnEmbeddable: sac,
+		IdleTimingConn:     *iConn,
 	}, err
 }
 
 // Wrapped IdleTimingConn that supports OnState
 type idleConn struct {
-	StateAwareConn
+	WrapConnEmbeddable
 	idletiming.IdleTimingConn
 }
 
 func (c *idleConn) OnState(s http.ConnState) {
-	if c.StateAwareConn != nil {
-		c.StateAwareConn.OnState(s)
+	if c.WrapConnEmbeddable != nil {
+		c.WrapConnEmbeddable.OnState(s)
+	}
+}
+
+func (c *idleConn) ControlMessage(msgType string, data interface{}) {
+	// Simply pass down the control message to the wrapped connection
+	if c.WrapConnEmbeddable != nil {
+		c.WrapConnEmbeddable.ControlMessage(msgType, data)
 	}
 }

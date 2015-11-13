@@ -1,24 +1,29 @@
 package server
 
 import (
-	"net"
 	"sync"
+
+	"github.com/getlantern/http-proxy/listeners"
 )
 
 // connBag is a just bag of connections. You can put a connection in and
 // withdraw it afterwards, or purge it regardless it's withdrawed or not.
 type connBag struct {
 	mu sync.Mutex
-	m  map[string]net.Conn
+	m  map[string]listeners.WrapConn
 }
 
-func (cb *connBag) Put(c net.Conn) {
+func NewConnBag() *connBag {
+	return &connBag{m: make(map[string]listeners.WrapConn)}
+}
+
+func (cb *connBag) Put(c listeners.WrapConn) {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
 	cb.m[c.RemoteAddr().String()] = c
 }
 
-func (cb *connBag) Withdraw(remoteAddr string) (c net.Conn) {
+func (cb *connBag) Withdraw(remoteAddr string) (c listeners.WrapConn) {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
 	c = cb.m[remoteAddr]
