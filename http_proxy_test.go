@@ -168,7 +168,64 @@ func TestIdleClientConnections(t *testing.T) {
 	testRoundTrip(t, limitedServer, httpOriginServer, idleFn)
 }
 
-func TestIdleOriginConnections(t *testing.T) {
+// A proxy with a custom origin server connection timeout
+func impatientProxy(maxConns uint64, idleTimeout time.Duration) (*server.Server, error) {
+	forwarder, err := forward.New(nil, forward.IdleTimeoutSetter(idleTimeout))
+	if err != nil {
+		log.Error(err)
+	}
+
+	// Middleware: Handle HTTP CONNECT
+	httpConnect, err := httpconnect.New(forwarder, httpconnect.IdleTimeoutSetter(idleTimeout))
+	if err != nil {
+		log.Error(err)
+	}
+
+	srv := server.NewServer(httpConnect)
+
+	// Add net.Listener wrappers for inbound connections
+
+	srv.AddListenerWrappers(
+		// Close connections after 30 seconds of no activity
+		func(ls net.Listener) net.Listener {
+			return listeners.NewIdleConnListener(ls, time.Second*30)
+		},
+	)
+
+	ready := make(chan string)
+	wait := func(addr string) {
+		ready <- addr
+	}
+	go func(err *error) {
+		if *err = srv.ServeHTTP("localhost:0", wait); err != nil {
+			log.Errorf("Unable to serve: %s", err)
+		}
+	}(&err)
+	<-ready
+	return srv, err
+}
+
+func chunkedReq(t *testing.T, buf *[400]byte, conn net.Conn, originURL *url.URL) error {
+	str1tpl := "POST / HTTP/1.1\r\nTransfer-Encoding: chunked\r\nHost: %s\r\n\r\n"
+	str2 := "64\r\neqxnmrkoccpsnhcsrcqbuuvhvbhbcsdijcvxuglykcqxjspawibqcyzzzjacbfkmkijequeazvzinqjmamcdleeknfoqmbdwjmcb\r\n0\r\n\r\n"
+
+	str1 := fmt.Sprintf(str1tpl, originURL.Host)
+	t.Log("\n" + str1)
+	conn.Write([]byte(str1))
+
+	time.Sleep(150 * time.Millisecond)
+
+	t.Log("\n" + str2)
+	conn.Write([]byte([]byte(str2)))
+
+	_, err := conn.Read(buf[:])
+
+	t.Log("\n" + string(buf[:]))
+
+	return err
+}
+
+func TestIdleOriginDirect(t *testing.T) {
 	okServer, err := impatientProxy(0, 30*time.Second)
 	if err != nil {
 		assert.Fail(t, "Error starting proxy server: %s", err)
@@ -179,55 +236,57 @@ func TestIdleOriginConnections(t *testing.T) {
 		assert.Fail(t, "Error starting proxy server: %s", err)
 	}
 
-	chunkedReq := func(buf *[400]byte, conn net.Conn, originURL *url.URL) {
-		str1tpl := "GET / HTTP/1.1\r\nTransfer-Encoding: chunked\r\nHost: %s\r\n\r\n"
-		str2 := "64\r\neqxnmrkoccpsnhcsrcqbuuvhvbhbcsdijcvxuglykcqxjspawibqcyzzzjacbfkmkijequeazvzinqjmamcdleeknfoqmbdwjmcb\r\n0\r\n\r\n"
-
-		str1 := fmt.Sprintf(str1tpl, originURL.Host)
-		t.Log("\n" + str1)
-		conn.Write([]byte(str1))
-
-		time.Sleep(150 * time.Millisecond)
-
-		t.Log("\n" + str2)
-		conn.Write([]byte([]byte(str2)))
-
-		conn.Read(buf[:])
-
-		t.Log("\n" + string(buf[:]))
-	}
-
 	okForwardFn := func(conn net.Conn, proxy *server.Server, originURL *url.URL) {
 		var buf [400]byte
-		chunkedReq(&buf, conn, originURL)
+		chunkedReq(t, &buf, conn, originURL)
 		assert.Contains(t, string(buf[:]), "200 OK", "should succeed")
 	}
 
 	failForwardFn := func(conn net.Conn, proxy *server.Server, originURL *url.URL) {
 		var buf [400]byte
-		chunkedReq(&buf, conn, originURL)
+		chunkedReq(t, &buf, conn, originURL)
 		assert.Contains(t, string(buf[:]), "502 Bad Gateway", "should fail with 502")
 	}
-	/*
-		failConnectFn := func(conn net.Conn, proxy *server.Server, originURL *url.URL) {
-			reqStr := "CONNECT www.google.com HTTP/1.1\r\nHost: www.google.com\r\n\r\n"
-			conn.Write([]byte(reqStr))
-			var buf [400]byte
-			conn.Read(buf[:])
 
-			time.Sleep(150 * time.Millisecond)
-			conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
-			_, err := conn.Read(buf[:])
-
-			if assert.Error(t, err) {
-				assert.Equal(t, "EOF", err.Error())
-			}
-		}
-	*/
 	testRoundTrip(t, okServer, httpOriginServer, okForwardFn)
-	//testRoundTrip(t, normalServer, httpOriginServer, okConnectFn)
 	testRoundTrip(t, impatientServer, httpOriginServer, failForwardFn)
-	//testRoundTrip(t, impatientServer, httpOriginServer, failConnectFn)
+}
+
+func TestIdleOriginConnect(t *testing.T) {
+	okServer, err := impatientProxy(0, 30*time.Second)
+	if err != nil {
+		assert.Fail(t, "Error starting proxy server: %s", err)
+	}
+
+	impatientServer, err := impatientProxy(0, 50*time.Millisecond)
+	if err != nil {
+		assert.Fail(t, "Error starting proxy server: %s", err)
+	}
+
+	connectReq := func(conn net.Conn, proxy *server.Server, originURL *url.URL) error {
+		reqStr := "CONNECT %s HTTP/1.1\r\nHost: %s\r\n\r\n"
+		req := fmt.Sprintf(reqStr, originURL.Host, originURL.Host)
+		conn.Write([]byte(req))
+		var buf [400]byte
+		conn.Read(buf[:])
+
+		return chunkedReq(t, &buf, conn, originURL)
+	}
+
+	okConnectFn := func(conn net.Conn, proxy *server.Server, originURL *url.URL) {
+		err := connectReq(conn, proxy, originURL)
+
+		assert.NoError(t, err, "should succeed")
+	}
+
+	failConnectFn := func(conn net.Conn, proxy *server.Server, originURL *url.URL) {
+		err := connectReq(conn, proxy, originURL)
+
+		assert.Error(t, err, "should fail")
+	}
+
+	testRoundTrip(t, okServer, httpOriginServer, okConnectFn)
+	testRoundTrip(t, impatientServer, httpOriginServer, failConnectFn)
 }
 
 // X-Lantern-Auth-Token + X-Lantern-Device-Id -> 200 OK <- Tunneled request -> 200 OK
@@ -359,7 +418,6 @@ func TestInvalidRequest(t *testing.T) {
 		testRoundTrip(t, httpProxy, tlsOriginServer, testFn)
 		testRoundTrip(t, tlsProxy, tlsOriginServer, testFn)
 	}
-
 }
 
 //
@@ -449,35 +507,6 @@ func basicServer(maxConns uint64, idleTimeout time.Duration) *server.Server {
 	)
 
 	return srv
-}
-
-func impatientProxy(maxConns uint64, idleTimeout time.Duration) (*server.Server, error) {
-	forwarder, err := forward.New(nil, forward.IdleTimeoutSetter(idleTimeout))
-	if err != nil {
-		log.Error(err)
-	}
-	srv := server.NewServer(forwarder)
-
-	// Add net.Listener wrappers for inbound connections
-
-	srv.AddListenerWrappers(
-		// Close connections after 30 seconds of no activity
-		func(ls net.Listener) net.Listener {
-			return listeners.NewIdleConnListener(ls, time.Second*30)
-		},
-	)
-
-	ready := make(chan string)
-	wait := func(addr string) {
-		ready <- addr
-	}
-	go func(err *error) {
-		if *err = srv.ServeHTTP("localhost:0", wait); err != nil {
-			log.Errorf("Unable to serve: %s", err)
-		}
-	}(&err)
-	<-ready
-	return srv, err
 }
 
 func setupNewHTTPServer(maxConns uint64, idleTimeout time.Duration) (*server.Server, error) {
