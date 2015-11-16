@@ -164,87 +164,79 @@ func TestIdleClientConnections(t *testing.T) {
 		assert.Error(t, err)
 	}
 
-	go testRoundTrip(t, limitedServer, httpTargetServer, okFn)
-	testRoundTrip(t, limitedServer, httpTargetServer, idleFn)
+	go testRoundTrip(t, limitedServer, httpOriginServer, okFn)
+	testRoundTrip(t, limitedServer, httpOriginServer, idleFn)
 }
 
-// TODO: Since both client and target server idle timeouts are identical,
-// we are just testing the combined behavior.  We probably can do that by
-// creating a custom server that only sets one timeout at a time
-/*
-func TestIdleTargetConnections(t *testing.T) {
-	normalServer, err := setupNewHTTPServer(0, 30*time.Second)
+func TestIdleOriginConnections(t *testing.T) {
+	okServer, err := impatientProxy(0, 30*time.Second)
 	if err != nil {
 		assert.Fail(t, "Error starting proxy server: %s", err)
 	}
 
-	impatientServer, err := setupNewHTTPServer(0, 100*time.Millisecond)
+	impatientServer, err := impatientProxy(0, 50*time.Millisecond)
 	if err != nil {
 		assert.Fail(t, "Error starting proxy server: %s", err)
 	}
 
-	okForwardFn := func(conn net.Conn, proxy *server.Server, targetURL *url.URL) {
-		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
-		var buf [400]byte
-		_, err := conn.Read(buf[:])
+	chunkedReq := func(buf *[400]byte, conn net.Conn, originURL *url.URL) {
+		str1tpl := "GET / HTTP/1.1\r\nTransfer-Encoding: chunked\r\nHost: %s\r\n\r\n"
+		str2 := "64\r\neqxnmrkoccpsnhcsrcqbuuvhvbhbcsdijcvxuglykcqxjspawibqcyzzzjacbfkmkijequeazvzinqjmamcdleeknfoqmbdwjmcb\r\n0\r\n\r\n"
 
-		assert.NoError(t, err)
-	}
-
-	okConnectFn := func(conn net.Conn, proxy *server.Server, targetURL *url.URL) {
-		conn.Write([]byte("CONNECT www.google.com HTTP/1.1\r\nHost: www.google.com\r\n\r\n"))
-		var buf [400]byte
-		_, err := conn.Read(buf[:])
-
-		assert.NoError(t, err)
-	}
-
-	failForwardFn := func(conn net.Conn, proxy *server.Server, targetURL *url.URL) {
-		reqStr := "GET / HTTP/1.1\r\nHost: %s\r\n\r\n"
-		req := fmt.Sprintf(reqStr, targetURL.Host)
-		t.Log("\n" + req)
-		conn.Write([]byte(req))
-		var buf [400]byte
-		conn.Read(buf[:])
+		str1 := fmt.Sprintf(str1tpl, originURL.Host)
+		t.Log("\n" + str1)
+		conn.Write([]byte(str1))
 
 		time.Sleep(150 * time.Millisecond)
-		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
-		_, err := conn.Read(buf[:])
 
-		if assert.Error(t, err) {
-			assert.Equal(t, "EOF", err.Error())
-		}
-	}
+		t.Log("\n" + str2)
+		conn.Write([]byte([]byte(str2)))
 
-	failConnectFn := func(conn net.Conn, proxy *server.Server, targetURL *url.URL) {
-		reqStr := "CONNECT www.google.com HTTP/1.1\r\nHost: www.google.com\r\n\r\n"
-		conn.Write([]byte(reqStr))
-		var buf [400]byte
 		conn.Read(buf[:])
 
-		time.Sleep(150 * time.Millisecond)
-		conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
-		_, err := conn.Read(buf[:])
-
-		if assert.Error(t, err) {
-			assert.Equal(t, "EOF", err.Error())
-		}
+		t.Log("\n" + string(buf[:]))
 	}
 
-	testRoundTrip(t, normalServer, httpTargetServer, okForwardFn)
-	testRoundTrip(t, normalServer, httpTargetServer, okConnectFn)
-	testRoundTrip(t, impatientServer, httpTargetServer, failForwardFn)
-	testRoundTrip(t, impatientServer, httpTargetServer, failConnectFn)
+	okForwardFn := func(conn net.Conn, proxy *server.Server, originURL *url.URL) {
+		var buf [400]byte
+		chunkedReq(&buf, conn, originURL)
+		assert.Contains(t, string(buf[:]), "200 OK", "should succeed")
+	}
+
+	failForwardFn := func(conn net.Conn, proxy *server.Server, originURL *url.URL) {
+		var buf [400]byte
+		chunkedReq(&buf, conn, originURL)
+		assert.Contains(t, string(buf[:]), "502 Bad Gateway", "should fail with 502")
+	}
+	/*
+		failConnectFn := func(conn net.Conn, proxy *server.Server, originURL *url.URL) {
+			reqStr := "CONNECT www.google.com HTTP/1.1\r\nHost: www.google.com\r\n\r\n"
+			conn.Write([]byte(reqStr))
+			var buf [400]byte
+			conn.Read(buf[:])
+
+			time.Sleep(150 * time.Millisecond)
+			conn.Write([]byte("GET / HTTP/1.1\r\n\r\n"))
+			_, err := conn.Read(buf[:])
+
+			if assert.Error(t, err) {
+				assert.Equal(t, "EOF", err.Error())
+			}
+		}
+	*/
+	testRoundTrip(t, okServer, httpOriginServer, okForwardFn)
+	//testRoundTrip(t, normalServer, httpOriginServer, okConnectFn)
+	testRoundTrip(t, impatientServer, httpOriginServer, failForwardFn)
+	//testRoundTrip(t, impatientServer, httpOriginServer, failConnectFn)
 }
-*/
 
 // X-Lantern-Auth-Token + X-Lantern-Device-Id -> 200 OK <- Tunneled request -> 200 OK
 func TestConnectOK(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\n\r\n"
 	connectResp := "HTTP/1.1 200 OK\r\n"
 
-	testHTTP := func(conn net.Conn, proxy *server.Server, targetURL *url.URL) {
-		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host)
+	testHTTP := func(conn net.Conn, proxy *server.Server, originURL *url.URL) {
+		req := fmt.Sprintf(connectReq, originURL.Host, originURL.Host)
 		t.Log("\n" + req)
 		_, err := conn.Write([]byte(req))
 		if !assert.NoError(t, err, "should write CONNECT request") {
@@ -457,6 +449,35 @@ func basicServer(maxConns uint64, idleTimeout time.Duration) *server.Server {
 	)
 
 	return srv
+}
+
+func impatientProxy(maxConns uint64, idleTimeout time.Duration) (*server.Server, error) {
+	forwarder, err := forward.New(nil, forward.IdleTimeoutSetter(idleTimeout))
+	if err != nil {
+		log.Error(err)
+	}
+	srv := server.NewServer(forwarder)
+
+	// Add net.Listener wrappers for inbound connections
+
+	srv.AddListenerWrappers(
+		// Close connections after 30 seconds of no activity
+		func(ls net.Listener) net.Listener {
+			return listeners.NewIdleConnListener(ls, time.Second*30)
+		},
+	)
+
+	ready := make(chan string)
+	wait := func(addr string) {
+		ready <- addr
+	}
+	go func(err *error) {
+		if *err = srv.ServeHTTP("localhost:0", wait); err != nil {
+			log.Errorf("Unable to serve: %s", err)
+		}
+	}(&err)
+	<-ready
+	return srv, err
 }
 
 func setupNewHTTPServer(maxConns uint64, idleTimeout time.Duration) (*server.Server, error) {
