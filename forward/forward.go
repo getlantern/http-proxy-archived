@@ -173,7 +173,12 @@ func (f *Forwarder) cloneRequest(req *http.Request, u *url.URL) (*http.Request, 
 	outReq.URL.Opaque = req.URL.Path
 	outReq.URL.RawQuery = req.URL.RawQuery
 
-	outReq.Header.Set("User-Agent", req.UserAgent())
+	userAgent := req.UserAgent()
+	if userAgent == "" {
+		outReq.Header.Del("User-Agent")
+	} else {
+		outReq.Header.Set("User-Agent", userAgent)
+	}
 
 	/*
 		// Trailer support
