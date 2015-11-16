@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/getlantern/golog"
-	//	"github.com/getlantern/idletiming"
 
 	"github.com/getlantern/http-proxy/commonfilter"
 	"github.com/getlantern/http-proxy/forward"

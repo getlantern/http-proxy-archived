@@ -75,10 +75,11 @@ func (s *Server) doServe(listener net.Listener, readyCb func(addr string)) error
 	s.httpServer = http.Server{Handler: proxy,
 		ConnState: func(c net.Conn, state http.ConnState) {
 			wconn, ok := c.(listeners.WrapConn)
-
-			if ok {
-				wconn.OnState(state)
+			if !ok {
+				panic("Should be of type WrapConn")
 			}
+
+			wconn.OnState(state)
 
 			switch state {
 			case http.StateActive:
@@ -93,14 +94,17 @@ func (s *Server) doServe(listener net.Listener, readyCb func(addr string)) error
 		},
 	}
 
-	firstListener := &listener
+	firstListener := listeners.NewDefaultListener(listener)
+	firstListenerPtr := &firstListener
+	s.listeners = []*net.Listener{firstListenerPtr}
+
 	for _, li := range s.listenerGenerators {
-		newlis := li(*firstListener)
+		newlis := li(*firstListenerPtr)
 		s.listeners = append(s.listeners, &newlis)
-		firstListener = &newlis
+		firstListenerPtr = &newlis
 	}
 
-	s.Addr = (*firstListener).Addr()
+	s.Addr = (*firstListenerPtr).Addr()
 	addrStr := s.Addr.String()
 	s.httpServer.Addr = addrStr
 
@@ -108,5 +112,5 @@ func (s *Server) doServe(listener net.Listener, readyCb func(addr string)) error
 		readyCb(addrStr)
 	}
 
-	return s.httpServer.Serve(*firstListener)
+	return s.httpServer.Serve(*firstListenerPtr)
 }
