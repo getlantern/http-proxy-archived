@@ -26,16 +26,16 @@ import (
 
 const (
 	tunneledReq    = "GET / HTTP/1.1\r\n\r\n"
-	targetResponse = "Fight for a Free Internet!"
+	originResponse = "Fight for a Free Internet!"
 )
 
 var (
 	httpProxy        *server.Server
 	tlsProxy         *server.Server
-	httpTargetServer *targetHandler
-	httpTargetURL    string
-	tlsTargetServer  *targetHandler
-	tlsTargetURL     string
+	httpOriginServer *originHandler
+	httpOriginURL    string
+	tlsOriginServer  *originHandler
+	tlsOriginURL     string
 
 	serverCertificate *keyman.Certificate
 	// TODO: this should be imported from tlsdefaults package, but is not being
@@ -62,11 +62,11 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	var err error
 
-	// Set up mock target servers
-	httpTargetURL, httpTargetServer = newTargetHandler(targetResponse, false)
-	defer httpTargetServer.Close()
-	tlsTargetURL, tlsTargetServer = newTargetHandler(targetResponse, true)
-	defer tlsTargetServer.Close()
+	// Set up mock origin servers
+	httpOriginURL, httpOriginServer = newOriginHandler(originResponse, false)
+	defer httpOriginServer.Close()
+	tlsOriginURL, tlsOriginServer = newOriginHandler(originResponse, true)
+	defer tlsOriginServer.Close()
 
 	// Set up HTTP chained server
 	httpProxy, err = setupNewHTTPServer(0, 30*time.Second)
@@ -96,8 +96,8 @@ func TestMaxConnections(t *testing.T) {
 	}
 
 	//limitedServer.httpServer.SetKeepAlivesEnabled(false)
-	okFn := func(conn net.Conn, proxy *server.Server, targetURL *url.URL) {
-		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host)
+	okFn := func(conn net.Conn, proxy *server.Server, originURL *url.URL) {
+		req := fmt.Sprintf(connectReq, originURL.Host, originURL.Host)
 		conn.Write([]byte(req))
 		var buf [400]byte
 		_, err = conn.Read(buf[:])
@@ -107,10 +107,10 @@ func TestMaxConnections(t *testing.T) {
 		time.Sleep(time.Millisecond * 100)
 	}
 
-	waitFn := func(conn net.Conn, proxy *server.Server, targetURL *url.URL) {
+	waitFn := func(conn net.Conn, proxy *server.Server, originURL *url.URL) {
 		conn.SetReadDeadline(time.Now().Add(50 * time.Millisecond))
 
-		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host)
+		req := fmt.Sprintf(connectReq, originURL.Host, originURL.Host)
 		conn.Write([]byte(req))
 		var buf [400]byte
 		_, err = conn.Read(buf[:])
@@ -122,19 +122,19 @@ func TestMaxConnections(t *testing.T) {
 	}
 
 	for i := 0; i < 5; i++ {
-		go testRoundTrip(t, limitedServer, httpTargetServer, okFn)
+		go testRoundTrip(t, limitedServer, httpOriginServer, okFn)
 	}
 
 	time.Sleep(time.Millisecond * 10)
 
 	for i := 0; i < 5; i++ {
-		go testRoundTrip(t, limitedServer, httpTargetServer, waitFn)
+		go testRoundTrip(t, limitedServer, httpOriginServer, waitFn)
 	}
 
 	time.Sleep(time.Millisecond * 100)
 
 	for i := 0; i < 5; i++ {
-		go testRoundTrip(t, limitedServer, httpTargetServer, okFn)
+		go testRoundTrip(t, limitedServer, httpOriginServer, okFn)
 	}
 }
 
@@ -144,7 +144,7 @@ func TestIdleClientConnections(t *testing.T) {
 		assert.Fail(t, "Error starting proxy server")
 	}
 
-	okFn := func(conn net.Conn, proxy *server.Server, targetURL *url.URL) {
+	okFn := func(conn net.Conn, proxy *server.Server, originURL *url.URL) {
 		time.Sleep(time.Millisecond * 90)
 		conn.Write([]byte("GET / HTTP/1.1\r\nHost: www.google.com\r\n\r\n"))
 
@@ -154,7 +154,7 @@ func TestIdleClientConnections(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
-	idleFn := func(conn net.Conn, proxy *server.Server, targetURL *url.URL) {
+	idleFn := func(conn net.Conn, proxy *server.Server, originURL *url.URL) {
 		time.Sleep(time.Millisecond * 110)
 		conn.Write([]byte("GET / HTTP/1.1\r\nHost: www.google.com\r\n\r\n"))
 
@@ -257,11 +257,11 @@ func TestConnectOK(t *testing.T) {
 
 		buf = [400]byte{}
 		_, err = conn.Read(buf[:])
-		assert.Contains(t, string(buf[:]), targetResponse, "should read tunneled response")
+		assert.Contains(t, string(buf[:]), originResponse, "should read tunneled response")
 	}
 
-	testTLS := func(conn net.Conn, proxy *server.Server, targetURL *url.URL) {
-		req := fmt.Sprintf(connectReq, targetURL.Host, targetURL.Host)
+	testTLS := func(conn net.Conn, proxy *server.Server, originURL *url.URL) {
+		req := fmt.Sprintf(connectReq, originURL.Host, originURL.Host)
 		t.Log("\n" + req)
 		_, err := conn.Write([]byte(req))
 		if !assert.NoError(t, err, "should write CONNECT request") {
@@ -288,14 +288,14 @@ func TestConnectOK(t *testing.T) {
 
 		buf = [400]byte{}
 		_, err = tunnConn.Read(buf[:])
-		assert.Contains(t, string(buf[:]), targetResponse, "should read tunneled response")
+		assert.Contains(t, string(buf[:]), originResponse, "should read tunneled response")
 	}
 
-	testRoundTrip(t, httpProxy, httpTargetServer, testHTTP)
-	testRoundTrip(t, tlsProxy, httpTargetServer, testHTTP)
+	testRoundTrip(t, httpProxy, httpOriginServer, testHTTP)
+	testRoundTrip(t, tlsProxy, httpOriginServer, testHTTP)
 
-	testRoundTrip(t, httpProxy, tlsTargetServer, testTLS)
-	testRoundTrip(t, tlsProxy, tlsTargetServer, testTLS)
+	testRoundTrip(t, httpProxy, tlsOriginServer, testTLS)
+	testRoundTrip(t, tlsProxy, tlsOriginServer, testTLS)
 }
 
 // X-Lantern-Auth-Token + X-Lantern-Device-Id -> Forward
@@ -303,8 +303,8 @@ func TestDirectOK(t *testing.T) {
 	reqTempl := "GET /%s HTTP/1.1\r\nHost: %s\r\n\r\n"
 	failResp := "HTTP/1.1 500 Internal Server Error\r\n"
 
-	testOk := func(conn net.Conn, proxy *server.Server, targetURL *url.URL) {
-		req := fmt.Sprintf(reqTempl, targetURL.Path, targetURL.Host)
+	testOk := func(conn net.Conn, proxy *server.Server, originURL *url.URL) {
+		req := fmt.Sprintf(reqTempl, originURL.Path, originURL.Host)
 		t.Log("\n" + req)
 		_, err := conn.Write([]byte(req))
 		if !assert.NoError(t, err, "should write GET request") {
@@ -313,12 +313,12 @@ func TestDirectOK(t *testing.T) {
 
 		buf := [400]byte{}
 		_, err = conn.Read(buf[:])
-		assert.Contains(t, string(buf[:]), targetResponse, "should read tunneled response")
+		assert.Contains(t, string(buf[:]), originResponse, "should read tunneled response")
 
 	}
 
-	testFail := func(conn net.Conn, proxy *server.Server, targetURL *url.URL) {
-		req := fmt.Sprintf(reqTempl, targetURL.Path, targetURL.Host)
+	testFail := func(conn net.Conn, proxy *server.Server, originURL *url.URL) {
+		req := fmt.Sprintf(reqTempl, originURL.Path, originURL.Host)
 		t.Log("\n" + req)
 		_, err := conn.Write([]byte(req))
 		if !assert.NoError(t, err, "should write GET request") {
@@ -333,18 +333,18 @@ func TestDirectOK(t *testing.T) {
 
 	}
 
-	testRoundTrip(t, httpProxy, httpTargetServer, testOk)
-	testRoundTrip(t, tlsProxy, httpTargetServer, testOk)
+	testRoundTrip(t, httpProxy, httpOriginServer, testOk)
+	testRoundTrip(t, tlsProxy, httpOriginServer, testOk)
 
 	// HTTPS can't be tunneled using Direct Proxying, as redirections
-	// require a TLS handshake between the proxy and the target
-	testRoundTrip(t, httpProxy, tlsTargetServer, testFail)
-	testRoundTrip(t, tlsProxy, tlsTargetServer, testFail)
+	// require a TLS handshake between the proxy and the origin
+	testRoundTrip(t, httpProxy, tlsOriginServer, testFail)
+	testRoundTrip(t, tlsProxy, tlsOriginServer, testFail)
 }
 
 func TestInvalidRequest(t *testing.T) {
 	connectResp := "HTTP/1.1 400 Bad Request\r\n"
-	testFn := func(conn net.Conn, proxy *server.Server, targetURL *url.URL) {
+	testFn := func(conn net.Conn, proxy *server.Server, originURL *url.URL) {
 		_, err := conn.Write([]byte("GET HTTP/1.1\r\n\r\n"))
 		if !assert.NoError(t, err, "should write GET request") {
 			t.FailNow()
@@ -356,8 +356,8 @@ func TestInvalidRequest(t *testing.T) {
 
 	}
 	for i := 0; i < 10; i++ {
-		testRoundTrip(t, httpProxy, tlsTargetServer, testFn)
-		testRoundTrip(t, tlsProxy, tlsTargetServer, testFn)
+		testRoundTrip(t, httpProxy, tlsOriginServer, testFn)
+		testRoundTrip(t, tlsProxy, tlsOriginServer, testFn)
 	}
 
 }
@@ -366,14 +366,14 @@ func TestInvalidRequest(t *testing.T) {
 // Auxiliary functions
 //
 
-func testRoundTrip(t *testing.T, proxy *server.Server, target *targetHandler, checkerFn func(conn net.Conn, proxy *server.Server, targetURL *url.URL)) {
+func testRoundTrip(t *testing.T, proxy *server.Server, origin *originHandler, checkerFn func(conn net.Conn, proxy *server.Server, originURL *url.URL)) {
 	var conn net.Conn
 	var err error
 
 	addr := proxy.Addr.String()
 	if !proxy.Tls {
 		conn, err = net.Dial("tcp", addr)
-		log.Debugf("%s -> %s (via HTTP) -> %s", conn.LocalAddr().String(), addr, target.server.URL)
+		log.Debugf("%s -> %s (via HTTP) -> %s", conn.LocalAddr().String(), addr, origin.server.URL)
 		if !assert.NoError(t, err, "should dial proxy server") {
 			t.FailNow()
 		}
@@ -384,7 +384,7 @@ func testRoundTrip(t *testing.T, proxy *server.Server, target *targetHandler, ch
 			CipherSuites:       preferredCipherSuites,
 			InsecureSkipVerify: true,
 		})
-		log.Debugf("%s -> %s (via HTTPS) -> %s", tlsConn.LocalAddr().String(), addr, target.server.URL)
+		log.Debugf("%s -> %s (via HTTPS) -> %s", tlsConn.LocalAddr().String(), addr, origin.server.URL)
 		if !assert.NoError(t, err, "should dial proxy server") {
 			t.FailNow()
 		}
@@ -400,7 +400,7 @@ func testRoundTrip(t *testing.T, proxy *server.Server, target *targetHandler, ch
 		assert.NoError(t, conn.Close(), "should close connection")
 	}()
 
-	url, _ := url.Parse(target.server.URL)
+	url, _ := url.Parse(origin.server.URL)
 	checkerFn(conn, proxy, url)
 }
 
@@ -517,20 +517,20 @@ func setupNewHTTPSServer(maxConns uint64, idleTimeout time.Duration) (*server.Se
 }
 
 //
-// Mock target server
-// Emulating locally a target site for testing tunnels
+// Mock origin server
+// Emulating locally an origin server for testing tunnels
 //
 
-type targetHandler struct {
+type originHandler struct {
 	writer func(w http.ResponseWriter)
 	server *httptest.Server
 }
 
-func (m *targetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (m *originHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.writer(w)
 }
 
-func (m *targetHandler) Raw(msg string) {
+func (m *originHandler) Raw(msg string) {
 	m.writer = func(w http.ResponseWriter) {
 		conn, _, _ := w.(http.Hijacker).Hijack()
 		if _, err := conn.Write([]byte(msg)); err != nil {
@@ -542,7 +542,7 @@ func (m *targetHandler) Raw(msg string) {
 	}
 }
 
-func (m *targetHandler) Msg(msg string) {
+func (m *originHandler) Msg(msg string) {
 	m.writer = func(w http.ResponseWriter) {
 		w.Header()["Content-Length"] = []string{strconv.Itoa(len(msg))}
 		_, _ = w.Write([]byte(msg))
@@ -550,7 +550,7 @@ func (m *targetHandler) Msg(msg string) {
 	}
 }
 
-func (m *targetHandler) Timeout(d time.Duration, msg string) {
+func (m *originHandler) Timeout(d time.Duration, msg string) {
 	m.writer = func(w http.ResponseWriter) {
 		time.Sleep(d)
 		w.Header()["Content-Length"] = []string{strconv.Itoa(len(msg))}
@@ -559,19 +559,19 @@ func (m *targetHandler) Timeout(d time.Duration, msg string) {
 	}
 }
 
-func (m *targetHandler) Close() {
-	m.Close()
+func (m *originHandler) Close() {
+	m.server.Close()
 }
 
-func newTargetHandler(msg string, tls bool) (string, *targetHandler) {
-	m := targetHandler{}
+func newOriginHandler(msg string, tls bool) (string, *originHandler) {
+	m := originHandler{}
 	m.Msg(msg)
 	if tls {
 		m.server = httptest.NewTLSServer(&m)
 	} else {
 		m.server = httptest.NewServer(&m)
 	}
-	log.Debugf("Started target site at %v", m.server.URL)
+	log.Debugf("Started origin server at %v", m.server.URL)
 	return m.server.URL, &m
 }
 
