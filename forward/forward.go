@@ -52,7 +52,20 @@ func IdleTimeoutSetter(i time.Duration) optSetter {
 }
 
 func New(next http.Handler, setters ...optSetter) (*Forwarder, error) {
-	var dialerFunc func(string, string) (net.Conn, error)
+	idleTimeoutPtr := new(time.Duration)
+	dialerFunc := func(network, addr string) (conn net.Conn, err error) {
+		conn, err = net.DialTimeout(network, addr, time.Second*30)
+		if err != nil {
+			return
+		}
+
+		idleConn := idletiming.Conn(conn, *idleTimeoutPtr, func() {
+			if conn != nil {
+				conn.Close()
+			}
+		})
+		return idleConn, err
+	}
 
 	var timeoutTransport http.RoundTripper = &http.Transport{
 		Dial:                dialerFunc,
@@ -62,35 +75,22 @@ func New(next http.Handler, setters ...optSetter) (*Forwarder, error) {
 		errHandler:   utils.DefaultHandler,
 		roundTripper: timeoutTransport,
 		next:         next,
-		idleTimeout:  30,
+		idleTimeout:  30 * time.Second,
 	}
 	for _, s := range setters {
 		if err := s(f); err != nil {
 			return nil, err
 		}
 	}
+
+	// Make sure we update the timeout that dialer is going to use
+	*idleTimeoutPtr = f.idleTimeout
+
 	if f.rewriter == nil {
 		f.rewriter = &HeaderRewriter{
 			TrustForwardHeader: true,
 			Hostname:           "",
 		}
-	}
-
-	dialerFunc = func(network, addr string) (conn net.Conn, err error) {
-		conn, err = (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
-		}).Dial(network, addr)
-		if err != nil {
-			return
-		}
-
-		idleConn := idletiming.Conn(conn, f.idleTimeout, func() {
-			if conn != nil {
-				conn.Close()
-			}
-		})
-		return idleConn, err
 	}
 
 	return f, nil
