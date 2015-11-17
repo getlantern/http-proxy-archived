@@ -93,6 +93,7 @@ func (s *Server) doServe(listener net.Listener, readyCb func(addr string)) error
 				cb.Purge(c.RemoteAddr().String())
 			}
 		},
+		ErrorLog: log.AsStdLogger(),
 	}
 
 	firstListener := listeners.NewDefaultListener(listener)
