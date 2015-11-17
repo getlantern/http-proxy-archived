@@ -70,6 +70,7 @@ func (s *Server) doServe(listener net.Listener, readyCb func(addr string)) error
 			c := cb.Withdraw(req.RemoteAddr)
 			context.Set(req, "conn", c)
 			s.handler.ServeHTTP(w, req)
+			context.Clear(req)
 		})
 
 	s.httpServer = http.Server{Handler: proxy,
