@@ -88,22 +88,26 @@ func (f *HTTPConnectHandler) intercept(w http.ResponseWriter, req *http.Request)
 	closeConns := func() {
 		if clientConn != nil {
 			if err := clientConn.Close(); err != nil {
-				log.Errorf("Error closing the out connection: %s", err)
+				log.Debugf("Error closing the out connection: %s", err)
 			}
 		}
 		if connOut != nil {
 			if err := connOut.Close(); err != nil {
-				log.Errorf("Error closing the client connection: %s", err)
+				log.Debugf("Error closing the client connection: %s", err)
 			}
 		}
 	}
 	var closeOnce sync.Once
 	go func() {
-		_, _ = io.Copy(connOut, clientConn)
+		if _, err := io.Copy(connOut, clientConn); err != nil {
+			log.Debug(err)
+		}
 		closeOnce.Do(closeConns)
 
 	}()
-	_, _ = io.Copy(clientConn, connOut)
+	if _, err := io.Copy(clientConn, connOut); err != nil {
+		log.Debug(err)
+	}
 	closeOnce.Do(closeConns)
 
 	return
