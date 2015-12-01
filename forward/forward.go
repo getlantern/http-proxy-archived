@@ -119,7 +119,7 @@ func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	start := time.Now().UTC()
 	response, err := f.roundTripper.RoundTrip(reqClone)
 	if err != nil {
-		log.Errorf("Error forwarding to %v, error: %v", req.Host, err)
+		log.Debugf("Error forwarding to %v, error: %v", req.Host, err)
 		f.errHandler.ServeHTTP(w, req, err)
 		return
 	}
@@ -139,7 +139,7 @@ func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if response.Body != nil {
 		_, err = io.Copy(w, response.Body)
 		if err != nil {
-			log.Error(err)
+			log.Debug(err)
 		}
 
 		response.Body.Close()
