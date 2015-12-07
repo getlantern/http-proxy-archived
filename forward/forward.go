@@ -170,6 +170,11 @@ func (f *Forwarder) cloneRequest(req *http.Request, u *url.URL) (*http.Request, 
 	// We need to make sure the host is defined in the URL (not the actual URI)
 	outReq.URL.Host = req.Host
 	// Make sure we define an opaque URL, so the URI is just the path
+	//
+	// Note that EscapedPath() always return the URL-encoded path, so we have
+	// no way to know if the raw URL in req is encoded or not.  Go HTTP client
+	// always encode URL, so do major browsers. That means it's totally safe for
+	// Lantern usage and possibly others.
 	outReq.URL.Opaque = req.URL.EscapedPath()
 	outReq.URL.RawQuery = req.URL.RawQuery
 
