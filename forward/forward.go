@@ -170,7 +170,7 @@ func (f *Forwarder) cloneRequest(req *http.Request, u *url.URL) (*http.Request, 
 	// We need to make sure the host is defined in the URL (not the actual URI)
 	outReq.URL.Host = req.Host
 	// Make sure we define an opaque URL, so the URI is just the path
-	outReq.URL.Opaque = req.URL.Path
+	outReq.URL.Opaque = req.URL.EscapedPath()
 	outReq.URL.RawQuery = req.URL.RawQuery
 
 	userAgent := req.UserAgent()
@@ -185,8 +185,8 @@ func (f *Forwarder) cloneRequest(req *http.Request, u *url.URL) (*http.Request, 
 		// We are forced to do this because Go's server won't allow us to read the trailers otherwise
 		_, err := httputil.DumpRequestOut(req, true)
 		if err != nil {
-			log.Errorf("Error: %v", err)
-			return outReq, err
+		  log.Errorf("Error: %v", err)
+		  return outReq, err
 		}
 
 		rcloser := ioutil.NopCloser(req.Body)
@@ -194,20 +194,20 @@ func (f *Forwarder) cloneRequest(req *http.Request, u *url.URL) (*http.Request, 
 
 		chunkedTransfer := false
 		for _, enc := range req.TransferEncoding {
-			if enc == "chunked" {
-				chunkedTransfer = true
-				break
-			}
+		  if enc == "chunked" {
+		    chunkedTransfer = true
+		    break
+		  }
 		}
 
 		// Append Trailer
 		if chunkedTransfer && len(req.Trailer) > 0 {
-			outReq.Trailer = http.Header{}
-			for k, vv := range req.Trailer {
-				for _, v := range vv {
-					outReq.Trailer.Add(k, v)
-				}
-			}
+		  outReq.Trailer = http.Header{}
+		  for k, vv := range req.Trailer {
+		    for _, v := range vv {
+		      outReq.Trailer.Add(k, v)
+		    }
+		  }
 		}
 	*/
 
