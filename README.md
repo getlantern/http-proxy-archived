@@ -4,6 +4,8 @@
 
 ## Run
 
+Go 1.5 or later is required.
+
 First get dependencies:
 
 ```
