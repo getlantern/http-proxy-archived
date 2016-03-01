@@ -7,6 +7,8 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -18,10 +20,9 @@ import (
 var log = golog.LoggerFor("httpconnect")
 
 type HTTPConnectHandler struct {
-	errHandler utils.ErrorHandler
-	next       http.Handler
-
-	idleTimeout time.Duration
+	next         http.Handler
+	idleTimeout  time.Duration
+	allowedPorts []int
 }
 
 type optSetter func(f *HTTPConnectHandler) error
@@ -33,11 +34,34 @@ func IdleTimeoutSetter(i time.Duration) optSetter {
 	}
 }
 
-func New(next http.Handler, setters ...optSetter) (*HTTPConnectHandler, error) {
-	f := &HTTPConnectHandler{
-		errHandler: utils.DefaultHandler,
-		next:       next,
+func AllowedPorts(ports []int) optSetter {
+	return func(f *HTTPConnectHandler) error {
+		f.allowedPorts = ports
+		return nil
 	}
+}
+
+func AllowedPortsFromCSV(csv string) optSetter {
+	return func(f *HTTPConnectHandler) error {
+		fields := strings.Split(csv, ",")
+		ports := make([]int, len(fields))
+		for i, f := range fields {
+			p, err := strconv.Atoi(f)
+			if err != nil {
+				return err
+			}
+			ports[i] = p
+		}
+		f.allowedPorts = ports
+		return nil
+	}
+}
+
+func New(next http.Handler, setters ...optSetter) (*HTTPConnectHandler, error) {
+	if next == nil {
+		return nil, errors.New("Next handler is not defined (nil)")
+	}
+	f := &HTTPConnectHandler{next: next}
 	for _, s := range setters {
 		if err := s(f); err != nil {
 			return nil, err
@@ -48,13 +72,8 @@ func New(next http.Handler, setters ...optSetter) (*HTTPConnectHandler, error) {
 }
 
 func (f *HTTPConnectHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	// If the request is not HTTP CONNECT, pass along to the next handler
 	if req.Method != "CONNECT" {
-		if f.next == nil {
-			f.errHandler.ServeHTTP(w, req, errors.New("Next handler is not defined (nil)"))
-		} else {
-			f.next.ServeHTTP(w, req)
-		}
+		f.next.ServeHTTP(w, req)
 		return
 	}
 
@@ -63,7 +82,36 @@ func (f *HTTPConnectHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		log.Tracef("HTTPConnectHandler Middleware received request:\n%s", reqStr)
 	}
 
-	f.intercept(w, req)
+	if f.portAllowed(w, req) {
+		f.intercept(w, req)
+	}
+}
+
+func (f *HTTPConnectHandler) portAllowed(w http.ResponseWriter, req *http.Request) bool {
+	if len(f.allowedPorts) == 0 {
+		return true
+	}
+	log.Tracef("Checking CONNECT tunnel to %s against allowed ports %v", req.Host, f.allowedPorts)
+	_, portString, err := net.SplitHostPort(req.Host)
+	if err != nil {
+		// CONNECT request should always include port in req.Host.
+		// Ref https://tools.ietf.org/html/rfc2817#section-5.2.
+		f.ServeError(w, req, http.StatusBadRequest, "No port field in Request-URI / Host header")
+		return false
+	}
+	port, err := strconv.Atoi(portString)
+	if err != nil {
+		f.ServeError(w, req, http.StatusBadRequest, "Invalid port")
+		return false
+	}
+
+	for _, p := range f.allowedPorts {
+		if port == p {
+			return true
+		}
+	}
+	f.ServeError(w, req, http.StatusForbidden, "Port not allowed")
+	return false
 }
 
 func (f *HTTPConnectHandler) intercept(w http.ResponseWriter, req *http.Request) (err error) {
@@ -111,4 +159,10 @@ func (f *HTTPConnectHandler) intercept(w http.ResponseWriter, req *http.Request)
 	closeOnce.Do(closeConns)
 
 	return
+}
+
+func (f *HTTPConnectHandler) ServeError(w http.ResponseWriter, req *http.Request, statusCode int, reason string) {
+	log.Debugf("Respond error to CONNECT request to %s: %d %s", req.Host, statusCode, reason)
+	w.WriteHeader(statusCode)
+	w.Write([]byte(reason))
 }
