@@ -36,6 +36,7 @@ func TestCloneRequest(t *testing.T) {
 	const url = "http://zh.moegirl.org" + rawPath
 	rt := mockRT{func(r *http.Request) (*http.Response, error) {
 		assert.Equal(t, url, r.URL.String(), "should not alter the path")
+		assert.Equal(t, "zh.moegirl.org", r.Header.Get("Host"), "should have host header")
 		return nil, errors.New("intentionally fail")
 	}}
 	fwd, _ := New(nil, RoundTripper(rt))
