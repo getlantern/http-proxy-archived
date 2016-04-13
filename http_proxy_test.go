@@ -98,7 +98,7 @@ func TestMaxConnections(t *testing.T) {
 		req := fmt.Sprintf(connectReq, originURL.Host, originURL.Host)
 		conn.Write([]byte(req))
 		var buf [400]byte
-		_, err = conn.Read(buf[:])
+		_, err := conn.Read(buf[:])
 
 		assert.NoError(t, err)
 
@@ -111,7 +111,7 @@ func TestMaxConnections(t *testing.T) {
 		req := fmt.Sprintf(connectReq, originURL.Host, originURL.Host)
 		conn.Write([]byte(req))
 		var buf [400]byte
-		_, err = conn.Read(buf[:])
+		_, err := conn.Read(buf[:])
 
 		if assert.Error(t, err) {
 			e, ok := err.(*net.OpError)

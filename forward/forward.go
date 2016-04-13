@@ -53,10 +53,10 @@ func IdleTimeoutSetter(i time.Duration) optSetter {
 
 func New(next http.Handler, setters ...optSetter) (*Forwarder, error) {
 	idleTimeoutPtr := new(time.Duration)
-	dialerFunc := func(network, addr string) (conn net.Conn, err error) {
-		conn, err = net.DialTimeout(network, addr, time.Second*30)
+	dialerFunc := func(network, addr string) (net.Conn, error) {
+		conn, err := net.DialTimeout(network, addr, time.Second*30)
 		if err != nil {
-			return
+			return nil, err
 		}
 
 		idleConn := idletiming.Conn(conn, *idleTimeoutPtr, func() {
