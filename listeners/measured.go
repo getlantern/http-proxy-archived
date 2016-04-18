@@ -27,14 +27,14 @@ func (l *stateAwareMeasuredListener) Accept() (c net.Conn, err error) {
 	sac, _ := c.(*measured.Conn).Conn.(WrapConnEmbeddable)
 	return &wrapMeasuredConn{
 		WrapConnEmbeddable: sac,
-		Conn:               *c.(*measured.Conn),
+		Conn:               c.(*measured.Conn),
 	}, err
 }
 
 // Wrapped MeasuredConn that supports OnState
 type wrapMeasuredConn struct {
 	WrapConnEmbeddable
-	measured.Conn
+	*measured.Conn
 }
 
 func (c *wrapMeasuredConn) OnState(s http.ConnState) {

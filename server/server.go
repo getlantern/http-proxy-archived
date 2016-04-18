@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/context"
 
 	"github.com/getlantern/golog"
+	"github.com/getlantern/tlsdefaults"
 
 	"github.com/getlantern/http-proxy/listeners"
 )
@@ -19,18 +20,44 @@ var (
 type listenerGenerator func(net.Listener) net.Listener
 
 type Server struct {
-	Addr net.Addr
-	Tls  bool
-
-	handler            http.Handler
 	httpServer         http.Server
 	listenerGenerators []listenerGenerator
-	listeners          []*net.Listener
 }
 
 func NewServer(handler http.Handler) *Server {
+	cb := NewConnBag()
+
+	proxy := http.HandlerFunc(
+		func(w http.ResponseWriter, req *http.Request) {
+			c := cb.Withdraw(req.RemoteAddr)
+			context.Set(req, "conn", c)
+			handler.ServeHTTP(w, req)
+			context.Clear(req)
+		})
+
 	server := &Server{
-		handler: handler,
+		httpServer: http.Server{Handler: proxy,
+			ConnState: func(c net.Conn, state http.ConnState) {
+				wconn, ok := c.(listeners.WrapConn)
+				if !ok {
+					panic("Should be of type WrapConn")
+				}
+
+				wconn.OnState(state)
+
+				switch state {
+				case http.StateActive:
+					cb.Put(wconn)
+				case http.StateClosed:
+					// When go server encounters abnormal request, it
+					// will transit to StateClosed directly without
+					// the handler being invoked, hence the connection
+					// will not be withdrawed. Purge it in such case.
+					cb.Purge(c.RemoteAddr().String())
+				}
+			},
+			ErrorLog: log.AsStdLogger(),
+		},
 	}
 
 	return server
@@ -42,77 +69,34 @@ func (s *Server) AddListenerWrappers(listenerGens ...listenerGenerator) {
 	}
 }
 
-func (s *Server) ServeHTTP(addr string, readyCb func(addr string)) error {
+func (s *Server) ListenAndServeHTTP(addr string, readyCb func(addr string)) error {
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
 	}
-	s.Tls = false
 	log.Debugf("Listen http on %s", addr)
-	return s.doServe(listener, readyCb)
+	return s.Serve(listener, readyCb)
 }
 
-func (s *Server) ServeHTTPS(addr, keyfile, certfile string, readyCb func(addr string)) error {
-	listener, err := listenTLS(addr, keyfile, certfile)
+func (s *Server) ListenAndServeHTTPS(addr, keyfile, certfile string, readyCb func(addr string)) error {
+	listener, err := tlsdefaults.Listen(addr, keyfile, certfile)
 	if err != nil {
 		return err
 	}
-	s.Tls = true
 	log.Debugf("Listen https on %s", addr)
-	return s.doServe(listener, readyCb)
+	return s.Serve(listener, readyCb)
 }
 
-func (s *Server) doServe(listener net.Listener, readyCb func(addr string)) error {
-	cb := NewConnBag()
+func (s *Server) Serve(listener net.Listener, readyCb func(addr string)) error {
+	l := listeners.NewDefaultListener(listener)
 
-	proxy := http.HandlerFunc(
-		func(w http.ResponseWriter, req *http.Request) {
-			c := cb.Withdraw(req.RemoteAddr)
-			context.Set(req, "conn", c)
-			s.handler.ServeHTTP(w, req)
-			context.Clear(req)
-		})
-
-	s.httpServer = http.Server{Handler: proxy,
-		ConnState: func(c net.Conn, state http.ConnState) {
-			wconn, ok := c.(listeners.WrapConn)
-			if !ok {
-				panic("Should be of type WrapConn")
-			}
-
-			wconn.OnState(state)
-
-			switch state {
-			case http.StateActive:
-				cb.Put(wconn)
-			case http.StateClosed:
-				// When go server encounters abnormal request, it
-				// will transit to StateClosed directly without
-				// the handler being invoked, hence the connection
-				// will not be withdrawed. Purge it in such case.
-				cb.Purge(c.RemoteAddr().String())
-			}
-		},
-		ErrorLog: log.AsStdLogger(),
+	for _, wrap := range s.listenerGenerators {
+		l = wrap(l)
 	}
-
-	firstListener := listeners.NewDefaultListener(listener)
-	firstListenerPtr := &firstListener
-	s.listeners = []*net.Listener{firstListenerPtr}
-
-	for _, li := range s.listenerGenerators {
-		newlis := li(*firstListenerPtr)
-		s.listeners = append(s.listeners, &newlis)
-		firstListenerPtr = &newlis
-	}
-
-	s.Addr = (*firstListenerPtr).Addr()
-	addrStr := s.Addr.String()
-	s.httpServer.Addr = addrStr
 
 	if readyCb != nil {
-		readyCb(addrStr)
+		readyCb(l.Addr().String())
 	}
 
-	return s.httpServer.Serve(*firstListenerPtr)
+	return s.httpServer.Serve(l)
 }
