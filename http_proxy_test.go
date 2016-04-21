@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -196,7 +197,7 @@ func impatientProxy(maxConns uint64, idleTimeout time.Duration) (string, error) 
 	}
 	go func(err *error) {
 		if *err = srv.ListenAndServeHTTP("localhost:0", wait); err != nil {
-			log.Errorf("Unable to serve: %s", err)
+			log.Errorf("Unable to serve: %v", err)
 		}
 	}(&err)
 	return <-ready, err
@@ -312,7 +313,7 @@ func TestConnectOK(t *testing.T) {
 		}
 
 		buf = [400]byte{}
-		_, err = conn.Read(buf[:])
+		conn.Read(buf[:])
 		assert.Contains(t, string(buf[:]), originResponse, "should read tunneled response")
 	}
 
@@ -343,7 +344,7 @@ func TestConnectOK(t *testing.T) {
 		}
 
 		buf = [400]byte{}
-		_, err = tunnConn.Read(buf[:])
+		tunnConn.Read(buf[:])
 		assert.Contains(t, string(buf[:]), originResponse, "should read tunneled response")
 	}
 
@@ -368,7 +369,7 @@ func TestDirectOK(t *testing.T) {
 		}
 
 		buf := [400]byte{}
-		_, err = conn.Read(buf[:])
+		conn.Read(buf[:])
 		assert.Contains(t, string(buf[:]), originResponse, "should read tunneled response")
 
 	}
@@ -382,7 +383,7 @@ func TestDirectOK(t *testing.T) {
 		}
 
 		buf := [400]byte{}
-		_, err = conn.Read(buf[:])
+		conn.Read(buf[:])
 		t.Log("\n" + string(buf[:]))
 
 		assert.Contains(t, string(buf[:]), failResp, "should respond with 500 Internal Server Error")
@@ -407,7 +408,7 @@ func TestInvalidRequest(t *testing.T) {
 		}
 
 		buf := [400]byte{}
-		_, err = conn.Read(buf[:])
+		conn.Read(buf[:])
 		assert.Contains(t, string(buf[:]), connectResp, "should 400")
 
 	}
@@ -415,6 +416,31 @@ func TestInvalidRequest(t *testing.T) {
 		testRoundTrip(t, httpProxyAddr, false, tlsOriginServer, testFn)
 		testRoundTrip(t, tlsProxyAddr, true, tlsOriginServer, testFn)
 	}
+}
+
+func TestDisconnectingServer(t *testing.T) {
+	addr, err := setupNewDisconnectingServer(0, 5*time.Second)
+	if err != nil {
+		assert.Fail(t, "Error starting proxy server")
+	}
+
+	t.Logf("Dialing %v", addr)
+	conn, err := net.Dial("tcp", addr)
+	if !assert.NoError(t, err, "Should be able to connect") {
+		return
+	}
+
+	time.Sleep(500 * time.Millisecond)
+	_, err = conn.Write([]byte("GET HTTP/1.1\r\n\r\n"))
+	if !assert.NoError(t, err) {
+		return
+	}
+
+	out, err := ioutil.ReadAll(conn)
+	if !assert.NoError(t, err) {
+		return
+	}
+	assert.Empty(t, string(out), "Server shouldn't have sent anything")
 }
 
 //
@@ -515,7 +541,7 @@ func setupNewHTTPServer(maxConns uint64, idleTimeout time.Duration) (string, err
 	}
 	go func(err *error) {
 		if *err = s.ListenAndServeHTTP("localhost:0", wait); err != nil {
-			log.Errorf("Unable to serve: %s", err)
+			log.Errorf("Unable to serve: %v", err)
 		}
 	}(&err)
 	return <-ready, err
@@ -532,7 +558,7 @@ func setupNewHTTPSServer(maxConns uint64, idleTimeout time.Duration) (string, er
 	}
 	go func(err *error) {
 		if *err = s.ListenAndServeHTTPS("localhost:0", "key.pem", "cert.pem", wait); err != nil {
-			log.Errorf("Unable to serve: %s", err)
+			log.Errorf("Unable to serve: %v", err)
 		}
 	}(&err)
 	addr := <-ready
@@ -541,6 +567,26 @@ func setupNewHTTPSServer(maxConns uint64, idleTimeout time.Duration) (string, er
 	}
 	serverCertificate, err = keyman.LoadCertificateFromFile("cert.pem")
 	return addr, err
+}
+
+func setupNewDisconnectingServer(maxConns uint64, idleTimeout time.Duration) (string, error) {
+	s := basicServer(maxConns, idleTimeout)
+	s.Allow = func(ip string) bool {
+		return false
+	}
+
+	var err error
+	ready := make(chan string)
+	wait := func(addr string) {
+		log.Debugf("Started disconnecting HTTP proxy server at %s", addr)
+		ready <- addr
+	}
+	go func(err *error) {
+		if *err = s.ListenAndServeHTTP("localhost:0", wait); err != nil {
+			log.Errorf("Unable to serve: %v", *err)
+		}
+	}(&err)
+	return <-ready, err
 }
 
 //
