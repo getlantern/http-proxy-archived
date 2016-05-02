@@ -639,10 +639,12 @@ func (m *originHandler) Close() {
 func newOriginHandler(msg string, tls bool) (string, *originHandler) {
 	m := originHandler{}
 	m.Msg(msg)
+	m.server = httptest.NewUnstartedServer(&m)
+	m.server.Config.AcceptAnyHostHeader = true
 	if tls {
-		m.server = httptest.NewTLSServer(&m)
+		m.server.StartTLS()
 	} else {
-		m.server = httptest.NewServer(&m)
+		m.server.Start()
 	}
 	log.Debugf("Started origin server at %v", m.server.URL)
 	return m.server.URL, &m

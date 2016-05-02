@@ -13,8 +13,10 @@ import (
 	"time"
 
 	"github.com/getlantern/golog"
-	"github.com/getlantern/http-proxy/utils"
 	"github.com/getlantern/idletiming"
+
+	"github.com/getlantern/http-proxy/buffers"
+	"github.com/getlantern/http-proxy/utils"
 )
 
 var log = golog.LoggerFor("httpconnect")
@@ -147,13 +149,17 @@ func (f *HTTPConnectHandler) intercept(w http.ResponseWriter, req *http.Request)
 	}
 	var closeOnce sync.Once
 	go func() {
-		if _, err := io.Copy(connOut, clientConn); err != nil {
+		buf := buffers.Get()
+		defer buffers.Put(buf)
+		if _, err := io.CopyBuffer(connOut, clientConn, buf); err != nil {
 			log.Debug(err)
 		}
 		closeOnce.Do(closeConns)
 
 	}()
-	if _, err := io.Copy(clientConn, connOut); err != nil {
+	buf := buffers.Get()
+	defer buffers.Put(buf)
+	if _, err := io.CopyBuffer(clientConn, connOut, buf); err != nil {
 		log.Debug(err)
 	}
 	closeOnce.Do(closeConns)

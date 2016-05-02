@@ -4,7 +4,8 @@
 
 ## Run
 
-Go 1.5 or later is required.
+[Custom fork of Go](https://github.com/getlantern/go/tree/lantern)  is
+currently required.
 
 First get dependencies:
 
