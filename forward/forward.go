@@ -72,7 +72,7 @@ func New(next http.Handler, setters ...optSetter) (*Forwarder, error) {
 	timeoutTransport := &http.Transport{
 		Dial:                dialerFunc,
 		TLSHandshakeTimeout: 10 * time.Second,
-		MaxIdleTime:         *idleTimeoutPtr, // remove idle keep-alive connections to avoid leaking memory
+		MaxIdleTime:         *idleTimeoutPtr / 2, // remove idle keep-alive connections to avoid leaking memory
 	}
 	timeoutTransport.EnforceMaxIdleTime()
 	f := &Forwarder{
