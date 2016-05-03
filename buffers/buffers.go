@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	maxBuffers = 1000
+	maxBuffers = 2500
 	bufferSize = 32768
 )
 

@@ -54,14 +54,15 @@ func IdleTimeoutSetter(i time.Duration) optSetter {
 }
 
 func New(next http.Handler, setters ...optSetter) (*Forwarder, error) {
-	idleTimeoutPtr := new(time.Duration)
+	idleTimeout := 30 * time.Second
+
 	dialerFunc := func(network, addr string) (net.Conn, error) {
 		conn, err := net.DialTimeout(network, addr, time.Second*30)
 		if err != nil {
 			return nil, err
 		}
 
-		idleConn := idletiming.Conn(conn, *idleTimeoutPtr, func() {
+		idleConn := idletiming.Conn(conn, idleTimeout, func() {
 			if conn != nil {
 				conn.Close()
 			}
@@ -72,23 +73,21 @@ func New(next http.Handler, setters ...optSetter) (*Forwarder, error) {
 	timeoutTransport := &http.Transport{
 		Dial:                dialerFunc,
 		TLSHandshakeTimeout: 10 * time.Second,
-		MaxIdleTime:         *idleTimeoutPtr / 2, // remove idle keep-alive connections to avoid leaking memory
+		MaxIdleTime:         idleTimeout / 2, // remove idle keep-alive connections to avoid leaking memory
 	}
+	log.Debugf("MaxIdleTime: %v", timeoutTransport.MaxIdleTime)
 	timeoutTransport.EnforceMaxIdleTime()
 	f := &Forwarder{
 		errHandler:   utils.DefaultHandler,
 		roundTripper: timeoutTransport,
 		next:         next,
-		idleTimeout:  30 * time.Second,
+		idleTimeout:  idleTimeout,
 	}
 	for _, s := range setters {
 		if err := s(f); err != nil {
 			return nil, err
 		}
 	}
-
-	// Make sure we update the timeout that dialer is going to use
-	*idleTimeoutPtr = f.idleTimeout
 
 	if f.rewriter == nil {
 		f.rewriter = &HeaderRewriter{
