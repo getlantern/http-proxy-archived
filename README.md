@@ -4,8 +4,9 @@
 
 ## Run
 
-[Custom fork of Go](https://github.com/getlantern/go/tree/lantern)  is
-currently required.
+[Custom fork of Go](https://github.com/getlantern/go/tree/lantern) is
+currently required. We'll eventually switch to Go 1.7 which supports what we
+need due to [this](https://github.com/golang/go/issues/13998).
 
 First get dependencies:
 
