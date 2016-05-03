@@ -124,7 +124,7 @@ func (f *HTTPConnectHandler) intercept(w http.ResponseWriter, req *http.Request)
 		utils.RespondBadGateway(w, req, fmt.Sprintf("Unable to hijack connection: %s", err))
 		return
 	}
-	connOutRaw, err := net.Dial("tcp", req.Host)
+	connOutRaw, err := net.DialTimeout("tcp", req.Host, 10*time.Second)
 	if err != nil {
 		return
 	}
