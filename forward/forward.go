@@ -9,8 +9,10 @@ import (
 	"time"
 
 	"github.com/getlantern/golog"
-	"github.com/getlantern/http-proxy/utils"
 	"github.com/getlantern/idletiming"
+
+	"github.com/getlantern/http-proxy/buffers"
+	"github.com/getlantern/http-proxy/utils"
 )
 
 var log = golog.LoggerFor("forward")
@@ -52,7 +54,9 @@ func IdleTimeoutSetter(i time.Duration) optSetter {
 }
 
 func New(next http.Handler, setters ...optSetter) (*Forwarder, error) {
-	idleTimeoutPtr := new(time.Duration)
+	idleTimeout := 30 * time.Second
+	idleTimeoutPtr := &idleTimeout
+
 	dialerFunc := func(network, addr string) (net.Conn, error) {
 		conn, err := net.DialTimeout(network, addr, time.Second*30)
 		if err != nil {
@@ -67,15 +71,18 @@ func New(next http.Handler, setters ...optSetter) (*Forwarder, error) {
 		return idleConn, err
 	}
 
-	var timeoutTransport http.RoundTripper = &http.Transport{
+	timeoutTransport := &http.Transport{
 		Dial:                dialerFunc,
 		TLSHandshakeTimeout: 10 * time.Second,
+		MaxIdleTime:         idleTimeout / 2, // remove idle keep-alive connections to avoid leaking memory
 	}
+	timeoutTransport.EnforceMaxIdleTime()
+
 	f := &Forwarder{
 		errHandler:   utils.DefaultHandler,
 		roundTripper: timeoutTransport,
 		next:         next,
-		idleTimeout:  30 * time.Second,
+		idleTimeout:  idleTimeout,
 	}
 	for _, s := range setters {
 		if err := s(f); err != nil {
@@ -137,7 +144,9 @@ func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	// It became nil in a Co-Advisor test though the doc says it will never be nil
 	if response.Body != nil {
-		_, err = io.Copy(w, response.Body)
+		buf := buffers.Get()
+		defer buffers.Put(buf)
+		_, err = io.CopyBuffer(w, response.Body, buf)
 		if err != nil {
 			log.Debug(err)
 		}
