@@ -76,8 +76,8 @@ func New(next http.Handler, setters ...optSetter) (*Forwarder, error) {
 		TLSHandshakeTimeout: 10 * time.Second,
 		MaxIdleTime:         idleTimeout / 2, // remove idle keep-alive connections to avoid leaking memory
 	}
-	log.Debugf("MaxIdleTime: %v", timeoutTransport.MaxIdleTime)
 	timeoutTransport.EnforceMaxIdleTime()
+
 	f := &Forwarder{
 		errHandler:   utils.DefaultHandler,
 		roundTripper: timeoutTransport,
