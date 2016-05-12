@@ -71,11 +71,13 @@ func (f *CommonFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		// in the form localhost:port
 		if err == nil {
 			if reqAddr.IP.IsLoopback() {
+				log.Errorf("%v requested loopback address %v (%v)", req.RemoteAddr, req.Host, reqAddr)
 				f.errHandler.ServeHTTP(w, req, err)
 				return
 			}
 			for _, ip := range f.localIPs {
 				if reqAddr.IP.Equal(ip) {
+					log.Errorf("%v requested local address %v (%v)", req.RemoteAddr, req.Host, reqAddr)
 					f.errHandler.ServeHTTP(w, req, err)
 					return
 				}
