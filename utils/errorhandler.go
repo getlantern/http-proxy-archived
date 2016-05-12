@@ -4,18 +4,24 @@ import (
 	"io"
 	"net"
 	"net/http"
+
+	"github.com/getlantern/golog"
 )
 
 type ErrorHandler interface {
-	ServeHTTP(w http.ResponseWriter, req *http.Request, err error)
+	ServeHTTP(w http.ResponseWriter, req *http.Request, err error, desc string)
 }
 
-var DefaultHandler ErrorHandler = &StdHandler{}
+var (
+	log = golog.LoggerFor("errorhandler")
+
+	DefaultHandler ErrorHandler = &StdHandler{}
+)
 
 type StdHandler struct {
 }
 
-func (e *StdHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, err error) {
+func (e *StdHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, err error, desc string) {
 	statusCode := http.StatusInternalServerError
 	if e, ok := err.(net.Error); ok {
 		if e.Timeout() {
@@ -26,6 +32,7 @@ func (e *StdHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, err err
 	} else if err == io.EOF {
 		statusCode = http.StatusBadGateway
 	}
+	log.Errorf("Responding with %d due to %v: %v", statusCode, err, desc)
 	w.WriteHeader(statusCode)
 	w.Write([]byte(http.StatusText(statusCode)))
 }

@@ -2,6 +2,7 @@ package commonfilter
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"strings"
@@ -71,14 +72,14 @@ func (f *CommonFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		// in the form localhost:port
 		if err == nil {
 			if reqAddr.IP.IsLoopback() {
-				log.Errorf("%v requested loopback address %v (%v)", req.RemoteAddr, req.Host, reqAddr)
-				f.errHandler.ServeHTTP(w, req, err)
+				desc := fmt.Sprintf("%v requested loopback address %v (%v)", req.RemoteAddr, req.Host, reqAddr)
+				f.errHandler.ServeHTTP(w, req, err, desc)
 				return
 			}
 			for _, ip := range f.localIPs {
 				if reqAddr.IP.Equal(ip) {
-					log.Errorf("%v requested local address %v (%v)", req.RemoteAddr, req.Host, reqAddr)
-					f.errHandler.ServeHTTP(w, req, err)
+					desc := fmt.Sprintf("%v requested local address %v (%v)", req.RemoteAddr, req.Host, reqAddr)
+					f.errHandler.ServeHTTP(w, req, err, desc)
 					return
 				}
 			}
@@ -87,7 +88,7 @@ func (f *CommonFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if f.next == nil {
-		f.errHandler.ServeHTTP(w, req, errors.New("Next handler is not defined (nil)"))
+		f.errHandler.ServeHTTP(w, req, errors.New("Next handler is not defined (nil)"), "")
 	} else {
 		f.next.ServeHTTP(w, req)
 	}
