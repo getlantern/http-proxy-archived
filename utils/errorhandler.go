@@ -32,7 +32,7 @@ func (e *StdHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, err err
 	} else if err == io.EOF {
 		statusCode = http.StatusBadGateway
 	}
-	log.Errorf("Responding with %d due to %v: %v", statusCode, err, desc)
+	log.Debugf("Responding with %d due to %v: %v", statusCode, err, desc)
 	w.WriteHeader(statusCode)
 	w.Write([]byte(http.StatusText(statusCode)))
 }
