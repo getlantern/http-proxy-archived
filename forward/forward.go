@@ -1,7 +1,6 @@
 package forward
 
 import (
-	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/getlantern/golog"
 	"github.com/getlantern/idletiming"
+	"github.com/getlantern/ops"
 
 	"github.com/getlantern/http-proxy/buffers"
 	"github.com/getlantern/http-proxy/utils"
@@ -105,11 +105,13 @@ func New(next http.Handler, setters ...optSetter) (*Forwarder, error) {
 }
 
 func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	op := ops.Enter("proxy_http")
+	defer op.Exit()
 
 	// Create a copy of the request suitable for our needs
 	reqClone, err := f.cloneRequest(req, req.URL)
 	if err != nil {
-		desc := fmt.Sprintf("Error forwarding from %v to %v", req.RemoteAddr, req.Host)
+		desc := op.Errorf("Error forwarding from %v to %v", req.RemoteAddr, req.Host)
 		f.errHandler.ServeHTTP(w, req, err, desc)
 		return
 	}
@@ -127,7 +129,7 @@ func (f *Forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	start := time.Now().UTC()
 	response, err := f.roundTripper.RoundTrip(reqClone)
 	if err != nil {
-		desc := fmt.Sprintf("Error forwarding from %v to %v", req.RemoteAddr, req.Host)
+		desc := op.Errorf("Error forwarding from %v to %v", req.RemoteAddr, req.Host)
 		f.errHandler.ServeHTTP(w, req, err, desc)
 		return
 	}

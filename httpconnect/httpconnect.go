@@ -14,6 +14,7 @@ import (
 
 	"github.com/getlantern/golog"
 	"github.com/getlantern/idletiming"
+	"github.com/getlantern/ops"
 
 	"github.com/getlantern/http-proxy/buffers"
 	"github.com/getlantern/http-proxy/utils"
@@ -84,12 +85,14 @@ func (f *HTTPConnectHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		log.Tracef("HTTPConnectHandler Middleware received request:\n%s", reqStr)
 	}
 
-	if f.portAllowed(w, req) {
-		f.intercept(w, req)
+	op := ops.Enter("proxy_https")
+	defer op.Exit()
+	if f.portAllowed(op, w, req) {
+		f.intercept(op, w, req)
 	}
 }
 
-func (f *HTTPConnectHandler) portAllowed(w http.ResponseWriter, req *http.Request) bool {
+func (f *HTTPConnectHandler) portAllowed(op ops.Op, w http.ResponseWriter, req *http.Request) bool {
 	if len(f.allowedPorts) == 0 {
 		return true
 	}
@@ -98,12 +101,12 @@ func (f *HTTPConnectHandler) portAllowed(w http.ResponseWriter, req *http.Reques
 	if err != nil {
 		// CONNECT request should always include port in req.Host.
 		// Ref https://tools.ietf.org/html/rfc2817#section-5.2.
-		f.ServeError(w, req, http.StatusBadRequest, "No port field in Request-URI / Host header")
+		f.ServeError(op, w, req, http.StatusBadRequest, "No port field in Request-URI / Host header")
 		return false
 	}
 	port, err := strconv.Atoi(portString)
 	if err != nil {
-		f.ServeError(w, req, http.StatusBadRequest, "Invalid port")
+		f.ServeError(op, w, req, http.StatusBadRequest, "Invalid port")
 		return false
 	}
 
@@ -112,20 +115,22 @@ func (f *HTTPConnectHandler) portAllowed(w http.ResponseWriter, req *http.Reques
 			return true
 		}
 	}
-	f.ServeError(w, req, http.StatusForbidden, "Port not allowed")
+	f.ServeError(op, w, req, http.StatusForbidden, "Port not allowed")
 	return false
 }
 
-func (f *HTTPConnectHandler) intercept(w http.ResponseWriter, req *http.Request) (err error) {
+func (f *HTTPConnectHandler) intercept(op ops.Op, w http.ResponseWriter, req *http.Request) (err error) {
 	utils.RespondOK(w, req)
 
 	clientConn, _, err := w.(http.Hijacker).Hijack()
 	if err != nil {
-		utils.RespondBadGateway(w, req, fmt.Sprintf("Unable to hijack connection: %s", err))
+		desc := op.Errorf("Unable to hijack connection: %s", err)
+		utils.RespondBadGateway(w, req, desc)
 		return
 	}
 	connOutRaw, err := net.DialTimeout("tcp", req.Host, 10*time.Second)
 	if err != nil {
+		op.Errorf("Unable to dial %v: %v", req.Host, err)
 		return
 	}
 	connOut := idletiming.Conn(connOutRaw, f.idleTimeout, func() {
@@ -147,28 +152,33 @@ func (f *HTTPConnectHandler) intercept(w http.ResponseWriter, req *http.Request)
 			}
 		}
 	}
-	var closeOnce sync.Once
-	go func() {
+
+	var readFinished sync.WaitGroup
+	readFinished.Add(1)
+	op.Go(func() {
 		buf := buffers.Get()
 		defer buffers.Put(buf)
-		if _, err := io.CopyBuffer(connOut, clientConn, buf); err != nil {
-			log.Debug(err)
+		_, readErr := io.CopyBuffer(connOut, clientConn, buf)
+		if readErr != nil {
+			log.Debug(op.Errorf("Unable to read from origin: %v", readErr))
 		}
-		closeOnce.Do(closeConns)
+		readFinished.Done()
+	})
 
-	}()
 	buf := buffers.Get()
 	defer buffers.Put(buf)
-	if _, err := io.CopyBuffer(clientConn, connOut, buf); err != nil {
-		log.Debug(err)
+	_, writeErr := io.CopyBuffer(clientConn, connOut, buf)
+	if writeErr != nil {
+		log.Debug(op.Errorf("Unable to write to origin: %v", writeErr))
 	}
-	closeOnce.Do(closeConns)
+	readFinished.Wait()
+	closeConns()
 
 	return
 }
 
-func (f *HTTPConnectHandler) ServeError(w http.ResponseWriter, req *http.Request, statusCode int, reason string) {
-	log.Debugf("Respond error to CONNECT request to %s: %d %s", req.Host, statusCode, reason)
+func (f *HTTPConnectHandler) ServeError(op ops.Op, w http.ResponseWriter, req *http.Request, statusCode int, reason interface{}) {
+	log.Error(op.Errorf("Respond error to CONNECT request to %s: %d %v", req.Host, statusCode, reason))
 	w.WriteHeader(statusCode)
-	w.Write([]byte(reason))
+	fmt.Fprintf(w, "%v", reason)
 }

@@ -9,7 +9,7 @@ import (
 )
 
 type ErrorHandler interface {
-	ServeHTTP(w http.ResponseWriter, req *http.Request, err error, desc string)
+	ServeHTTP(w http.ResponseWriter, req *http.Request, err error, desc interface{})
 }
 
 var (
@@ -21,7 +21,7 @@ var (
 type StdHandler struct {
 }
 
-func (e *StdHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, err error, desc string) {
+func (e *StdHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, err error, desc interface{}) {
 	statusCode := http.StatusInternalServerError
 	if e, ok := err.(net.Error); ok {
 		if e.Timeout() {
