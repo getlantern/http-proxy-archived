@@ -11,8 +11,14 @@ import (
 )
 
 func TestFilterTunnelPorts(t *testing.T) {
-	filter, _ := New(http.NotFoundHandler(), AllowedPorts([]int{443, 8080}))
-	server := httptest.NewServer(filter)
+	notFound := http.NotFoundHandler()
+	filter, _ := New(&Options{AllowedPorts: []int{443, 8080}})
+	server := httptest.NewServer(http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
+		ok, _, _ := filter.ServeHTTP(resp, req)
+		if ok {
+			notFound.ServeHTTP(resp, req)
+		}
+	}))
 	defer server.Close()
 	u, _ := url.Parse(server.URL)
 	client := http.Client{Transport: &http.Transport{

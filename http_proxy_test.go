@@ -18,6 +18,7 @@ import (
 	"github.com/getlantern/testify/assert"
 
 	"github.com/getlantern/http-proxy/commonfilter"
+	"github.com/getlantern/http-proxy/filter"
 	"github.com/getlantern/http-proxy/forward"
 	"github.com/getlantern/http-proxy/httpconnect"
 	"github.com/getlantern/http-proxy/listeners"
@@ -168,18 +169,15 @@ func TestIdleClientConnections(t *testing.T) {
 
 // A proxy with a custom origin server connection timeout
 func impatientProxy(maxConns uint64, idleTimeout time.Duration) (string, error) {
-	forwarder, err := forward.New(nil, forward.IdleTimeoutSetter(idleTimeout))
-	if err != nil {
-		log.Error(err)
-	}
-
-	// Middleware: Handle HTTP CONNECT
-	httpConnect, err := httpconnect.New(forwarder, httpconnect.IdleTimeoutSetter(idleTimeout))
-	if err != nil {
-		log.Error(err)
-	}
-
-	srv := server.NewServer(httpConnect)
+	filterChain := filter.NewChain(
+		httpconnect.New(&httpconnect.Options{
+			IdleTimeout: idleTimeout,
+		}),
+		forward.New(&forward.Options{
+			IdleTimeout: idleTimeout,
+		}),
+	)
+	srv := server.NewServer(filterChain)
 
 	// Add net.Listener wrappers for inbound connections
 
@@ -194,6 +192,7 @@ func impatientProxy(maxConns uint64, idleTimeout time.Duration) (string, error) 
 	wait := func(addr string) {
 		ready <- addr
 	}
+	var err error
 	go func(err *error) {
 		if *err = srv.ListenAndServeHTTP("localhost:0", wait); err != nil {
 			log.Errorf("Unable to serve: %v", err)
@@ -493,27 +492,19 @@ type proxy struct {
 }
 
 func basicServer(maxConns uint64, idleTimeout time.Duration) *server.Server {
-
-	// Middleware: Forward HTTP Messages
-	forwarder, err := forward.New(nil, forward.IdleTimeoutSetter(idleTimeout))
-	if err != nil {
-		log.Error(err)
-	}
-
-	// Middleware: Handle HTTP CONNECT
-	httpConnect, err := httpconnect.New(forwarder, httpconnect.IdleTimeoutSetter(idleTimeout))
-	if err != nil {
-		log.Error(err)
-	}
-
-	// Middleware: Common request filter
-	commonHandler, err := commonfilter.New(httpConnect, testingLocal)
-	if err != nil {
-		log.Error(err)
-	}
-
+	filterChain := filter.NewChain(
+		commonfilter.New(&commonfilter.Options{
+			AllowLocalhost: testingLocal,
+		}),
+		httpconnect.New(&httpconnect.Options{
+			IdleTimeout: idleTimeout,
+		}),
+		forward.New(&forward.Options{
+			IdleTimeout: idleTimeout,
+		}),
+	)
 	// Create server
-	srv := server.NewServer(commonHandler)
+	srv := server.NewServer(filterChain)
 
 	// Add net.Listener wrappers for inbound connections
 	srv.AddListenerWrappers(
