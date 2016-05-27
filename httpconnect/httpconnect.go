@@ -49,7 +49,6 @@ func New(opts *Options) filter.Filter {
 
 func (f *httpConnectHandler) Apply(w http.ResponseWriter, req *http.Request) (bool, error, string) {
 	if req.Method != "CONNECT" {
-		// Fall through
 		return filter.Continue()
 	}
 

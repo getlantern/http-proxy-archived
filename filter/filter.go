@@ -33,7 +33,7 @@ type filterChain struct {
 
 // Chain constructs a new chain of filters that executes the filters in order
 // until it encounters a filter that returns false.
-func Chain(filters ...Filter) http.Handler {
+func Chain(filters ...Filter) FilterChain {
 	return &filterChain{filters}
 }
 
