@@ -42,7 +42,7 @@ func New(opts *Options) filter.Filter {
 	return &commonFilter{opts, localIPs}
 }
 
-func (f *commonFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) (bool, error, string) {
+func (f *commonFilter) Apply(w http.ResponseWriter, req *http.Request) (bool, error, string) {
 	if !f.AllowLocalhost && !f.isException(req.URL.Host) {
 		reqAddr, err := net.ResolveTCPAddr("tcp", req.Host)
 

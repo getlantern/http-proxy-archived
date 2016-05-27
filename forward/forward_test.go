@@ -42,5 +42,5 @@ func TestCloneRequest(t *testing.T) {
 	}}
 	fwd := New(&Options{RoundTripper: rt})
 	req, _ := http.NewRequest("GET", url, nil)
-	fwd.ServeHTTP(emptyRW{}, req)
+	fwd.Apply(emptyRW{}, req)
 }

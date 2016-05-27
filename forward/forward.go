@@ -66,7 +66,7 @@ func New(opts *Options) filter.Filter {
 	return &forwarder{opts}
 }
 
-func (f *forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) (bool, error, string) {
+func (f *forwarder) Apply(w http.ResponseWriter, req *http.Request) (bool, error, string) {
 	// Create a copy of the request suitable for our needs
 	reqClone, err := f.cloneRequest(req, req.URL)
 	if err != nil {
