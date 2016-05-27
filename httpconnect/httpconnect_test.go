@@ -12,7 +12,7 @@ import (
 )
 
 func TestFilterTunnelPorts(t *testing.T) {
-	server := httptest.NewServer(filter.NewChain(
+	server := httptest.NewServer(filter.Chain(
 		New(&Options{AllowedPorts: []int{443, 8080}}),
 		filter.Adapt(http.NotFoundHandler())))
 	defer server.Close()

@@ -46,7 +46,7 @@ func main() {
 		log.Error(err)
 	}
 
-	filterChain := filter.NewChain(
+	filterChain := filter.Chain(
 		commonfilter.New(&commonfilter.Options{
 			AllowLocalhost: testingLocal,
 		}),

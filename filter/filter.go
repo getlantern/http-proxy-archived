@@ -22,9 +22,9 @@ type filterChain struct {
 	filters []Filter
 }
 
-// NewChain constructs a new chain of filters that executes the filters in order
+// Chain constructs a new chain of filters that executes the filters in order
 // until it encounters a filter that returns false.
-func NewChain(filters ...Filter) http.Handler {
+func Chain(filters ...Filter) http.Handler {
 	return &filterChain{filters}
 }
 

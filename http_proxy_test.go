@@ -169,7 +169,7 @@ func TestIdleClientConnections(t *testing.T) {
 
 // A proxy with a custom origin server connection timeout
 func impatientProxy(maxConns uint64, idleTimeout time.Duration) (string, error) {
-	filterChain := filter.NewChain(
+	filterChain := filter.Chain(
 		httpconnect.New(&httpconnect.Options{
 			IdleTimeout: idleTimeout,
 		}),
@@ -492,7 +492,7 @@ type proxy struct {
 }
 
 func basicServer(maxConns uint64, idleTimeout time.Duration) *server.Server {
-	filterChain := filter.NewChain(
+	filterChain := filter.Chain(
 		commonfilter.New(&commonfilter.Options{
 			AllowLocalhost: testingLocal,
 		}),
