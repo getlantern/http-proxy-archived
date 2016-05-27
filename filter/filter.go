@@ -17,6 +17,13 @@ type Filter interface {
 	ServeHTTP(w http.ResponseWriter, req *http.Request) (ok bool, err error, errdesc string)
 }
 
+type FilterChain interface {
+	http.Handler
+
+	// Creates a new FilterChain by appending the given filters.
+	And(filters ...Filter) FilterChain
+}
+
 // filterChain is a chain of filters that implements the http.Handler
 // interface.
 type filterChain struct {
@@ -27,6 +34,10 @@ type filterChain struct {
 // until it encounters a filter that returns false.
 func Chain(filters ...Filter) http.Handler {
 	return &filterChain{filters}
+}
+
+func (c *filterChain) And(filters ...Filter) FilterChain {
+	return &filterChain{append(c.filters, filters...)}
 }
 
 // Continue is a convenience method for indicating that we should continue down

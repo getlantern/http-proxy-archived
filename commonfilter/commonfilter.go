@@ -13,8 +13,8 @@ import (
 var log = golog.LoggerFor("commonfilter")
 
 type Options struct {
-	Exceptions     []string
 	AllowLocalhost bool
+	Exceptions     []string
 }
 
 type commonFilter struct {
