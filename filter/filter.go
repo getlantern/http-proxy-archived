@@ -39,3 +39,17 @@ func (chain *filterChain) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 }
+
+// Adapt adapts an existing http.Handler to the Filter interface.
+func Adapt(handler http.Handler) Filter {
+	return &wrapper{handler}
+}
+
+type wrapper struct {
+	handler http.Handler
+}
+
+func (w *wrapper) ServeHTTP(resp http.ResponseWriter, req *http.Request) (bool, error, string) {
+	w.handler.ServeHTTP(resp, req)
+	return true, nil, ""
+}
