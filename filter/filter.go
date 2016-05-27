@@ -1,6 +1,7 @@
 package filter
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/getlantern/http-proxy/utils"
@@ -28,6 +29,24 @@ func Chain(filters ...Filter) http.Handler {
 	return &filterChain{filters}
 }
 
+// Continue is a convenience method for indicating that we should continue down
+// filter chain.
+func Continue() (bool, error, string) {
+	return true, nil, ""
+}
+
+// Stop is a convenience method for indicating that we should stop processing
+// the filter chain, but not due to an error.
+func Stop() (bool, error, string) {
+	return false, nil, ""
+}
+
+// Fail is a convenience method for failing and not continuing down filter
+// chain.
+func Fail(err error, msg string, args ...interface{}) (bool, error, string) {
+	return false, err, fmt.Sprintf(msg, args)
+}
+
 func (chain *filterChain) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	for _, filter := range chain.filters {
 		ok, err, desc := filter.ServeHTTP(w, req)
@@ -51,5 +70,5 @@ type wrapper struct {
 
 func (w *wrapper) ServeHTTP(resp http.ResponseWriter, req *http.Request) (bool, error, string) {
 	w.handler.ServeHTTP(resp, req)
-	return true, nil, ""
+	return Continue()
 }

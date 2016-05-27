@@ -1,7 +1,6 @@
 package commonfilter
 
 import (
-	"fmt"
 	"net"
 	"net/http"
 	"strings"
@@ -49,20 +48,20 @@ func (f *commonFilter) ServeHTTP(w http.ResponseWriter, req *http.Request) (bool
 
 		// If there was an error resolving is probably because it wasn't an address
 		// in the form localhost:port
-		if err == nil {
+		if err != nil {
 			if reqAddr.IP.IsLoopback() {
-				return false, err, fmt.Sprintf("%v requested loopback address %v (%v)", req.RemoteAddr, req.Host, reqAddr)
+				return filter.Fail(err, "%v requested loopback address %v (%v)", req.RemoteAddr, req.Host, reqAddr)
 			}
 			for _, ip := range f.localIPs {
 				if reqAddr.IP.Equal(ip) {
-					return false, err, fmt.Sprintf("%v requested local address %v (%v)", req.RemoteAddr, req.Host, reqAddr)
+					return filter.Fail(err, "%v requested local address %v (%v)", req.RemoteAddr, req.Host, reqAddr)
 				}
 			}
 
 		}
 	}
 
-	return true, nil, ""
+	return filter.Continue()
 }
 
 func (f *commonFilter) isException(addr string) bool {

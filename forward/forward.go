@@ -1,7 +1,6 @@
 package forward
 
 import (
-	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -71,7 +70,7 @@ func (f *forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) (bool, e
 	// Create a copy of the request suitable for our needs
 	reqClone, err := f.cloneRequest(req, req.URL)
 	if err != nil {
-		return false, err, fmt.Sprintf("Error forwarding from %v to %v", req.RemoteAddr, req.Host)
+		return filter.Fail(err, "Error forwarding from %v to %v", req.RemoteAddr, req.Host)
 	}
 	f.Rewriter.Rewrite(reqClone)
 
@@ -87,7 +86,7 @@ func (f *forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) (bool, e
 	start := time.Now().UTC()
 	response, err := f.RoundTripper.RoundTrip(reqClone)
 	if err != nil {
-		return false, err, fmt.Sprintf("Error forwarding from %v to %v", req.RemoteAddr, req.Host)
+		return filter.Fail(err, "Error forwarding from %v to %v", req.RemoteAddr, req.Host)
 	}
 	log.Debugf("Round trip: %v, code: %v, duration: %v",
 		reqClone.URL, response.StatusCode, time.Now().UTC().Sub(start))
@@ -113,7 +112,7 @@ func (f *forwarder) ServeHTTP(w http.ResponseWriter, req *http.Request) (bool, e
 		response.Body.Close()
 	}
 
-	return false, nil, ""
+	return filter.Stop()
 }
 
 func (f *forwarder) cloneRequest(req *http.Request, u *url.URL) (*http.Request, error) {

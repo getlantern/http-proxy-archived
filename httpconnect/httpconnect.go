@@ -50,7 +50,7 @@ func New(opts *Options) filter.Filter {
 func (f *httpConnectHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) (bool, error, string) {
 	if req.Method != "CONNECT" {
 		// Fall through
-		return true, nil, ""
+		return filter.Continue()
 	}
 
 	if log.IsTraceEnabled() {
@@ -62,7 +62,7 @@ func (f *httpConnectHandler) ServeHTTP(w http.ResponseWriter, req *http.Request)
 		f.intercept(w, req)
 	}
 
-	return false, nil, ""
+	return filter.Stop()
 }
 
 func (f *httpConnectHandler) portAllowed(w http.ResponseWriter, req *http.Request) bool {
