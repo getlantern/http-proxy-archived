@@ -17,36 +17,33 @@ type Filter interface {
 	Apply(w http.ResponseWriter, req *http.Request) (ok bool, err error, errdesc string)
 }
 
-type FilterChain interface {
+// Filters is a chain of filters that acts as an http.Handler and a Filter.
+type Filters interface {
 	http.Handler
 	Filter
 
-	// Creates a new FilterChain by appending the given filters.
-	And(filters ...Filter) FilterChain
+	// Creates a new Filters by appending the given filters.
+	And(filters ...Filter) Filters
 }
 
-// filterChain is a chain of filters that implements the http.Handler
-// interface.
-type filterChain struct {
-	filters []Filter
-}
+type chain []Filter
 
 // Chain constructs a new chain of filters that executes the filters in order
 // until it encounters a filter that returns false.
-func Chain(filters ...Filter) FilterChain {
-	return &filterChain{filters}
+func Chain(filters ...Filter) Filters {
+	return chain(filters)
 }
 
-func (c *filterChain) And(filters ...Filter) FilterChain {
-	return &filterChain{append(c.filters, filters...)}
+func (c chain) And(filters ...Filter) Filters {
+	return append(c, filters...)
 }
 
-func (chain *filterChain) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	chain.Apply(w, req)
+func (c chain) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	c.Apply(w, req)
 }
 
-func (chain *filterChain) Apply(w http.ResponseWriter, req *http.Request) (ok bool, err error, desc string) {
-	for _, filter := range chain.filters {
+func (c chain) Apply(w http.ResponseWriter, req *http.Request) (ok bool, err error, desc string) {
+	for _, filter := range c {
 		ok, err, desc = filter.Apply(w, req)
 		if err != nil {
 			utils.DefaultHandler.ServeHTTP(w, req, err, desc)
