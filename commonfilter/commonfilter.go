@@ -48,7 +48,7 @@ func (f *commonFilter) Apply(w http.ResponseWriter, req *http.Request) (bool, er
 
 		// If there was an error resolving is probably because it wasn't an address
 		// in the form localhost:port
-		if err != nil {
+		if err == nil {
 			if reqAddr.IP.IsLoopback() {
 				return filter.Fail(err, "%v requested loopback address %v (%v)", req.RemoteAddr, req.Host, reqAddr)
 			}
