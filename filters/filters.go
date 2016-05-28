@@ -56,7 +56,7 @@ func (c Chain) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if len(c) == 0 {
 		return
 	}
-	n := &next{w, req, c}
+	n := &next{w, req, c[1:]}
 	err := c[0].Apply(w, req, n.Do)
 	if err != nil {
 		utils.DefaultHandler.ServeHTTP(w, req, err)
