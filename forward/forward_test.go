@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/getlantern/http-proxy/filter"
+	"github.com/getlantern/http-proxy/filters"
 
 	"github.com/getlantern/testify/assert"
 )
@@ -42,7 +42,7 @@ func TestCloneRequest(t *testing.T) {
 		assert.Equal(t, "zh.moegirl.org", r.Header.Get("Host"), "should have host header")
 		return nil, errors.New("intentionally fail")
 	}}
-	fwd := filter.Chain(New(&Options{RoundTripper: rt}))
+	fwd := filters.Join(New(&Options{RoundTripper: rt}))
 	req, _ := http.NewRequest("GET", url, nil)
 	fwd.ServeHTTP(emptyRW{}, req)
 }

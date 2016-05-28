@@ -13,7 +13,7 @@ import (
 	"github.com/getlantern/ops"
 
 	"github.com/getlantern/http-proxy/buffers"
-	"github.com/getlantern/http-proxy/filter"
+	"github.com/getlantern/http-proxy/filters"
 )
 
 var log = golog.LoggerFor("forward")
@@ -32,7 +32,7 @@ type RequestRewriter interface {
 	Rewrite(r *http.Request)
 }
 
-func New(opts *Options) filter.Filter {
+func New(opts *Options) filters.Filter {
 	if opts.Rewriter == nil {
 		opts.Rewriter = &HeaderRewriter{
 			TrustForwardHeader: true,
@@ -67,15 +67,14 @@ func New(opts *Options) filter.Filter {
 	return &forwarder{opts}
 }
 
-func (f *forwarder) Apply(w http.ResponseWriter, req *http.Request, ctx filter.Context) {
+func (f *forwarder) Apply(w http.ResponseWriter, req *http.Request, next filters.Next) error {
 	op := ops.Enter("proxy_http")
 	defer op.Exit()
 
 	// Create a copy of the request suitable for our needs
 	reqClone, err := f.cloneRequest(req, req.URL)
 	if err != nil {
-		ctx.Fail(err, op.Errorf("Error forwarding from %v to %v", req.RemoteAddr, req.Host).Error())
-		return
+		return op.Error(filters.Fail("Error forwarding from %v to %v: %v", req.RemoteAddr, req.Host, err))
 	}
 	f.Rewriter.Rewrite(reqClone)
 
@@ -91,8 +90,7 @@ func (f *forwarder) Apply(w http.ResponseWriter, req *http.Request, ctx filter.C
 	start := time.Now().UTC()
 	response, err := f.RoundTripper.RoundTrip(reqClone)
 	if err != nil {
-		ctx.Fail(err, op.Errorf("Error forwarding from %v to %v", req.RemoteAddr, req.Host).Error())
-		return
+		return op.Error(filters.Fail("Error forwarding from %v to %v: %v", req.RemoteAddr, req.Host, err))
 	}
 	log.Debugf("Round trip: %v, code: %v, duration: %v",
 		reqClone.URL, response.StatusCode, time.Now().UTC().Sub(start))
@@ -117,6 +115,8 @@ func (f *forwarder) Apply(w http.ResponseWriter, req *http.Request, ctx filter.C
 
 		response.Body.Close()
 	}
+
+	return filters.Stop()
 }
 
 func (f *forwarder) cloneRequest(req *http.Request, u *url.URL) (*http.Request, error) {

@@ -7,7 +7,7 @@ import (
 
 	"github.com/getlantern/golog"
 
-	"github.com/getlantern/http-proxy/filter"
+	"github.com/getlantern/http-proxy/filters"
 )
 
 var log = golog.LoggerFor("commonfilter")
@@ -22,7 +22,7 @@ type commonFilter struct {
 	localIPs []net.IP
 }
 
-func New(opts *Options) filter.Filter {
+func New(opts *Options) filters.Filter {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		log.Errorf("Error enumerating local addresses: %v\n", err)
@@ -42,7 +42,7 @@ func New(opts *Options) filter.Filter {
 	return &commonFilter{opts, localIPs}
 }
 
-func (f *commonFilter) Apply(w http.ResponseWriter, req *http.Request, ctx filter.Context) {
+func (f *commonFilter) Apply(w http.ResponseWriter, req *http.Request, next filters.Next) error {
 	if !f.AllowLocalhost && !f.isException(req.URL.Host) {
 		reqAddr, err := net.ResolveTCPAddr("tcp", req.Host)
 
@@ -50,20 +50,18 @@ func (f *commonFilter) Apply(w http.ResponseWriter, req *http.Request, ctx filte
 		// in the form localhost:port
 		if err == nil {
 			if reqAddr.IP.IsLoopback() {
-				ctx.Fail(err, "%v requested loopback address %v (%v)", req.RemoteAddr, req.Host, reqAddr)
-				return
+				return filters.Fail("%v requested loopback address %v (%v)", req.RemoteAddr, req.Host, reqAddr)
 			}
 			for _, ip := range f.localIPs {
 				if reqAddr.IP.Equal(ip) {
-					ctx.Fail(err, "%v requested local address %v (%v)", req.RemoteAddr, req.Host, reqAddr)
-					return
+					return filters.Fail("%v requested local address %v (%v)", req.RemoteAddr, req.Host, reqAddr)
 				}
 			}
 
 		}
 	}
 
-	ctx.Continue()
+	return next()
 }
 
 func (f *commonFilter) isException(addr string) bool {

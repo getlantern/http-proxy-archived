@@ -16,7 +16,7 @@ import (
 	"github.com/getlantern/ops"
 
 	"github.com/getlantern/http-proxy/buffers"
-	"github.com/getlantern/http-proxy/filter"
+	"github.com/getlantern/http-proxy/filters"
 	"github.com/getlantern/http-proxy/utils"
 )
 
@@ -44,14 +44,13 @@ func AllowedPortsFromCSV(csv string) ([]int, error) {
 	return ports, nil
 }
 
-func New(opts *Options) filter.Filter {
+func New(opts *Options) filters.Filter {
 	return &httpConnectHandler{opts}
 }
 
-func (f *httpConnectHandler) Apply(w http.ResponseWriter, req *http.Request, ctx filter.Context) {
+func (f *httpConnectHandler) Apply(w http.ResponseWriter, req *http.Request, next filters.Next) error {
 	if req.Method != "CONNECT" {
-		ctx.Continue()
-		return
+		return next()
 	}
 
 	if log.IsTraceEnabled() {
@@ -64,6 +63,8 @@ func (f *httpConnectHandler) Apply(w http.ResponseWriter, req *http.Request, ctx
 	if f.portAllowed(op, w, req) {
 		f.intercept(op, w, req)
 	}
+
+	return filters.Stop()
 }
 
 func (f *httpConnectHandler) portAllowed(op ops.Op, w http.ResponseWriter, req *http.Request) bool {

@@ -18,7 +18,7 @@ import (
 	"github.com/getlantern/testify/assert"
 
 	"github.com/getlantern/http-proxy/commonfilter"
-	"github.com/getlantern/http-proxy/filter"
+	"github.com/getlantern/http-proxy/filters"
 	"github.com/getlantern/http-proxy/forward"
 	"github.com/getlantern/http-proxy/httpconnect"
 	"github.com/getlantern/http-proxy/listeners"
@@ -169,7 +169,7 @@ func TestIdleClientConnections(t *testing.T) {
 
 // A proxy with a custom origin server connection timeout
 func impatientProxy(maxConns uint64, idleTimeout time.Duration) (string, error) {
-	filterChain := filter.Chain(
+	filterChain := filters.Join(
 		httpconnect.New(&httpconnect.Options{
 			IdleTimeout: idleTimeout,
 		}),
@@ -492,7 +492,7 @@ type proxy struct {
 }
 
 func basicServer(maxConns uint64, idleTimeout time.Duration) *server.Server {
-	filterChain := filter.Chain(
+	filterChain := filters.Join(
 		commonfilter.New(&commonfilter.Options{
 			AllowLocalhost: testingLocal,
 		}),
