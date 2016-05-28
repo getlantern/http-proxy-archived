@@ -10,20 +10,20 @@ import (
 // Filter is a special http.Handler that returns true or false depending on
 // whether subsequent handlers should continue.
 type Filter interface {
-	// ServeHTTP is like the function on http.Handler but also returns true or
-	// false depending on whether subsequent handlers should continue. If an error
-	// occurred, ServeHTTP should return the original error plus a description
-	// for logging purposes.
-	Apply(w http.ResponseWriter, req *http.Request) (ok bool, err error, errdesc string)
+	// ServeHTTP is like the function on http.Handler but also gets a context
+	// which allows it to control the progress of the filter chain.
+	Apply(w http.ResponseWriter, req *http.Request, ctx Context)
 }
 
-// Filters is a chain of filters that acts as an http.Handler and a Filter.
+// Filters is a chain of filters that acts as an http.Handler.
 type Filters interface {
 	http.Handler
-	Filter
 
-	// Creates a new Filters by appending the given filters.
-	And(filters ...Filter) Filters
+	// Creates a new chain by appending the given filters.
+	Append(post ...Filter) Filters
+
+	// Creates a new chain by prepending the given filters.
+	Prepend(pre Filter) Filters
 }
 
 type chain []Filter
@@ -34,44 +34,52 @@ func Chain(filters ...Filter) Filters {
 	return chain(filters)
 }
 
-func (c chain) And(filters ...Filter) Filters {
-	return append(c, filters...)
+func (c chain) Append(post ...Filter) Filters {
+	return append(c, post...)
+}
+
+func (c chain) Prepend(pre Filter) Filters {
+	result := make(chain, len(c)+1)
+	result[0] = pre
+	copy(result[1:], c)
+	return result
 }
 
 func (c chain) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	c.Apply(w, req)
+	if len(c) == 0 {
+		return
+	}
+	ctx := &context{w, req, c[1:]}
+	c[0].Apply(w, req, ctx)
 }
 
-func (c chain) Apply(w http.ResponseWriter, req *http.Request) (ok bool, err error, desc string) {
-	for _, filter := range c {
-		ok, err, desc = filter.Apply(w, req)
-		if err != nil {
-			utils.DefaultHandler.ServeHTTP(w, req, err, desc)
-		} else if !ok {
-			// Interrupt chain
-			return
-		}
+// Context is the context within which Filters execute
+type Context interface {
+	// Continue continues execution down the filter chain.
+	Continue()
+
+	// Fail fails execution of the current filter and stops processing the filter
+	// chain.
+	Fail(err error, msg string, args ...interface{})
+}
+
+type context struct {
+	w         http.ResponseWriter
+	req       *http.Request
+	remaining []Filter
+}
+
+func (ctx context) Continue() {
+	if len(ctx.remaining) == 0 {
+		return
 	}
 
-	return
+	next := ctx.remaining[0]
+	next.Apply(ctx.w, ctx.req, &context{ctx.w, ctx.req, ctx.remaining[1:]})
 }
 
-// Continue is a convenience method for indicating that we should continue down
-// filter chain.
-func Continue() (bool, error, string) {
-	return true, nil, ""
-}
-
-// Stop is a convenience method for indicating that we should stop processing
-// the filter chain, but not due to an error.
-func Stop() (bool, error, string) {
-	return false, nil, ""
-}
-
-// Fail is a convenience method for failing and not continuing down filter
-// chain.
-func Fail(err error, msg string, args ...interface{}) (bool, error, string) {
-	return false, err, fmt.Sprintf(msg, args)
+func (ctx context) Fail(err error, msg string, args ...interface{}) {
+	utils.DefaultHandler.ServeHTTP(ctx.w, ctx.req, err, fmt.Sprintf(msg, args))
 }
 
 // Adapt adapts an existing http.Handler to the Filter interface.
@@ -83,7 +91,7 @@ type wrapper struct {
 	handler http.Handler
 }
 
-func (w *wrapper) Apply(resp http.ResponseWriter, req *http.Request) (bool, error, string) {
+func (w *wrapper) Apply(resp http.ResponseWriter, req *http.Request, ctx Context) {
 	w.handler.ServeHTTP(resp, req)
-	return Continue()
+	ctx.Continue()
 }

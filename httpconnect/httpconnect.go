@@ -48,9 +48,10 @@ func New(opts *Options) filter.Filter {
 	return &httpConnectHandler{opts}
 }
 
-func (f *httpConnectHandler) Apply(w http.ResponseWriter, req *http.Request) (bool, error, string) {
+func (f *httpConnectHandler) Apply(w http.ResponseWriter, req *http.Request, ctx filter.Context) {
 	if req.Method != "CONNECT" {
-		return filter.Continue()
+		ctx.Continue()
+		return
 	}
 
 	if log.IsTraceEnabled() {
@@ -63,8 +64,6 @@ func (f *httpConnectHandler) Apply(w http.ResponseWriter, req *http.Request) (bo
 	if f.portAllowed(op, w, req) {
 		f.intercept(op, w, req)
 	}
-
-	return filter.Stop()
 }
 
 func (f *httpConnectHandler) portAllowed(op ops.Op, w http.ResponseWriter, req *http.Request) bool {

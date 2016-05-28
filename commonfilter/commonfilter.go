@@ -42,7 +42,7 @@ func New(opts *Options) filter.Filter {
 	return &commonFilter{opts, localIPs}
 }
 
-func (f *commonFilter) Apply(w http.ResponseWriter, req *http.Request) (bool, error, string) {
+func (f *commonFilter) Apply(w http.ResponseWriter, req *http.Request, ctx filter.Context) {
 	if !f.AllowLocalhost && !f.isException(req.URL.Host) {
 		reqAddr, err := net.ResolveTCPAddr("tcp", req.Host)
 
@@ -50,18 +50,20 @@ func (f *commonFilter) Apply(w http.ResponseWriter, req *http.Request) (bool, er
 		// in the form localhost:port
 		if err == nil {
 			if reqAddr.IP.IsLoopback() {
-				return filter.Fail(err, "%v requested loopback address %v (%v)", req.RemoteAddr, req.Host, reqAddr)
+				ctx.Fail(err, "%v requested loopback address %v (%v)", req.RemoteAddr, req.Host, reqAddr)
+				return
 			}
 			for _, ip := range f.localIPs {
 				if reqAddr.IP.Equal(ip) {
-					return filter.Fail(err, "%v requested local address %v (%v)", req.RemoteAddr, req.Host, reqAddr)
+					ctx.Fail(err, "%v requested local address %v (%v)", req.RemoteAddr, req.Host, reqAddr)
+					return
 				}
 			}
 
 		}
 	}
 
-	return filter.Continue()
+	ctx.Continue()
 }
 
 func (f *commonFilter) isException(addr string) bool {
