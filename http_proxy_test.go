@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/getlantern/keyman"
-	"github.com/getlantern/measured"
 	"github.com/getlantern/testify/assert"
 
 	"github.com/getlantern/http-proxy/commonfilter"
@@ -648,32 +647,4 @@ func newOriginHandler(msg string, tls bool) (string, *originHandler) {
 	}
 	log.Debugf("Started origin server at %v", m.server.URL)
 	return m.server.URL, &m
-}
-
-//
-//
-// Mock Redis reporter
-//
-
-type mockReporter struct {
-	error   map[measured.Error]int
-	latency []*measured.LatencyTracker
-	traffic []*measured.TrafficTracker
-}
-
-func (nr *mockReporter) ReportError(e map[*measured.Error]int) error {
-	for k, v := range e {
-		nr.error[*k] = nr.error[*k] + v
-	}
-	return nil
-}
-
-func (nr *mockReporter) ReportLatency(l []*measured.LatencyTracker) error {
-	nr.latency = append(nr.latency, l...)
-	return nil
-}
-
-func (nr *mockReporter) ReportTraffic(t []*measured.TrafficTracker) error {
-	nr.traffic = append(nr.traffic, t...)
-	return nil
 }
