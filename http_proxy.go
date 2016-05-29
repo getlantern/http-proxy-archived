@@ -9,7 +9,7 @@ import (
 	"github.com/getlantern/golog"
 
 	"github.com/getlantern/http-proxy/commonfilter"
-	"github.com/getlantern/http-proxy/filter"
+	"github.com/getlantern/http-proxy/filters"
 	"github.com/getlantern/http-proxy/forward"
 	"github.com/getlantern/http-proxy/httpconnect"
 	"github.com/getlantern/http-proxy/listeners"
@@ -46,7 +46,7 @@ func main() {
 		log.Error(err)
 	}
 
-	filterChain := filter.Chain(
+	filterChain := filters.Join(
 		commonfilter.New(&commonfilter.Options{
 			AllowLocalhost: testingLocal,
 		}),
