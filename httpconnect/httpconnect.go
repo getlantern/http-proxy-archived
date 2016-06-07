@@ -118,12 +118,12 @@ func (f *httpConnectHandler) intercept(op ops.Op, w http.ResponseWriter, req *ht
 	closeConns := func() {
 		if clientConn != nil {
 			if err := clientConn.Close(); err != nil {
-				log.Debugf("Error closing the out connection: %s", err)
+				log.Tracef("Error closing the out connection: %s", err)
 			}
 		}
 		if connOut != nil {
 			if err := connOut.Close(); err != nil {
-				log.Debugf("Error closing the client connection: %s", err)
+				log.Tracef("Error closing the client connection: %s", err)
 			}
 		}
 	}
