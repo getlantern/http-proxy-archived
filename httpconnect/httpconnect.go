@@ -99,13 +99,13 @@ func (f *httpConnectHandler) intercept(op ops.Op, w http.ResponseWriter, req *ht
 
 	clientConn, _, err := w.(http.Hijacker).Hijack()
 	if err != nil {
-		desc := op.Errorf("Unable to hijack connection: %s", err)
+		desc := errorf(op, "Unable to hijack connection: %s", err)
 		utils.RespondBadGateway(w, req, desc)
 		return
 	}
 	connOutRaw, err := net.DialTimeout("tcp", req.Host, 10*time.Second)
 	if err != nil {
-		op.Errorf("Unable to dial %v: %v", req.Host, err)
+		errorf(op, "Unable to dial %v: %v", req.Host, err)
 		return
 	}
 	connOut := idletiming.Conn(connOutRaw, f.IdleTimeout, nil)
@@ -131,7 +131,7 @@ func (f *httpConnectHandler) intercept(op ops.Op, w http.ResponseWriter, req *ht
 		defer buffers.Put(buf)
 		_, readErr := io.CopyBuffer(connOut, clientConn, buf)
 		if readErr != nil {
-			log.Debug(op.Errorf("Unable to read from origin: %v", readErr))
+			log.Debug(errorf(op, "Unable to read from origin: %v", readErr))
 		}
 		readFinished.Done()
 	})
@@ -140,7 +140,7 @@ func (f *httpConnectHandler) intercept(op ops.Op, w http.ResponseWriter, req *ht
 	defer buffers.Put(buf)
 	_, writeErr := io.CopyBuffer(clientConn, connOut, buf)
 	if writeErr != nil {
-		log.Debug(op.Errorf("Unable to write to origin: %v", writeErr))
+		log.Debug(errorf(op, "Unable to write to origin: %v", writeErr))
 	}
 	readFinished.Wait()
 	closeConns()
@@ -149,7 +149,11 @@ func (f *httpConnectHandler) intercept(op ops.Op, w http.ResponseWriter, req *ht
 }
 
 func (f *httpConnectHandler) ServeError(op ops.Op, w http.ResponseWriter, req *http.Request, statusCode int, reason interface{}) {
-	log.Error(op.Errorf("Respond error to CONNECT request to %s: %d %v", req.Host, statusCode, reason))
+	log.Error(errorf(op, "Respond error to CONNECT request to %s: %d %v", req.Host, statusCode, reason))
 	w.WriteHeader(statusCode)
 	fmt.Fprintf(w, "%v", reason)
+}
+
+func errorf(op ops.Op, msg string, args ...interface{}) error {
+	return op.FailIf(fmt.Errorf(msg, args...))
 }
