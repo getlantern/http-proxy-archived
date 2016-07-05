@@ -21,6 +21,7 @@ var log = golog.LoggerFor("forward")
 type Options struct {
 	IdleTimeout  time.Duration
 	Rewriter     RequestRewriter
+	Dialer       func(network, address string) (net.Conn, error)
 	RoundTripper http.RoundTripper
 }
 
@@ -40,9 +41,14 @@ func New(opts *Options) filters.Filter {
 		}
 	}
 
+	if opts.Dialer == nil {
+		opts.Dialer = func(network, addr string) (net.Conn, error) {
+			return net.DialTimeout(network, addr, time.Second*30)
+		}
+	}
 	if opts.RoundTripper == nil {
 		dialerFunc := func(network, addr string) (net.Conn, error) {
-			conn, err := net.DialTimeout(network, addr, time.Second*30)
+			conn, err := opts.Dialer(network, addr)
 			if err != nil {
 				return nil, err
 			}

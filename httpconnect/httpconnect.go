@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -25,26 +24,20 @@ var log = golog.LoggerFor("httpconnect")
 type Options struct {
 	IdleTimeout  time.Duration
 	AllowedPorts []int
+	Dialer       func(network, address string) (net.Conn, error)
 }
 
 type httpConnectHandler struct {
 	*Options
 }
 
-func AllowedPortsFromCSV(csv string) ([]int, error) {
-	fields := strings.Split(csv, ",")
-	ports := make([]int, len(fields))
-	for i, f := range fields {
-		p, err := strconv.Atoi(f)
-		if err != nil {
-			return nil, err
-		}
-		ports[i] = p
-	}
-	return ports, nil
-}
-
 func New(opts *Options) filters.Filter {
+	if opts.Dialer == nil {
+		opts.Dialer = func(network, address string) (net.Conn, error) {
+			return net.DialTimeout(network, address, 10*time.Second)
+		}
+	}
+
 	return &httpConnectHandler{opts}
 }
 
@@ -103,7 +96,7 @@ func (f *httpConnectHandler) intercept(op ops.Op, w http.ResponseWriter, req *ht
 		utils.RespondBadGateway(w, req, desc)
 		return
 	}
-	connOutRaw, err := net.DialTimeout("tcp", req.Host, 10*time.Second)
+	connOutRaw, err := f.Dialer("tcp", req.Host)
 	if err != nil {
 		errorf(op, "Unable to dial %v: %v", req.Host, err)
 		return
