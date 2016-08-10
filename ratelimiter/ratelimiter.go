@@ -1,6 +1,7 @@
 package ratelimiter
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"sync"
@@ -36,7 +37,7 @@ func New(numClients int, hostPeriods map[string]time.Duration) filters.Filter {
 	}
 }
 
-func (f *ratelimiter) Apply(w http.ResponseWriter, req *http.Request, next filters.Next) error {
+func (f *ratelimiter) Apply(resp http.ResponseWriter, req *http.Request, next filters.Next) error {
 	host, _, err := net.SplitHostPort(req.Host)
 	if err != nil {
 		host = req.Host
@@ -45,11 +46,11 @@ func (f *ratelimiter) Apply(w http.ResponseWriter, req *http.Request, next filte
 	period := f.hostPeriods[host]
 	if period == 0 {
 		f.mx.Unlock()
-		return filters.Fail("Access to %v not allowed", host)
+		return fail(resp, "Access to %v not allowed", host)
 	}
-	clientAddr := req.RemoteAddr
+	client, _, _ := net.SplitHostPort(req.RemoteAddr)
 	var hostAccesses map[string]time.Time
-	_hostAccesses, found := f.hostAccessesByClient.Get(clientAddr)
+	_hostAccesses, found := f.hostAccessesByClient.Get(client)
 	if found {
 		hostAccesses = _hostAccesses.(map[string]time.Time)
 	} else {
@@ -57,11 +58,19 @@ func (f *ratelimiter) Apply(w http.ResponseWriter, req *http.Request, next filte
 	}
 	now := time.Now()
 	allowed := now.Sub(hostAccesses[host]) > period
-	hostAccesses[host] = now
-	f.hostAccessesByClient.Add(clientAddr, hostAccesses)
+	if allowed {
+		hostAccesses[host] = now
+		f.hostAccessesByClient.Add(client, hostAccesses)
+	}
 	f.mx.Unlock()
 	if !allowed {
-		return filters.Fail("Rate limit for %v exceeded", host)
+		return fail(resp, "Rate limit for %v exceeded", host)
 	}
 	return next()
+}
+
+func fail(resp http.ResponseWriter, msg string, args ...interface{}) error {
+	resp.WriteHeader(http.StatusForbidden)
+	fmt.Fprintf(resp, msg, args...)
+	return filters.Stop()
 }
