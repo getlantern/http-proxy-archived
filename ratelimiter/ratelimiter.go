@@ -1,3 +1,5 @@
+// Package ratelimiter provides a mechanism for limiting the rate at which
+// clients can make requests to specific domains.
 package ratelimiter
 
 import (

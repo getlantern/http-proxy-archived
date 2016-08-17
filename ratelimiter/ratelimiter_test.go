@@ -24,13 +24,13 @@ func TestRateLimit(t *testing.T) {
 
 	port := 10000
 	resp := &httptest.ResponseRecorder{}
-	test := func(succeed bool, desc string) {
+	test := func(expectSuccess bool, desc string) {
 		port++
 		for _, client := range []string{"a", "b"} {
 			google.RemoteAddr = fmt.Sprintf("%v:%d", client, port)
 			facebook.RemoteAddr = fmt.Sprintf("%v:%d", client, port)
 			twitter.RemoteAddr = fmt.Sprintf("%v:%d", client, port)
-			if succeed {
+			if expectSuccess {
 				resp = &httptest.ResponseRecorder{}
 				rateLimiter.Apply(resp, google, next)
 				assert.NotEqual(t, http.StatusForbidden, resp.Code, "Request from client %v to google should have succeeded: %v", client, desc)
