@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -25,7 +26,7 @@ import (
 )
 
 const (
-	tunneledReq    = "GET / HTTP/1.1\r\n\r\n"
+	tunneledReq    = "GET / HTTP/1.1\r\nHost: testhost\r\n\r\n"
 	originResponse = "Fight for a Free Internet!"
 )
 
@@ -137,23 +138,27 @@ func TestMaxConnections(t *testing.T) {
 }
 
 func TestIdleClientConnections(t *testing.T) {
-	addr, err := setupNewHTTPServer(0, 100*time.Millisecond)
+	addr, err := setupNewHTTPServer(0, 1*time.Second)
 	if err != nil {
 		assert.Fail(t, "Error starting proxy server")
 	}
 
+	var wg sync.WaitGroup
+	wg.Add(1)
+
 	okFn := func(conn net.Conn, originURL *url.URL) {
-		time.Sleep(time.Millisecond * 90)
+		time.Sleep(time.Millisecond * 900)
 		conn.Write([]byte("GET / HTTP/1.1\r\nHost: www.google.com\r\n\r\n"))
 
 		var buf [400]byte
 		_, err := conn.Read(buf[:])
 
 		assert.NoError(t, err)
+		wg.Done()
 	}
 
 	idleFn := func(conn net.Conn, originURL *url.URL) {
-		time.Sleep(time.Millisecond * 110)
+		time.Sleep(time.Millisecond * 1100)
 		conn.Write([]byte("GET / HTTP/1.1\r\nHost: www.google.com\r\n\r\n"))
 
 		var buf [400]byte
@@ -164,6 +169,8 @@ func TestIdleClientConnections(t *testing.T) {
 
 	go testRoundTrip(t, addr, false, httpOriginServer, okFn)
 	testRoundTrip(t, addr, false, httpOriginServer, idleFn)
+
+	wg.Wait()
 }
 
 // A proxy with a custom origin server connection timeout
@@ -629,7 +636,6 @@ func newOriginHandler(msg string, tls bool) (string, *originHandler) {
 	m := originHandler{}
 	m.Msg(msg)
 	m.server = httptest.NewUnstartedServer(&m)
-	m.server.Config.AcceptAnyHostHeader = true
 	if tls {
 		m.server.StartTLS()
 	} else {

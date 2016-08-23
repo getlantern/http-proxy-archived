@@ -60,9 +60,8 @@ func New(opts *Options) filters.Filter {
 		timeoutTransport := &http.Transport{
 			Dial:                dialerFunc,
 			TLSHandshakeTimeout: 10 * time.Second,
-			MaxIdleTime:         opts.IdleTimeout / 2, // remove idle keep-alive connections to avoid leaking memory
+			IdleConnTimeout:     opts.IdleTimeout, // remove idle keep-alive connections to avoid leaking memory
 		}
-		timeoutTransport.EnforceMaxIdleTime()
 		opts.RoundTripper = timeoutTransport
 	}
 
