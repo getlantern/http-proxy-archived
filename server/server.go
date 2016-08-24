@@ -42,8 +42,7 @@ func NewServer(handler http.Handler) *Server {
 
 	server := &Server{
 		httpServer: http.Server{
-			AcceptAnyHostHeader: true, // needed to keep Go 1.6+ from interfering with Apache mimicry
-			Handler:             proxy,
+			Handler: proxy,
 			ConnState: func(c net.Conn, state http.ConnState) {
 				wconn, ok := c.(listeners.WrapConn)
 				if !ok {
