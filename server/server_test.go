@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bufio"
 	"crypto/tls"
 	"flag"
 	"fmt"
@@ -247,7 +248,7 @@ func TestIdleOriginDirect(t *testing.T) {
 	failForwardFn := func(conn net.Conn, originURL *url.URL) {
 		var buf [400]byte
 		chunkedReq(t, &buf, conn, originURL)
-		assert.Contains(t, string(buf[:]), "502 Bad Gateway", "should fail with 502")
+		assert.NotContains(t, string(buf[:]), "200 OK", "should fail")
 	}
 
 	testRoundTrip(t, okAddr, false, httpOriginServer, okForwardFn)
@@ -362,7 +363,6 @@ func TestConnectOK(t *testing.T) {
 // X-Lantern-Auth-Token + X-Lantern-Device-Id -> Forward
 func TestDirectOK(t *testing.T) {
 	reqTempl := "GET /%s HTTP/1.1\r\nHost: %s\r\n\r\n"
-	failResp := "HTTP/1.1 500 Internal Server Error\r\n"
 
 	testOk := func(conn net.Conn, originURL *url.URL) {
 		req := fmt.Sprintf(reqTempl, originURL.Path, originURL.Host)
@@ -372,8 +372,8 @@ func TestDirectOK(t *testing.T) {
 			t.FailNow()
 		}
 
-		buf := [400]byte{}
-		conn.Read(buf[:])
+		resp, _ := http.ReadResponse(bufio.NewReader(conn), nil)
+		buf, _ := ioutil.ReadAll(resp.Body)
 		assert.Contains(t, string(buf[:]), originResponse, "should read tunneled response")
 
 	}
@@ -386,11 +386,8 @@ func TestDirectOK(t *testing.T) {
 			t.FailNow()
 		}
 
-		buf := [400]byte{}
-		conn.Read(buf[:])
-		t.Log("\n" + string(buf[:]))
-
-		assert.Contains(t, string(buf[:]), failResp, "should respond with 500 Internal Server Error")
+		_, err = http.ReadResponse(bufio.NewReader(conn), nil)
+		assert.Error(t, err, "should fail")
 
 	}
 

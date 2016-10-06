@@ -124,7 +124,7 @@ func (f *httpConnectHandler) intercept(op ops.Op, w http.ResponseWriter, req *ht
 		defer buffers.Put(buf)
 		_, readErr := io.CopyBuffer(connOut, clientConn, buf)
 		if readErr != nil {
-			log.Debug(errorf(op, "Unable to read from origin: %v", readErr))
+			log.Debug(errorf(op, "Unable to write to origin: %v", readErr))
 		}
 		readFinished.Done()
 	})
@@ -133,7 +133,7 @@ func (f *httpConnectHandler) intercept(op ops.Op, w http.ResponseWriter, req *ht
 	defer buffers.Put(buf)
 	_, writeErr := io.CopyBuffer(clientConn, connOut, buf)
 	if writeErr != nil {
-		log.Debug(errorf(op, "Unable to write to origin: %v", writeErr))
+		log.Debug(errorf(op, "Unable to read from origin: %v", writeErr))
 	}
 	readFinished.Wait()
 	closeConns()

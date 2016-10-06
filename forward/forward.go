@@ -1,11 +1,11 @@
 package forward
 
 import (
-	"io"
+	"bufio"
+	"fmt"
 	"net"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
+	"strings"
 	"time"
 
 	"github.com/getlantern/golog"
@@ -14,15 +14,15 @@ import (
 
 	"github.com/getlantern/http-proxy/buffers"
 	"github.com/getlantern/http-proxy/filters"
+	"github.com/getlantern/http-proxy/utils"
 )
 
 var log = golog.LoggerFor("forward")
 
 type Options struct {
-	IdleTimeout  time.Duration
-	Rewriter     RequestRewriter
-	Dialer       func(network, address string) (net.Conn, error)
-	RoundTripper http.RoundTripper
+	IdleTimeout time.Duration
+	Rewriter    RequestRewriter
+	Dialer      func(network, address string) (net.Conn, error)
 }
 
 type forwarder struct {
@@ -34,6 +34,10 @@ type RequestRewriter interface {
 }
 
 func New(opts *Options) filters.Filter {
+	if opts == nil {
+		opts = &Options{}
+	}
+
 	if opts.Rewriter == nil {
 		opts.Rewriter = &HeaderRewriter{
 			TrustForwardHeader: true,
@@ -46,24 +50,6 @@ func New(opts *Options) filters.Filter {
 			return net.DialTimeout(network, addr, time.Second*30)
 		}
 	}
-	if opts.RoundTripper == nil {
-		dialerFunc := func(network, addr string) (net.Conn, error) {
-			conn, err := opts.Dialer(network, addr)
-			if err != nil {
-				return nil, err
-			}
-
-			idleConn := idletiming.Conn(conn, opts.IdleTimeout, nil)
-			return idleConn, err
-		}
-
-		timeoutTransport := &http.Transport{
-			Dial:                dialerFunc,
-			TLSHandshakeTimeout: 10 * time.Second,
-			IdleConnTimeout:     opts.IdleTimeout, // remove idle keep-alive connections to avoid leaking memory
-		}
-		opts.RoundTripper = timeoutTransport
-	}
 
 	return &forwarder{opts}
 }
@@ -71,56 +57,91 @@ func New(opts *Options) filters.Filter {
 func (f *forwarder) Apply(w http.ResponseWriter, req *http.Request, next filters.Next) error {
 	op := ops.Begin("proxy_http")
 	defer op.End()
-
-	// Create a copy of the request suitable for our needs
-	reqClone, err := f.cloneRequest(req, req.URL)
-	if err != nil {
-		return op.FailIf(filters.Fail("Error forwarding from %v to %v: %v", req.RemoteAddr, req.Host, err))
-	}
-	f.Rewriter.Rewrite(reqClone)
-
-	if log.IsTraceEnabled() {
-		reqStr, _ := httputil.DumpRequest(req, false)
-		log.Tracef("Forwarder Middleware received request:\n%s", reqStr)
-
-		reqStr2, _ := httputil.DumpRequest(reqClone, false)
-		log.Tracef("Forwarder Middleware forwarding rewritten request:\n%s", reqStr2)
-	}
-
-	// Forward the request and get a response
-	start := time.Now().UTC()
-	response, err := f.RoundTripper.RoundTrip(reqClone)
-	if err != nil {
-		return op.FailIf(filters.Fail("Error forwarding from %v to %v: %v", req.RemoteAddr, req.Host, err))
-	}
-	log.Debugf("Round trip: %v, code: %v, duration: %v",
-		reqClone.URL, response.StatusCode, time.Now().UTC().Sub(start))
-
-	if log.IsTraceEnabled() {
-		respStr, _ := httputil.DumpResponse(response, true)
-		log.Tracef("Forward Middleware received response:\n%s", respStr)
-	}
-
-	// Forward the response to the origin
-	copyHeadersForForwarding(w.Header(), response.Header)
-	w.WriteHeader(response.StatusCode)
-
-	// It became nil in a Co-Advisor test though the doc says it will never be nil
-	if response.Body != nil {
-		buf := buffers.Get()
-		defer buffers.Put(buf)
-		_, err = io.CopyBuffer(w, response.Body, buf)
-		if err != nil {
-			log.Debug(err)
-		}
-
-		response.Body.Close()
-	}
-
+	f.intercept(op, w, req)
 	return filters.Stop()
 }
 
-func (f *forwarder) cloneRequest(req *http.Request, u *url.URL) (*http.Request, error) {
+func (f *forwarder) intercept(op ops.Op, w http.ResponseWriter, req *http.Request) (err error) {
+	addr := req.Host
+	_, _, err = net.SplitHostPort(addr)
+	if err != nil {
+		// Use default port
+		addr = fmt.Sprintf("%v:%d", addr, 80)
+	}
+	clientConn, clientBuffered, err := w.(http.Hijacker).Hijack()
+	if err != nil {
+		desc := errorf(op, "Unable to hijack connection: %s", err)
+		utils.RespondBadGateway(w, req, desc)
+		return
+	}
+	originConnRaw, err := f.Dialer("tcp", addr)
+	if err != nil {
+		errorf(op, "Unable to dial %v: %v", addr, err)
+		return
+	}
+	originConn := idletiming.Conn(originConnRaw, f.IdleTimeout, nil)
+
+	// Pipe data through tunnel
+	closeConns := func() {
+		if clientConn != nil {
+			if err := clientConn.Close(); err != nil {
+				log.Tracef("Error closing the client connection: %s", err)
+			}
+		}
+		if originConn != nil {
+			if err := originConn.Close(); err != nil {
+				log.Tracef("Error closing the origin connection: %s", err)
+			}
+		}
+	}
+
+	op.Go(func() {
+		defer closeConns()
+		buf := buffers.Get()
+		defer buffers.Put(buf)
+		var readErr error
+		for {
+			cloned := f.cloneRequest(req)
+			writeErr := cloned.Write(originConn)
+			if writeErr != nil {
+				if isUnexpected(writeErr) {
+					log.Debug(errorf(op, "Unable to write request to origin: %v", writeErr))
+				}
+				break
+			}
+			req, readErr = http.ReadRequest(clientBuffered.Reader)
+			if readErr != nil {
+				if isUnexpected(readErr) {
+					log.Debug(errorf(op, "Unable to read next request from client: %v", readErr))
+				}
+				break
+			}
+		}
+	})
+
+	originBuffered := bufio.NewReader(originConn)
+	for {
+		resp, readErr := http.ReadResponse(originBuffered, nil)
+		if readErr != nil {
+			if isUnexpected(readErr) {
+				log.Debug(errorf(op, "Unable to read from origin: %v", readErr))
+			}
+			break
+		}
+		writeErr := resp.Write(clientConn)
+		if writeErr != nil {
+			if isUnexpected(writeErr) {
+				log.Debug(errorf(op, "Unable to write response to client: %v", writeErr))
+			}
+			break
+		}
+	}
+	closeConns()
+
+	return
+}
+
+func (f *forwarder) cloneRequest(req *http.Request) *http.Request {
 	outReq := new(http.Request)
 	// Beware, this will make a shallow copy. We have to copy all maps
 	*outReq = *req
@@ -147,6 +168,7 @@ func (f *forwarder) cloneRequest(req *http.Request, u *url.URL) (*http.Request, 
 	// We need to make sure the host is defined in the URL (not the actual URI)
 	outReq.URL.Host = req.Host
 	outReq.URL.RawQuery = req.URL.RawQuery
+	outReq.Body = req.Body
 
 	userAgent := req.UserAgent()
 	if userAgent == "" {
@@ -155,36 +177,14 @@ func (f *forwarder) cloneRequest(req *http.Request, u *url.URL) (*http.Request, 
 		outReq.Header.Set("User-Agent", userAgent)
 	}
 
-	/*
-		// Trailer support
-		// We are forced to do this because Go's server won't allow us to read the trailers otherwise
-		_, err := httputil.DumpRequestOut(req, true)
-		if err != nil {
-		  log.Errorf("Error: %v", err)
-		  return outReq, err
-		}
+	return outReq
+}
 
-		rcloser := ioutil.NopCloser(req.Body)
-		outReq.Body = rcloser
+func isUnexpected(err error) bool {
+	text := err.Error()
+	return !strings.HasSuffix(text, "EOF") && !strings.Contains(text, "use of closed network connection") && !strings.Contains(text, "Use of idled network connection")
+}
 
-		chunkedTransfer := false
-		for _, enc := range req.TransferEncoding {
-		  if enc == "chunked" {
-		    chunkedTransfer = true
-		    break
-		  }
-		}
-
-		// Append Trailer
-		if chunkedTransfer && len(req.Trailer) > 0 {
-		  outReq.Trailer = http.Header{}
-		  for k, vv := range req.Trailer {
-		    for _, v := range vv {
-		      outReq.Trailer.Add(k, v)
-		    }
-		  }
-		}
-	*/
-
-	return outReq, nil
+func errorf(op ops.Op, msg string, args ...interface{}) error {
+	return op.FailIf(fmt.Errorf(msg, args...))
 }
