@@ -13,6 +13,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	proxyAuthorization = "Proxy-Authorization"
+)
+
 var (
 	text = "Hello There"
 )
@@ -37,7 +41,12 @@ func TestProxy(t *testing.T) {
 func buildOrigin(closePrematurely bool) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
 		resp.Header().Set("Content-Length", fmt.Sprint(len(text)))
-		resp.WriteHeader(200)
+		resp.Header().Set(proxyAuthorization, "hop-by-hop header that should be removed")
+		if req.Header.Get("Proxy-Authorization") != "" {
+			resp.WriteHeader(http.StatusBadRequest)
+		} else {
+			resp.WriteHeader(http.StatusOK)
+		}
 		if closePrematurely {
 			conn, buffered, err := resp.(http.Hijacker).Hijack()
 			if err == nil {
@@ -80,13 +89,16 @@ func testGet(t *testing.T, client *http.Client, origin *httptest.Server) bool {
 	if !assert.NoError(t, err) {
 		return false
 	}
-	if !assert.Equal(t, http.StatusOK, resp.StatusCode) {
-		return false
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	// Hop-by-hop headers should have been removed
+	assert.Empty(t, resp.Header.Get("Proxy-Authorization"))
+	if resp != nil {
+		defer resp.Body.Close()
+		b, err := ioutil.ReadAll(resp.Body)
+		if !assert.NoError(t, err) {
+			return false
+		}
+		return assert.Equal(t, text, string(b))
 	}
-	defer resp.Body.Close()
-	b, err := ioutil.ReadAll(resp.Body)
-	if !assert.NoError(t, err) {
-		return false
-	}
-	return assert.Equal(t, text, string(b))
+	return true
 }
