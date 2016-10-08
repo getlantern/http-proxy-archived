@@ -1,48 +1,104 @@
 package forward
 
 import (
-	"errors"
+	"fmt"
+	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"testing"
+	"time"
 
 	"github.com/getlantern/http-proxy/filters"
-
 	"github.com/stretchr/testify/assert"
 )
 
-type mockRT struct {
-	roundTrip func(*http.Request) (*http.Response, error)
+const (
+	proxyAuthorization = "Proxy-Authorization"
+)
+
+var (
+	text = "Hello There"
+)
+
+func TestProxy(t *testing.T) {
+	goodOrigin := buildOrigin(false)
+	defer goodOrigin.Close()
+	prematureCloser := buildOrigin(true)
+	defer prematureCloser.Close()
+
+	server := httptest.NewServer(filters.Join(
+		New(&Options{IdleTimeout: 500 * time.Second}),
+		filters.Adapt(http.NotFoundHandler())))
+	defer server.Close()
+
+	doTestProxy(t, goodOrigin, server, false)
+	doTestProxy(t, goodOrigin, server, true)
+	doTestProxy(t, prematureCloser, server, false)
+	doTestProxy(t, prematureCloser, server, true)
 }
 
-func (m mockRT) RoundTrip(r *http.Request) (*http.Response, error) {
-	return m.roundTrip(r)
+func buildOrigin(closePrematurely bool) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
+		resp.Header().Set("Content-Length", fmt.Sprint(len(text)))
+		resp.Header().Set(proxyAuthorization, "hop-by-hop header that should be removed")
+		if req.Header.Get("Proxy-Authorization") != "" {
+			resp.WriteHeader(http.StatusBadRequest)
+		} else {
+			resp.WriteHeader(http.StatusOK)
+		}
+		if closePrematurely {
+			conn, buffered, err := resp.(http.Hijacker).Hijack()
+			if err == nil {
+				buffered.Flush()
+				conn.Write([]byte(text))
+				conn.Close()
+			}
+		} else {
+			resp.Write([]byte(text))
+		}
+	}))
 }
 
-type emptyRW struct {
-}
-
-func (m emptyRW) Header() http.Header {
-	return http.Header{}
-}
-
-func (m emptyRW) Write([]byte) (int, error) {
-	return 0, nil
-}
-
-func (m emptyRW) WriteHeader(int) {
-}
-
-// Regression for https://github.com/getlantern/http-proxy/issues/70
-// and an issue of unable to distinguish slash from %2F prior to Go 1.5.
-func TestCloneRequest(t *testing.T) {
-	const rawPath = "/%E4%B8%9C%E6%96%B9Project/http%3A%2F%2Fwww.site.com%2Fsomething"
-	const url = "http://zh.moegirl.org" + rawPath
-	rt := mockRT{func(r *http.Request) (*http.Response, error) {
-		assert.Equal(t, url, r.URL.String(), "should not alter the path")
-		assert.Equal(t, "zh.moegirl.org", r.Header.Get("Host"), "should have host header")
-		return nil, errors.New("intentionally fail")
+func doTestProxy(t *testing.T, origin *httptest.Server, server *httptest.Server, disableKeepAlives bool) {
+	u, _ := url.Parse(server.URL)
+	client := &http.Client{Transport: &http.Transport{
+		Proxy: func(req *http.Request) (*url.URL, error) {
+			return u, nil
+		},
+		DisableKeepAlives: disableKeepAlives,
 	}}
-	fwd := filters.Join(New(&Options{RoundTripper: rt}))
-	req, _ := http.NewRequest("GET", url, nil)
-	fwd.ServeHTTP(emptyRW{}, req)
+
+	// Do a simple GET
+	if !testGet(t, client, origin) {
+		return
+	}
+
+	// Do another GET to test keepalive functionality
+	if !testGet(t, client, origin) {
+		return
+	}
+
+	// Forcibly close client connections and make sure we can still proxy
+	origin.CloseClientConnections()
+	testGet(t, client, origin)
+}
+
+func testGet(t *testing.T, client *http.Client, origin *httptest.Server) bool {
+	resp, err := client.Get(origin.URL)
+	if !assert.NoError(t, err) {
+		return false
+	}
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	// Hop-by-hop headers should have been removed
+	assert.Empty(t, resp.Header.Get("Proxy-Authorization"))
+	if resp != nil {
+		defer resp.Body.Close()
+		b, err := ioutil.ReadAll(resp.Body)
+		if !assert.NoError(t, err) {
+			return false
+		}
+		return assert.Equal(t, text, string(b))
+	}
+	return true
 }
