@@ -10,11 +10,11 @@ import (
 
 	"github.com/getlantern/http-proxy/commonfilter"
 	"github.com/getlantern/http-proxy/filters"
-	"github.com/getlantern/http-proxy/forward"
 	"github.com/getlantern/http-proxy/httpconnect"
 	"github.com/getlantern/http-proxy/listeners"
 	"github.com/getlantern/http-proxy/logging"
 	"github.com/getlantern/http-proxy/server"
+	"github.com/getlantern/http-proxy/stateful"
 )
 
 var (
@@ -51,7 +51,7 @@ func main() {
 			AllowLocalhost: testingLocal,
 		}),
 		httpconnect.New(&httpconnect.Options{IdleTimeout: time.Duration(*idleClose) * time.Second}),
-		forward.New(&forward.Options{IdleTimeout: time.Duration(*idleClose) * time.Second}),
+		stateful.New(&stateful.Options{Force: true, IdleTimeout: time.Duration(*idleClose) * time.Second}),
 	)
 
 	// Create server

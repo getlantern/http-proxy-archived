@@ -31,6 +31,7 @@ const (
 )
 
 type Options struct {
+	Force       bool // set to true to use this without the initial http Request
 	IdleTimeout time.Duration
 	Dialer      func(network, address string) (net.Conn, error)
 	OnRequest   func(req *http.Request)
@@ -66,14 +67,16 @@ func New(opts *Options) filters.Filter {
 }
 
 func (f *forwarder) Apply(w http.ResponseWriter, req *http.Request, next filters.Next) error {
-	statefulAllowed, _ := strconv.ParseBool(req.Header.Get(XLanternStateful))
-	if !statefulAllowed {
-		return next()
+	if !f.Force {
+		statefulAllowed, _ := strconv.ParseBool(req.Header.Get(XLanternStateful))
+		if !statefulAllowed {
+			return next()
+		}
 	}
 
 	op := ops.Begin("proxy_http")
 	defer op.End()
-	f.ic.Intercept(w, req, false, op, 80)
+	f.ic.Intercept(w, req, f.Force, op, 80)
 	return filters.Stop()
 }
 
