@@ -35,6 +35,7 @@ type Options struct {
 	IdleTimeout time.Duration
 	Dialer      func(network, address string) (net.Conn, error)
 	OnRequest   func(req *http.Request)
+	OnResponse  func(resp *http.Response, req *http.Request, responseNumber int) *http.Response
 }
 
 type forwarder struct {
@@ -59,8 +60,9 @@ func New(opts *Options) filters.Filter {
 
 	f := &forwarder{Options: opts}
 	f.ic = interceptor.New(&interceptor.Opts{
-		Dial:      f.dial,
-		OnRequest: f.modifyRequest,
+		Dial:       f.dial,
+		OnRequest:  f.modifyRequest,
+		OnResponse: f.OnResponse,
 	})
 
 	return f

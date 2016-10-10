@@ -17,7 +17,8 @@ import (
 const (
 	proxyAuthorization = "Proxy-Authorization"
 
-	fakeHeader = "X-Fake-Header"
+	fakeRequestHeader  = "X-Fake-Request-Header"
+	fakeResponseHeader = "X-Fake-Response-Header"
 )
 
 var (
@@ -34,8 +35,14 @@ func TestProxy(t *testing.T) {
 		New(&Options{
 			IdleTimeout: 500 * time.Second,
 			OnRequest: func(req *http.Request) {
-				req.Header.Set(fakeHeader, "fake")
-			}}),
+				req.Header.Set(fakeRequestHeader, "faker")
+			},
+			OnResponse: func(resp *http.Response, req *http.Request, responseNumber int) *http.Response {
+				// Add fake response header
+				resp.Header.Set(fakeResponseHeader, "fakeresp")
+				return resp
+			},
+		}),
 		filters.Adapt(http.NotFoundHandler())))
 	defer server.Close()
 
@@ -47,8 +54,8 @@ func TestProxy(t *testing.T) {
 
 func buildOrigin(closePrematurely bool) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
-		// Reflect the fake header
-		resp.Header().Set(fakeHeader, req.Header.Get(fakeHeader))
+		// Reflect the fake request header
+		resp.Header().Set(fakeRequestHeader, req.Header.Get(fakeRequestHeader))
 		resp.Header().Set("Content-Length", fmt.Sprint(len(text)))
 		resp.Header().Set("Keep-Alive", "timeout=15, max=100")
 		resp.Header().Set(proxyAuthorization, "hop-by-hop header that should be removed")
@@ -112,7 +119,8 @@ func testGet(t *testing.T, client *http.Client, origin *httptest.Server) bool {
 		return false
 	}
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "fake", resp.Header.Get(fakeHeader))
+	assert.Equal(t, "faker", resp.Header.Get(fakeRequestHeader), "OnRequest should have been applied")
+	assert.Equal(t, "fakeresp", resp.Header.Get(fakeResponseHeader), "OnResponse should have been applied")
 	assert.Empty(t, resp.Header.Get("Proxy-Authorization"), "Hop-by-hop headers should have been removed")
 	if resp != nil {
 		defer resp.Body.Close()
