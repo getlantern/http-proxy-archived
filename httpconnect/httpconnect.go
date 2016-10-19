@@ -2,21 +2,20 @@ package httpconnect
 
 import (
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"strconv"
-	"sync"
 	"time"
 
+	"github.com/getlantern/errors"
 	"github.com/getlantern/golog"
 	"github.com/getlantern/idletiming"
+	"github.com/getlantern/interceptor"
 	"github.com/getlantern/ops"
 
 	"github.com/getlantern/http-proxy/buffers"
 	"github.com/getlantern/http-proxy/filters"
-	"github.com/getlantern/http-proxy/utils"
 )
 
 var log = golog.LoggerFor("httpconnect")
@@ -29,6 +28,7 @@ type Options struct {
 
 type httpConnectHandler struct {
 	*Options
+	ic interceptor.Interceptor
 }
 
 func New(opts *Options) filters.Filter {
@@ -38,7 +38,24 @@ func New(opts *Options) filters.Filter {
 		}
 	}
 
-	return &httpConnectHandler{opts}
+	f := &httpConnectHandler{Options: opts}
+	f.ic = interceptor.New(&interceptor.Opts{
+		Dial:      f.dial,
+		GetBuffer: buffers.Get,
+		PutBuffer: buffers.Put,
+	})
+	return f
+}
+
+func (f *httpConnectHandler) dial(initialReq *http.Request, addr string, port int) (conn net.Conn, pipe bool, err error) {
+	pipe = true
+	conn, dialErr := f.Dialer("tcp", addr)
+	if dialErr != nil {
+		err = errors.New("Unable to dial %v: %v", addr, dialErr)
+		return
+	}
+	conn = idletiming.Conn(conn, f.IdleTimeout, nil)
+	return
 }
 
 func (f *httpConnectHandler) Apply(w http.ResponseWriter, req *http.Request, next filters.Next) error {
@@ -54,7 +71,7 @@ func (f *httpConnectHandler) Apply(w http.ResponseWriter, req *http.Request, nex
 	op := ops.Begin("proxy_https")
 	defer op.End()
 	if f.portAllowed(op, w, req) {
-		f.intercept(op, w, req)
+		f.ic.Intercept(w, req, false, op, 443)
 	}
 
 	return filters.Stop()
@@ -85,60 +102,6 @@ func (f *httpConnectHandler) portAllowed(op ops.Op, w http.ResponseWriter, req *
 	}
 	f.ServeError(op, w, req, http.StatusForbidden, "Port not allowed")
 	return false
-}
-
-func (f *httpConnectHandler) intercept(op ops.Op, w http.ResponseWriter, req *http.Request) (err error) {
-	utils.RespondOK(w, req)
-
-	clientConn, _, err := w.(http.Hijacker).Hijack()
-	if err != nil {
-		desc := errorf(op, "Unable to hijack connection: %s", err)
-		utils.RespondBadGateway(w, req, desc)
-		return
-	}
-	connOutRaw, err := f.Dialer("tcp", req.Host)
-	if err != nil {
-		errorf(op, "Unable to dial %v: %v", req.Host, err)
-		return
-	}
-	connOut := idletiming.Conn(connOutRaw, f.IdleTimeout, nil)
-
-	// Pipe data through CONNECT tunnel
-	closeConns := func() {
-		if clientConn != nil {
-			if err := clientConn.Close(); err != nil {
-				log.Tracef("Error closing the out connection: %s", err)
-			}
-		}
-		if connOut != nil {
-			if err := connOut.Close(); err != nil {
-				log.Tracef("Error closing the client connection: %s", err)
-			}
-		}
-	}
-
-	var readFinished sync.WaitGroup
-	readFinished.Add(1)
-	op.Go(func() {
-		buf := buffers.Get()
-		defer buffers.Put(buf)
-		_, readErr := io.CopyBuffer(connOut, clientConn, buf)
-		if readErr != nil {
-			log.Debug(errorf(op, "Unable to read from origin: %v", readErr))
-		}
-		readFinished.Done()
-	})
-
-	buf := buffers.Get()
-	defer buffers.Put(buf)
-	_, writeErr := io.CopyBuffer(clientConn, connOut, buf)
-	if writeErr != nil {
-		log.Debug(errorf(op, "Unable to write to origin: %v", writeErr))
-	}
-	readFinished.Wait()
-	closeConns()
-
-	return
 }
 
 func (f *httpConnectHandler) ServeError(op ops.Op, w http.ResponseWriter, req *http.Request, statusCode int, reason interface{}) {

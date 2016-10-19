@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bufio"
 	"crypto/tls"
 	"flag"
 	"fmt"
@@ -269,9 +270,11 @@ func TestIdleOriginConnect(t *testing.T) {
 		reqStr := "CONNECT %s HTTP/1.1\r\nHost: %s\r\n\r\n"
 		req := fmt.Sprintf(reqStr, originURL.Host, originURL.Host)
 		conn.Write([]byte(req))
+		_, err := http.ReadResponse(bufio.NewReader(conn), nil)
+		if err != nil {
+			return err
+		}
 		var buf [400]byte
-		conn.Read(buf[:])
-
 		return chunkedReq(t, &buf, conn, originURL)
 	}
 
@@ -294,7 +297,6 @@ func TestIdleOriginConnect(t *testing.T) {
 // X-Lantern-Auth-Token + X-Lantern-Device-Id -> 200 OK <- Tunneled request -> 200 OK
 func TestConnectOK(t *testing.T) {
 	connectReq := "CONNECT %s HTTP/1.1\r\nHost: %s\r\n\r\n"
-	connectResp := "HTTP/1.1 200 OK\r\n"
 
 	testHTTP := func(conn net.Conn, originURL *url.URL) {
 		req := fmt.Sprintf(connectReq, originURL.Host, originURL.Host)
@@ -304,10 +306,9 @@ func TestConnectOK(t *testing.T) {
 			t.FailNow()
 		}
 
-		var buf [400]byte
-		_, err = conn.Read(buf[:])
-		if !assert.Contains(t, string(buf[:]), connectResp,
-			"should get 200 OK") {
+		resp, _ := http.ReadResponse(bufio.NewReader(conn), nil)
+		buf, _ := ioutil.ReadAll(resp.Body)
+		if !assert.Equal(t, 200, resp.StatusCode) {
 			t.FailNow()
 		}
 
@@ -316,8 +317,8 @@ func TestConnectOK(t *testing.T) {
 			t.FailNow()
 		}
 
-		buf = [400]byte{}
-		conn.Read(buf[:])
+		resp, _ = http.ReadResponse(bufio.NewReader(conn), nil)
+		buf, _ = ioutil.ReadAll(resp.Body)
 		assert.Contains(t, string(buf[:]), originResponse, "should read tunneled response")
 	}
 
@@ -329,10 +330,9 @@ func TestConnectOK(t *testing.T) {
 			t.FailNow()
 		}
 
-		var buf [400]byte
-		_, err = conn.Read(buf[:])
-		if !assert.Contains(t, string(buf[:]), connectResp,
-			"should get 200 OK") {
+		resp, _ := http.ReadResponse(bufio.NewReader(conn), nil)
+		buf, _ := ioutil.ReadAll(resp.Body)
+		if !assert.Equal(t, 200, resp.StatusCode) {
 			t.FailNow()
 		}
 
@@ -347,8 +347,8 @@ func TestConnectOK(t *testing.T) {
 			t.FailNow()
 		}
 
-		buf = [400]byte{}
-		tunnConn.Read(buf[:])
+		resp, _ = http.ReadResponse(bufio.NewReader(tunnConn), nil)
+		buf, _ = ioutil.ReadAll(resp.Body)
 		assert.Contains(t, string(buf[:]), originResponse, "should read tunneled response")
 	}
 
@@ -362,7 +362,6 @@ func TestConnectOK(t *testing.T) {
 // X-Lantern-Auth-Token + X-Lantern-Device-Id -> Forward
 func TestDirectOK(t *testing.T) {
 	reqTempl := "GET /%s HTTP/1.1\r\nHost: %s\r\n\r\n"
-	failResp := "HTTP/1.1 500 Internal Server Error\r\n"
 
 	testOk := func(conn net.Conn, originURL *url.URL) {
 		req := fmt.Sprintf(reqTempl, originURL.Path, originURL.Host)
@@ -372,8 +371,8 @@ func TestDirectOK(t *testing.T) {
 			t.FailNow()
 		}
 
-		buf := [400]byte{}
-		conn.Read(buf[:])
+		resp, _ := http.ReadResponse(bufio.NewReader(conn), nil)
+		buf, _ := ioutil.ReadAll(resp.Body)
 		assert.Contains(t, string(buf[:]), originResponse, "should read tunneled response")
 
 	}
@@ -386,12 +385,9 @@ func TestDirectOK(t *testing.T) {
 			t.FailNow()
 		}
 
-		buf := [400]byte{}
-		conn.Read(buf[:])
-		t.Log("\n" + string(buf[:]))
-
-		assert.Contains(t, string(buf[:]), failResp, "should respond with 500 Internal Server Error")
-
+		resp, _ := http.ReadResponse(bufio.NewReader(conn), nil)
+		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode, "should fail")
+		defer resp.Body.Close()
 	}
 
 	testRoundTrip(t, httpProxyAddr, false, httpOriginServer, testOk)
