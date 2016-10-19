@@ -37,7 +37,7 @@ func TestFilterTunnelPorts(t *testing.T) {
 		DisableKeepAlives: true,
 	}}
 
-	req, _ := http.NewRequest("GET", "https://site.com:abc", nil)
+	req, _ := http.NewRequest("CONNECT", "https://site.com:abc", nil)
 	resp, _ := client.Do(req)
 	assert.Nil(t, resp, "CONNECT request without non-integer port should fail with 400")
 
