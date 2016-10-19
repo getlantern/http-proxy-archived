@@ -49,7 +49,7 @@ func TestFilterTunnelPorts(t *testing.T) {
 	_ = resp.Body.Close()
 	assert.Equal(t, http.StatusOK, resp.StatusCode, "CONNECT request to allowed port should succeed")
 
-	req, _ = http.NewRequest("GET", fmt.Sprintf("https://site.com:%d", (port-1)), nil)
+	req, _ = http.NewRequest("CONNECT", fmt.Sprintf("https://site.com:%d", (port-1)), nil)
 	resp, _ = client.Do(req)
 	assert.Nil(t, resp, "CONNECT request to disallowed port should fail with 403")
 }
