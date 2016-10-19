@@ -1,4 +1,4 @@
-package stateful
+package pforward
 
 import (
 	"fmt"
@@ -87,7 +87,7 @@ func doTestProxy(t *testing.T, origin *httptest.Server, server *httptest.Server,
 				if reqErr != nil {
 					return nil, fmt.Errorf("Unable to construct initial request: %v", reqErr)
 				}
-				initReq.Header.Set(XLanternStateful, "true")
+				initReq.Header.Set(XLanternPersistent, "true")
 				writeErr := initReq.Write(conn)
 				if writeErr != nil {
 					return nil, fmt.Errorf("Unable to write initial request: %v", writeErr)

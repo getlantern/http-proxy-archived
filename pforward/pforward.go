@@ -1,9 +1,9 @@
-// Package stateful provides stateful HTTP forwarding (i.e. maintaining a 1 to 1
-// relationship between downstream and upstream connections). Clients wishing to
-// take advantage of this capability need to send an initial GET request
-// (analogous to a CONNECT request) that includes the desired host and the HTTP
-// header "X-Lantern-Stateful: true".
-package stateful
+// Package pforward provides HTTP forwarding using persistent connections,
+// maintaining a 1 to 1 relationship between downstream and upstream connections.
+// Clients wishing to take advantage of this capability need to send an initial
+// GET request (analogous to a CONNECT request) that includes the desired host
+// and the HTTP header "X-Lantern-Persistent: true".
+package pforward
 
 import (
 	"net"
@@ -21,13 +21,13 @@ import (
 	"github.com/getlantern/http-proxy/filters"
 )
 
-var log = golog.LoggerFor("stateful")
+var log = golog.LoggerFor("pforward")
 
 const (
-	// XLanternStateful is the X-Lantern-Stateful header that indicates stateful
-	// connections are OK.
-	XLanternStateful = "X-Lantern-Stateful"
-	xForwardedFor    = "X-Forwarded-For"
+	// XLanternPersistent is the X-Lantern-Persistent header that indicates
+	// persistent connections are to be used.
+	XLanternPersistent = "X-Lantern-Persistent"
+	xForwardedFor      = "X-Forwarded-For"
 )
 
 type Options struct {
@@ -70,8 +70,8 @@ func New(opts *Options) filters.Filter {
 
 func (f *forwarder) Apply(w http.ResponseWriter, req *http.Request, next filters.Next) error {
 	if !f.Force {
-		statefulAllowed, _ := strconv.ParseBool(req.Header.Get(XLanternStateful))
-		if !statefulAllowed {
+		persistentAllowed, _ := strconv.ParseBool(req.Header.Get(XLanternPersistent))
+		if !persistentAllowed {
 			return next()
 		}
 	}
