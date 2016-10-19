@@ -39,7 +39,7 @@ func TestFilterTunnelPorts(t *testing.T) {
 
 	req, _ := http.NewRequest("CONNECT", "https://site.com:abc", nil)
 	resp, _ := client.Do(req)
-	assert.Nil(t, resp, "CONNECT request without non-integer port should fail with 400")
+	assert.Nil(t, resp, "CONNECT request with non-integer port should fail with 400")
 
 	req, _ = http.NewRequest("GET", "https://www.google.com/humans.txt", nil)
 	resp, err := client.Do(req)
