@@ -248,7 +248,7 @@ func TestIdleOriginDirect(t *testing.T) {
 	failForwardFn := func(conn net.Conn, originURL *url.URL) {
 		var buf [400]byte
 		chunkedReq(t, &buf, conn, originURL)
-		assert.NotContains(t, string(buf[:]), "200 OK", "should fail")
+		assert.Contains(t, string(buf[:]), "502 Bad Gateway", "should fail with 502")
 	}
 
 	testRoundTrip(t, okAddr, false, httpOriginServer, okForwardFn)
