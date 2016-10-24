@@ -3,6 +3,7 @@ package server
 import (
 	"net"
 	"net/http"
+	"reflect"
 
 	"github.com/gorilla/context"
 
@@ -131,7 +132,16 @@ func (l *allowinglistener) Accept() (net.Conn, error) {
 		return conn, err
 	}
 
-	ip := conn.RemoteAddr().(*net.TCPAddr).IP.String()
+	ip := ""
+	remoteAddr := conn.RemoteAddr()
+	switch addr := remoteAddr.(type) {
+	case *net.TCPAddr:
+		ip = addr.IP.String()
+	case *net.UDPAddr:
+		ip = addr.IP.String()
+	default:
+		log.Errorf("Remote addr %v is of unknown type %v, unable to determine IP", remoteAddr, reflect.TypeOf(remoteAddr))
+	}
 	if !l.allow(ip) {
 		conn.Close()
 		// Note - we don't return an error, because that causes http.Server to stop
