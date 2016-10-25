@@ -141,6 +141,7 @@ func (l *allowinglistener) Accept() (net.Conn, error) {
 		ip = addr.IP.String()
 	default:
 		log.Errorf("Remote addr %v is of unknown type %v, unable to determine IP", remoteAddr, reflect.TypeOf(remoteAddr))
+		return conn, err
 	}
 	if !l.allow(ip) {
 		conn.Close()
