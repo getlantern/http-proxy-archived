@@ -37,7 +37,7 @@ func TestProxy(t *testing.T) {
 			OnRequest: func(req *http.Request) {
 				req.Header.Set(fakeRequestHeader, "faker")
 			},
-			OnResponse: func(resp *http.Response, req *http.Request, responseNumber int) *http.Response {
+			OnResponse: func(resp *http.Response) *http.Response {
 				// Add fake response header
 				resp.Header.Set(fakeResponseHeader, "fakeresp")
 				return resp

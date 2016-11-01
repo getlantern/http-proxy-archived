@@ -14,6 +14,11 @@ var (
 	pool = bpool.NewBytePool(maxBuffers, bufferSize)
 )
 
+// Pool gets the byte pool
+func Pool() *bpool.BytePool {
+	return pool
+}
+
 // Get gets a byte buffer from the pool
 func Get() []byte {
 	return pool.Get()
