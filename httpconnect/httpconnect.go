@@ -47,15 +47,13 @@ func New(opts *Options) filters.Filter {
 	return f
 }
 
-func (f *httpConnectHandler) dial(initialReq *http.Request, addr string, port int) (conn net.Conn, pipe bool, err error) {
-	pipe = true
+func (f *httpConnectHandler) dial(initialReq *http.Request, addr string, port int) (net.Conn, error) {
 	conn, dialErr := f.Dialer("tcp", addr)
 	if dialErr != nil {
-		err = errors.New("Unable to dial %v: %v", addr, dialErr)
-		return
+		return nil, errors.New("Unable to dial %v: %v", addr, dialErr)
 	}
 	conn = idletiming.Conn(conn, f.IdleTimeout, nil)
-	return
+	return conn, nil
 }
 
 func (f *httpConnectHandler) Apply(w http.ResponseWriter, req *http.Request, next filters.Next) error {
@@ -71,7 +69,7 @@ func (f *httpConnectHandler) Apply(w http.ResponseWriter, req *http.Request, nex
 	op := ops.Begin("proxy_https")
 	defer op.End()
 	if f.portAllowed(op, w, req) {
-		f.ic.Intercept(w, req, false, op, 443)
+		f.ic.Pipe(op, w, req, 443)
 	}
 
 	return filters.Stop()

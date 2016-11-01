@@ -78,19 +78,17 @@ func (f *forwarder) Apply(w http.ResponseWriter, req *http.Request, next filters
 
 	op := ops.Begin("proxy_http")
 	defer op.End()
-	f.ic.Intercept(w, req, f.Force, op, 80)
+	f.ic.HTTP(op, w, req, f.Force, 80)
 	return filters.Stop()
 }
 
-func (f *forwarder) dial(initialReq *http.Request, addr string, port int) (conn net.Conn, pipe bool, err error) {
-	pipe = false
+func (f *forwarder) dial(initialReq *http.Request, addr string, port int) (net.Conn, error) {
 	conn, dialErr := f.Dialer("tcp", addr)
 	if dialErr != nil {
-		err = errors.New("Unable to dial %v: %v", addr, dialErr)
-		return
+		return nil, errors.New("Unable to dial %v: %v", addr, dialErr)
 	}
 	conn = idletiming.Conn(conn, f.IdleTimeout, nil)
-	return
+	return conn, nil
 }
 
 func (f *forwarder) modifyRequest(req *http.Request) *http.Request {
