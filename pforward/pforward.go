@@ -15,8 +15,8 @@ import (
 	"github.com/getlantern/errors"
 	"github.com/getlantern/golog"
 	"github.com/getlantern/idletiming"
-	"github.com/getlantern/interceptor"
 	"github.com/getlantern/ops"
+	"github.com/getlantern/proxy"
 
 	"github.com/getlantern/http-proxy/filters"
 )
@@ -35,12 +35,12 @@ type Options struct {
 	IdleTimeout time.Duration
 	Dialer      func(network, address string) (net.Conn, error)
 	OnRequest   func(req *http.Request)
-	OnResponse  func(resp *http.Response, req *http.Request, responseNumber int) *http.Response
+	OnResponse  func(resp *http.Response) *http.Response
 }
 
 type forwarder struct {
 	*Options
-	ic interceptor.Interceptor
+	intercept proxy.Interceptor
 }
 
 func New(opts *Options) filters.Filter {
@@ -59,11 +59,7 @@ func New(opts *Options) filters.Filter {
 	}
 
 	f := &forwarder{Options: opts}
-	f.ic = interceptor.New(&interceptor.Opts{
-		Dial:       f.dial,
-		OnRequest:  f.modifyRequest,
-		OnResponse: f.OnResponse,
-	})
+	f.intercept = proxy.HTTP(true, opts.IdleTimeout-5*time.Second, f.modifyRequest, f.OnResponse, nil, f.dial)
 
 	return f
 }
@@ -78,19 +74,20 @@ func (f *forwarder) Apply(w http.ResponseWriter, req *http.Request, next filters
 
 	op := ops.Begin("proxy_http")
 	defer op.End()
-	f.ic.Intercept(w, req, f.Force, op, 80)
+	err := f.intercept(w, req)
+	if err != nil {
+		log.Error(op.FailIf(err))
+	}
 	return filters.Stop()
 }
 
-func (f *forwarder) dial(initialReq *http.Request, addr string, port int) (conn net.Conn, pipe bool, err error) {
-	pipe = false
-	conn, dialErr := f.Dialer("tcp", addr)
+func (f *forwarder) dial(network, addr string) (net.Conn, error) {
+	conn, dialErr := f.Dialer(network, addr)
 	if dialErr != nil {
-		err = errors.New("Unable to dial %v: %v", addr, dialErr)
-		return
+		return nil, errors.New("Unable to dial %v: %v", addr, dialErr)
 	}
 	conn = idletiming.Conn(conn, f.IdleTimeout, nil)
-	return
+	return conn, nil
 }
 
 func (f *forwarder) modifyRequest(req *http.Request) *http.Request {
