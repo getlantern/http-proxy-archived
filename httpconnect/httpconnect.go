@@ -40,7 +40,7 @@ func New(opts *Options) filters.Filter {
 	}
 
 	f := &httpConnectHandler{Options: opts}
-	f.intercept = proxy.CONNECT(opts.IdleTimeout-5*time.Second, buffers.Pool(), f.dial)
+	f.intercept = proxy.CONNECT(opts.IdleTimeout-5*time.Second, buffers.Pool(), true, f.dial)
 	return f
 }
 
