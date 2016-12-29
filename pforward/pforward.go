@@ -6,6 +6,7 @@
 package pforward
 
 import (
+	"context"
 	"net"
 	"net/http"
 	"strconv"
@@ -74,14 +75,14 @@ func (f *forwarder) Apply(w http.ResponseWriter, req *http.Request, next filters
 
 	op := ops.Begin("proxy_http")
 	defer op.End()
-	err := f.intercept(w, req)
+	err := f.intercept(context.TODO(), w, req)
 	if err != nil {
 		log.Error(op.FailIf(err))
 	}
 	return filters.Stop()
 }
 
-func (f *forwarder) dial(network, addr string) (net.Conn, error) {
+func (f *forwarder) dial(ctx context.Context, network, addr string) (net.Conn, error) {
 	conn, dialErr := f.Dialer(network, addr)
 	if dialErr != nil {
 		return nil, errors.New("Unable to dial %v: %v", addr, dialErr)

@@ -1,6 +1,7 @@
 package httpconnect
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -39,11 +40,11 @@ func New(opts *Options) filters.Filter {
 	}
 
 	f := &httpConnectHandler{Options: opts}
-	f.intercept = proxy.CONNECT(opts.IdleTimeout-5*time.Second, buffers.Pool(), f.dial)
+	f.intercept = proxy.CONNECT(opts.IdleTimeout-5*time.Second, buffers.Pool(), true, f.dial)
 	return f
 }
 
-func (f *httpConnectHandler) dial(network, addr string) (net.Conn, error) {
+func (f *httpConnectHandler) dial(ctx context.Context, network, addr string) (net.Conn, error) {
 	conn, dialErr := f.Dialer(network, addr)
 	if dialErr != nil {
 		return nil, errors.New("Unable to dial %v: %v", addr, dialErr)
@@ -65,7 +66,7 @@ func (f *httpConnectHandler) Apply(w http.ResponseWriter, req *http.Request, nex
 	op := ops.Begin("proxy_https")
 	defer op.End()
 	if f.portAllowed(op, w, req) {
-		err := f.intercept(w, req)
+		err := f.intercept(context.TODO(), w, req)
 		if err != nil {
 			log.Error(op.FailIf(err))
 		}
