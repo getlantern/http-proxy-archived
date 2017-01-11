@@ -39,13 +39,14 @@ func (l *stateAwareMeasuredListener) Accept() (c net.Conn, err error) {
 	}
 	fs := make(chan *measured.Stats)
 	wc := &wrapMeasuredConn{
-		ctx:        make(map[string]interface{}),
-		finalStats: fs,
 		Conn: measured.Wrap(c, rateInterval, func(mc measured.Conn) {
 			fs <- mc.Stats()
 		}),
-		WrapConnEmbeddable: c.(WrapConnEmbeddable),
+		ctx:        make(map[string]interface{}),
+		finalStats: make(chan *measured.Stats),
 	}
+	sac, _ := c.(WrapConnEmbeddable)
+	wc.WrapConnEmbeddable = sac
 	go wc.track(l.reportInterval, l.report)
 	return wc, nil
 }
@@ -87,7 +88,9 @@ func (c *wrapMeasuredConn) track(reportInterval time.Duration, report MeasuredRe
 }
 
 func (c *wrapMeasuredConn) OnState(s http.ConnState) {
-	c.WrapConnEmbeddable.OnState(s)
+	if c.WrapConnEmbeddable != nil {
+		c.WrapConnEmbeddable.OnState(s)
+	}
 }
 
 // Responds to the "measured" message type
@@ -108,6 +111,8 @@ func (c *wrapMeasuredConn) ControlMessage(msgType string, data interface{}) {
 		c.ctx = newContext
 	}
 
-	// Pass it down too, just in case other wrapper does something with
-	c.WrapConnEmbeddable.ControlMessage(msgType, data)
+	if c.WrapConnEmbeddable != nil {
+		// Pass it down too, just in case other wrapper does something with
+		c.WrapConnEmbeddable.ControlMessage(msgType, data)
+	}
 }
