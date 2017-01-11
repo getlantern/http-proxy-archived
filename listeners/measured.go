@@ -37,15 +37,15 @@ func (l *stateAwareMeasuredListener) Accept() (c net.Conn, err error) {
 	if err != nil {
 		return nil, err
 	}
+	fs := make(chan *measured.Stats)
 	wc := &wrapMeasuredConn{
 		ctx:        make(map[string]interface{}),
-		finalStats: make(chan *measured.Stats),
+		finalStats: fs,
+		Conn: measured.Wrap(c, rateInterval, func(mc measured.Conn) {
+			fs <- mc.Stats()
+		}),
+		WrapConnEmbeddable: c.(WrapConnEmbeddable),
 	}
-	wc.Conn = measured.Wrap(c, rateInterval, func(mc measured.Conn) {
-		wc.finalStats <- mc.Stats()
-	})
-	sac, _ := wc.Conn.Wrapped().(WrapConnEmbeddable)
-	wc.WrapConnEmbeddable = sac
 	go wc.track(l.reportInterval, l.report)
 	return wc, nil
 }
