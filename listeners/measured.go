@@ -87,9 +87,7 @@ func (c *wrapMeasuredConn) track(reportInterval time.Duration, report MeasuredRe
 }
 
 func (c *wrapMeasuredConn) OnState(s http.ConnState) {
-	if c.WrapConnEmbeddable != nil {
-		c.WrapConnEmbeddable.OnState(s)
-	}
+	c.WrapConnEmbeddable.OnState(s)
 }
 
 // Responds to the "measured" message type
@@ -111,7 +109,5 @@ func (c *wrapMeasuredConn) ControlMessage(msgType string, data interface{}) {
 	}
 
 	// Pass it down too, just in case other wrapper does something with
-	if c.WrapConnEmbeddable != nil {
-		c.WrapConnEmbeddable.ControlMessage(msgType, data)
-	}
+	c.WrapConnEmbeddable.ControlMessage(msgType, data)
 }
