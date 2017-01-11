@@ -98,7 +98,6 @@ func (c *wrapMeasuredConn) ControlMessage(msgType string, data interface{}) {
 	if msgType == "measured" {
 		ctxUpdate := data.(map[string]interface{})
 		c.ctxMx.Lock()
-		defer c.ctxMx.Unlock()
 		newContext := make(map[string]interface{}, len(c.ctx))
 		// Copy context
 		for key, value := range c.ctx {
@@ -109,6 +108,7 @@ func (c *wrapMeasuredConn) ControlMessage(msgType string, data interface{}) {
 			newContext[key] = value
 		}
 		c.ctx = newContext
+		c.ctxMx.Unlock()
 	}
 
 	if c.WrapConnEmbeddable != nil {
