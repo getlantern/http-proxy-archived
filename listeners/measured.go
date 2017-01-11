@@ -62,8 +62,7 @@ type wrapMeasuredConn struct {
 func (c *wrapMeasuredConn) track(reportInterval time.Duration, report MeasuredReportFN) {
 	ticker := time.NewTicker(reportInterval)
 	var priorStats *measured.Stats
-	applyStats := func(final bool) {
-		stats := c.Conn.Stats()
+	applyStats := func(stats *measured.Stats, final bool) {
 		deltaStats := stats
 		if priorStats != nil {
 			deltaStats.SentTotal -= priorStats.SentTotal
@@ -79,9 +78,9 @@ func (c *wrapMeasuredConn) track(reportInterval time.Duration, report MeasuredRe
 	for {
 		select {
 		case <-ticker.C:
-			applyStats(false)
-		case <-c.finalStats:
-			applyStats(true)
+			applyStats(c.Conn.Stats(), false)
+		case stats := <-c.finalStats:
+			applyStats(stats, true)
 			return
 		}
 	}
