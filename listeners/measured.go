@@ -97,10 +97,17 @@ func (c *wrapMeasuredConn) ControlMessage(msgType string, data interface{}) {
 	if msgType == "measured" {
 		ctxUpdate := data.(map[string]interface{})
 		c.ctxMx.Lock()
-		for key, value := range ctxUpdate {
-			c.ctx[key] = value
+		defer c.ctxMx.Unlock()
+		newContext := make(map[string]interface{}, len(c.ctx))
+		// Copy context
+		for key, value := range c.ctx {
+			newContext[key] = value
 		}
-		c.ctxMx.Unlock()
+		// Update context
+		for key, value := range ctxUpdate {
+			newContext[key] = value
+		}
+		c.ctx = newContext
 	}
 
 	// Pass it down too, just in case other wrapper does something with
