@@ -43,7 +43,7 @@ func (l *stateAwareMeasuredListener) Accept() (c net.Conn, err error) {
 			fs <- mc.Stats()
 		}),
 		ctx:        make(map[string]interface{}),
-		finalStats: make(chan *measured.Stats),
+		finalStats: fs,
 	}
 	sac, _ := c.(WrapConnEmbeddable)
 	wc.WrapConnEmbeddable = sac
