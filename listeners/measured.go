@@ -64,7 +64,9 @@ func (c *wrapMeasuredConn) track(reportInterval time.Duration, report MeasuredRe
 	ticker := time.NewTicker(reportInterval)
 	var priorStats *measured.Stats
 	applyStats := func(stats *measured.Stats, final bool) {
-		deltaStats := stats
+		deltaStats := &measured.Stats{}
+		// Copy stats
+		*deltaStats = *stats
 		if priorStats != nil {
 			deltaStats.SentTotal -= priorStats.SentTotal
 			deltaStats.RecvTotal -= priorStats.RecvTotal
