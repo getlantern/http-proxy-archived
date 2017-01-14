@@ -62,6 +62,8 @@ type wrapMeasuredConn struct {
 
 func (c *wrapMeasuredConn) track(reportInterval time.Duration, report MeasuredReportFN) {
 	ticker := time.NewTicker(reportInterval)
+	defer ticker.Stop()
+
 	var priorStats *measured.Stats
 	applyStats := func(stats *measured.Stats, final bool) {
 		deltaStats := &measured.Stats{}
