@@ -120,3 +120,7 @@ func (c *wrapMeasuredConn) ControlMessage(msgType string, data interface{}) {
 		c.WrapConnEmbeddable.ControlMessage(msgType, data)
 	}
 }
+
+func (c *wrapMeasuredConn) Wrapped() net.Conn {
+	return c.Conn
+}

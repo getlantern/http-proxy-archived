@@ -35,3 +35,7 @@ type defaultConn struct {
 func (c *defaultConn) OnState(s http.ConnState) {}
 
 func (c *defaultConn) ControlMessage(msgType string, data interface{}) {}
+
+func (c *defaultConn) Wrapped() net.Conn {
+	return c.Conn
+}

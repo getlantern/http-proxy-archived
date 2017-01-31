@@ -54,3 +54,7 @@ func (c *idleConn) ControlMessage(msgType string, data interface{}) {
 		c.WrapConnEmbeddable.ControlMessage(msgType, data)
 	}
 }
+
+func (c *idleConn) Wrapped() net.Conn {
+	return c.Conn
+}

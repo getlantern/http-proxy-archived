@@ -152,3 +152,7 @@ func (c *limitedConn) ControlMessage(msgType string, data interface{}) {
 		c.WrapConnEmbeddable.ControlMessage(msgType, data)
 	}
 }
+
+func (c *limitedConn) Wrapped() net.Conn {
+	return c.Conn
+}
