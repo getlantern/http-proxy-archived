@@ -82,7 +82,7 @@ func (s *Server) ListenAndServeHTTP(addr string, readyCb func(addr string)) erro
 		return err
 	}
 	log.Debugf("Listen http on %s", addr)
-	return s.Serve(s.wrapListenerIfNecessary(listener), readyCb)
+	return s.Serve(listener, readyCb)
 }
 
 func (s *Server) ListenAndServeHTTPS(addr, keyfile, certfile string, readyCb func(addr string)) error {
@@ -91,7 +91,7 @@ func (s *Server) ListenAndServeHTTPS(addr, keyfile, certfile string, readyCb fun
 		return err
 	}
 
-	listener, err := tlsdefaults.NewListener(s.wrapListenerIfNecessary(l), keyfile, certfile)
+	listener, err := tlsdefaults.NewListener(l, keyfile, certfile)
 	if err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func (s *Server) ListenAndServeHTTPS(addr, keyfile, certfile string, readyCb fun
 }
 
 func (s *Server) Serve(listener net.Listener, readyCb func(addr string)) error {
-	l := listeners.NewDefaultListener(listener)
+	l := listeners.NewDefaultListener(s.wrapListenerIfNecessary(listener))
 
 	for _, wrap := range s.listenerGenerators {
 		l = wrap(l)
