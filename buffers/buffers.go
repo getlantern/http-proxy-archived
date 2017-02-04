@@ -1,8 +1,8 @@
-// Package buffers provides shared byte buffers based on connmux
+// Package buffers provides shared byte buffers based on lampshade
 package buffers
 
 import (
-	"github.com/getlantern/connmux"
+	"github.com/getlantern/lampshade"
 )
 
 const (
@@ -10,11 +10,11 @@ const (
 )
 
 var (
-	pool = connmux.NewBufferPool(maxBuffers)
+	pool = lampshade.NewBufferPool(maxBuffers)
 )
 
 // Pool gets the byte pool
-func Pool() connmux.BufferPool {
+func Pool() lampshade.BufferPool {
 	return pool
 }
 
