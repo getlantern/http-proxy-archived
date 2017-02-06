@@ -1,16 +1,17 @@
 package server
 
 import (
+	"bufio"
+	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"reflect"
 
-	"github.com/gorilla/context"
-
 	"github.com/getlantern/golog"
-	"github.com/getlantern/tlsdefaults"
-
 	"github.com/getlantern/http-proxy/listeners"
+	"github.com/getlantern/tlsdefaults"
+	"github.com/gorilla/context"
 )
 
 var (
@@ -25,49 +26,15 @@ type Server struct {
 	// Allow is a function that determines whether or not to allow connections
 	// from the given IP address. If unspecified, all connections are allowed.
 	Allow              func(string) bool
-	httpServer         http.Server
+	handler            http.Handler
 	listenerGenerators []listenerGenerator
 }
 
 // NewServer constructs a new HTTP proxy server using the given handler.
 func NewServer(handler http.Handler) *Server {
-	cb := NewConnBag()
-
-	proxy := http.HandlerFunc(
-		func(w http.ResponseWriter, req *http.Request) {
-			c := cb.Withdraw(req.RemoteAddr)
-			context.Set(req, "conn", c)
-			handler.ServeHTTP(w, req)
-			context.Clear(req)
-		})
-
-	server := &Server{
-		httpServer: http.Server{
-			Handler: proxy,
-			ConnState: func(c net.Conn, state http.ConnState) {
-				wconn, ok := c.(listeners.WrapConn)
-				if !ok {
-					panic("Should be of type WrapConn")
-				}
-
-				wconn.OnState(state)
-
-				switch state {
-				case http.StateActive:
-					cb.Put(wconn)
-				case http.StateClosed:
-					// When go server encounters abnormal request, it
-					// will transit to StateClosed directly without
-					// the handler being invoked, hence the connection
-					// will not be withdrawed. Purge it in such case.
-					cb.Purge(c.RemoteAddr().String())
-				}
-			},
-			ErrorLog: log.AsStdLogger(),
-		},
+	return &Server{
+		handler: handler,
 	}
-
-	return server
 }
 
 func (s *Server) AddListenerWrappers(listenerGens ...listenerGenerator) {
@@ -114,7 +81,47 @@ func (s *Server) serve(listener net.Listener, readyCb func(addr string)) error {
 		readyCb(l.Addr().String())
 	}
 
-	return s.httpServer.Serve(l)
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			return fmt.Errorf("Unable to accept connection: %v", err)
+		}
+		go s.proxy(conn)
+	}
+}
+
+func (s *Server) proxy(conn net.Conn) {
+	defer conn.Close()
+
+	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn)) // todo: pool these to avoid allocations
+	for {
+		req, err := http.ReadRequest(rw.Reader)
+		if err != nil {
+			if err != io.EOF {
+				log.Errorf("Unable to read request: %v", err)
+				rw.Write([]byte("HTTP/1.1 400 Bad Request\r\n"))
+				rw.Flush()
+			}
+			return
+		}
+
+		resp := newResponseWriter(conn, rw)
+		context.Set(req, "conn", conn)
+		s.handler.ServeHTTP(resp, req)
+		err = resp.flush()
+		context.Clear(req)
+		if err != nil {
+			log.Errorf("Error flushing response: %v", err)
+			return
+		}
+		if req.Header.Get("Connection") == "Close" {
+			conn.Close()
+			return
+		}
+		if resp.hijacked {
+			return
+		}
+	}
 }
 
 func (s *Server) wrapListenerIfNecessary(l net.Listener) net.Listener {
