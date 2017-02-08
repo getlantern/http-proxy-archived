@@ -1,21 +1,20 @@
-// Package buffers provides shared byte buffers based on bpool
+// Package buffers provides shared byte buffers based on connmux
 package buffers
 
 import (
-	"github.com/oxtoacart/bpool"
+	"github.com/getlantern/connmux"
 )
 
 const (
-	maxBuffers = 2500
-	bufferSize = 32768
+	maxBuffers = 5000
 )
 
 var (
-	pool = bpool.NewBytePool(maxBuffers, bufferSize)
+	pool = connmux.NewBufferPool(maxBuffers)
 )
 
 // Pool gets the byte pool
-func Pool() *bpool.BytePool {
+func Pool() connmux.BufferPool {
 	return pool
 }
 
