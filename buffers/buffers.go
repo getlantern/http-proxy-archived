@@ -6,11 +6,11 @@ import (
 )
 
 const (
-	maxBuffers = 5000
+	maxBufferBytes = 100 * 1024 * 1024
 )
 
 var (
-	pool = lampshade.NewBufferPool(maxBuffers)
+	pool = lampshade.NewBufferPool(maxBufferBytes)
 )
 
 // Pool gets the byte pool
