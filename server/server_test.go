@@ -371,10 +371,18 @@ func TestDirectOK(t *testing.T) {
 			t.FailNow()
 		}
 
-		resp, _ := http.ReadResponse(bufio.NewReader(conn), nil)
-		buf, _ := ioutil.ReadAll(resp.Body)
+		log.Debug("x")
+		resp, err := http.ReadResponse(bufio.NewReader(conn), nil)
+		if !assert.NoError(t, err) {
+			return
+		}
+		log.Debug("y")
+		buf, err := ioutil.ReadAll(resp.Body)
+		if !assert.NoError(t, err) {
+			return
+		}
+		log.Debug("z")
 		assert.Contains(t, string(buf[:]), originResponse, "should read tunneled response")
-
 	}
 
 	testFail := func(conn net.Conn, originURL *url.URL) {
@@ -385,17 +393,24 @@ func TestDirectOK(t *testing.T) {
 			t.FailNow()
 		}
 
-		resp, _ := http.ReadResponse(bufio.NewReader(conn), nil)
+		resp, err := http.ReadResponse(bufio.NewReader(conn), nil)
+		if !assert.NoError(t, err) {
+			return
+		}
 		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode, "should fail")
 		defer resp.Body.Close()
 	}
 
+	log.Debug("i")
 	testRoundTrip(t, httpProxyAddr, false, httpOriginServer, testOk)
+	log.Debug("ii")
 	testRoundTrip(t, tlsProxyAddr, true, httpOriginServer, testOk)
 
 	// HTTPS can't be tunneled using Direct Proxying, as redirections
 	// require a TLS handshake between the proxy and the origin
+	log.Debug("iii")
 	testRoundTrip(t, httpProxyAddr, false, tlsOriginServer, testFail)
+	log.Debug("iv")
 	testRoundTrip(t, tlsProxyAddr, true, tlsOriginServer, testFail)
 }
 
