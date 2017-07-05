@@ -7,8 +7,11 @@ import (
 
 	"github.com/gorilla/context"
 
+	"github.com/getlantern/errors"
 	"github.com/getlantern/golog"
 	"github.com/getlantern/tlsdefaults"
+	"github.com/valyala/fasthttp"
+	"github.com/valyala/fasthttp/fasthttpadaptor"
 
 	"github.com/getlantern/http-proxy/listeners"
 )
@@ -25,8 +28,9 @@ type Server struct {
 	// Allow is a function that determines whether or not to allow connections
 	// from the given IP address. If unspecified, all connections are allowed.
 	Allow              func(string) bool
-	httpServer         http.Server
+	httpServer         fasthttp.Server
 	listenerGenerators []listenerGenerator
+	cb                 *connBag
 }
 
 // NewServer constructs a new HTTP proxy server using the given handler.
@@ -37,34 +41,17 @@ func NewServer(handler http.Handler) *Server {
 		func(w http.ResponseWriter, req *http.Request) {
 			c := cb.Withdraw(req.RemoteAddr)
 			context.Set(req, "conn", c)
+			req.Header.Del("Server")
 			handler.ServeHTTP(w, req)
 			context.Clear(req)
 		})
 
 	server := &Server{
-		httpServer: http.Server{
-			Handler: proxy,
-			ConnState: func(c net.Conn, state http.ConnState) {
-				wconn, ok := c.(listeners.WrapConn)
-				if !ok {
-					panic("Should be of type WrapConn")
-				}
-
-				wconn.OnState(state)
-
-				switch state {
-				case http.StateActive:
-					cb.Put(wconn)
-				case http.StateClosed:
-					// When go server encounters abnormal request, it
-					// will transit to StateClosed directly without
-					// the handler being invoked, hence the connection
-					// will not be withdrawed. Purge it in such case.
-					cb.Purge(c.RemoteAddr().String())
-				}
-			},
-			ErrorLog: log.AsStdLogger(),
+		httpServer: fasthttp.Server{
+			Handler: fasthttpadaptor.NewFastHTTPHandler(proxy),
+			Logger:  log.AsStdLogger(),
 		},
+		cb: cb,
 	}
 
 	return server
@@ -114,7 +101,19 @@ func (s *Server) serve(listener net.Listener, readyCb func(addr string)) error {
 		readyCb(l.Addr().String())
 	}
 
-	return s.httpServer.Serve(l)
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			return errors.New("Unable to accept: %v", err)
+		}
+		wconn, ok := conn.(listeners.WrapConn)
+		if !ok {
+			panic("Should be of type WrapConn")
+		}
+		wconn.OnState(http.StateActive)
+		s.cb.Put(wconn)
+		s.httpServer.ServeConn(wconn)
+	}
 }
 
 func (s *Server) wrapListenerIfNecessary(l net.Listener) net.Listener {
