@@ -79,7 +79,7 @@ func TestRestrictConnectNonConnect(t *testing.T) {
 
 func TestRestrictConnectPortDisallowed(t *testing.T) {
 	doTestFilter(t,
-		filters.Join(RecordOp, RestrictConnectPorts([]int{9999999})),
+		RestrictConnectPorts([]int{9999999}),
 		func(send func(method string, headers http.Header, body string) error, recv func() (*http.Response, string, error)) {
 			err := send(http.MethodConnect, nil, "")
 			if !assert.NoError(t, err) {

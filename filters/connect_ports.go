@@ -10,14 +10,9 @@ import (
 )
 
 // RestrictConnectPorts restricts CONNECT requests to the given list of allowed
-// ports.
+// ports and returns either a 400 error if the request is missing a port or a
+// 403 error if the port is not allowed.
 func RestrictConnectPorts(allowedPorts []int) filters.Filter {
-	fail := func(ctx context.Context, req *http.Request, statusCode int, description string) (*http.Response, error) {
-		op := getOp(ctx)
-		err := op.FailIf(log.Error(description))
-		return filters.Fail(req, statusCode, err)
-	}
-
 	return filters.FilterFunc(func(ctx context.Context, req *http.Request, next filters.Next) (*http.Response, error) {
 		if req.Method != http.MethodConnect || len(allowedPorts) == 0 {
 			return next(ctx, req)
@@ -28,12 +23,12 @@ func RestrictConnectPorts(allowedPorts []int) filters.Filter {
 		if err != nil {
 			// CONNECT request should always include port in req.Host.
 			// Ref https://tools.ietf.org/html/rfc2817#section-5.2.
-			return fail(ctx, req, http.StatusBadRequest, "No port field in Request-URI / Host header")
+			return fail(req, http.StatusBadRequest, "No port field in Request-URI / Host header")
 		}
 
 		port, err := strconv.Atoi(portString)
 		if err != nil {
-			return fail(ctx, req, http.StatusBadRequest, "Invalid port")
+			return fail(req, http.StatusBadRequest, "Invalid port")
 		}
 
 		for _, p := range allowedPorts {
@@ -41,6 +36,6 @@ func RestrictConnectPorts(allowedPorts []int) filters.Filter {
 				return next(ctx, req)
 			}
 		}
-		return fail(ctx, req, http.StatusForbidden, "Port not allowed")
+		return fail(req, http.StatusForbidden, "Port not allowed")
 	})
 }

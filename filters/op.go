@@ -25,7 +25,9 @@ var RecordOp = filters.FilterFunc(func(ctx context.Context, req *http.Request, n
 	op := ops.Begin(name)
 	ctx = context.WithValue(ctx, opKey, op)
 	resp, err := next(ctx, req)
-	op.FailIf(err)
+	if err != nil {
+		log.Error(op.FailIf(err))
+	}
 	op.End()
 	return resp, err
 })
