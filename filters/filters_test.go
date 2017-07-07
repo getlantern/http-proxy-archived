@@ -45,43 +45,23 @@ func TestPersistent(t *testing.T) {
 		})
 }
 
+func TestRestrictConnectPortDisallowed(t *testing.T) {
+	doTestRestrictConnectPort(t, []int{9999999}, http.MethodConnect, http.StatusForbidden)
+}
+
 func TestRestrictConnectPortsEmpty(t *testing.T) {
-	doTestFilter(t,
-		RestrictConnectPorts([]int{}),
-		func(send func(method string, headers http.Header, body string) error, recv func() (*http.Response, string, error)) {
-			err := send(http.MethodConnect, nil, "")
-			if !assert.NoError(t, err) {
-				return
-			}
-			resp, _, err := recv()
-			if !assert.NoError(t, err) {
-				return
-			}
-			assert.Equal(t, http.StatusOK, resp.StatusCode)
-		})
+	doTestRestrictConnectPort(t, []int{}, http.MethodConnect, http.StatusOK)
 }
 
 func TestRestrictConnectNonConnect(t *testing.T) {
-	doTestFilter(t,
-		RestrictConnectPorts([]int{9999999}),
-		func(send func(method string, headers http.Header, body string) error, recv func() (*http.Response, string, error)) {
-			err := send(http.MethodGet, nil, "")
-			if !assert.NoError(t, err) {
-				return
-			}
-			resp, _, err := recv()
-			if !assert.NoError(t, err) {
-				return
-			}
-			assert.Equal(t, http.StatusOK, resp.StatusCode)
-		})
+	doTestRestrictConnectPort(t, []int{9999999}, http.MethodGet, http.StatusOK)
 }
 
-func TestRestrictConnectPortDisallowed(t *testing.T) {
+func doTestRestrictConnectPort(t *testing.T, ports []int, method string, expectedStatus int) {
 	doTestFilter(t,
-		RestrictConnectPorts([]int{9999999}),
+		RestrictConnectPorts(ports),
 		func(send func(method string, headers http.Header, body string) error, recv func() (*http.Response, string, error)) {
-			err := send(http.MethodConnect, nil, "")
+			err := send(method, nil, "")
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -89,7 +69,7 @@ func TestRestrictConnectPortDisallowed(t *testing.T) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, http.StatusForbidden, resp.StatusCode)
+			assert.Equal(t, expectedStatus, resp.StatusCode)
 		})
 }
 

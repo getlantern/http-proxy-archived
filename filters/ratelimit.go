@@ -11,9 +11,8 @@ import (
 	"github.com/hashicorp/golang-lru"
 )
 
-// RestrictConnectPorts restricts CONNECT requests to the given list of allowed
-// ports and returns either a 400 error if the request is missing a port or a
-// 403 error if the port is not allowed.
+// RateLimit restricts access to only specific hosts and limits the rate at
+// which clients (identified by IP address) are allowed to access thoses hosts.
 func RateLimit(numClients int, hostPeriods map[string]time.Duration) filters.Filter {
 	if numClients <= 0 {
 		numClients = 5000
