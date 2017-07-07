@@ -8,18 +8,14 @@ import (
 
 	"github.com/getlantern/golog"
 
-	"github.com/getlantern/http-proxy/commonfilter"
-	"github.com/getlantern/http-proxy/filters"
-	"github.com/getlantern/http-proxy/httpconnect"
 	"github.com/getlantern/http-proxy/listeners"
 	"github.com/getlantern/http-proxy/logging"
-	"github.com/getlantern/http-proxy/pforward"
+	"github.com/getlantern/http-proxy/proxyfilters"
 	"github.com/getlantern/http-proxy/server"
 )
 
 var (
-	testingLocal = false
-	log          = golog.LoggerFor("http-proxy")
+	log = golog.LoggerFor("http-proxy")
 
 	help      = flag.Bool("help", false, "Get usage help")
 	keyfile   = flag.String("key", "", "Private key file name")
@@ -46,16 +42,8 @@ func main() {
 		log.Error(err)
 	}
 
-	filterChain := filters.Join(
-		commonfilter.New(&commonfilter.Options{
-			AllowLocalhost: testingLocal,
-		}),
-		httpconnect.New(&httpconnect.Options{IdleTimeout: time.Duration(*idleClose) * time.Second}),
-		pforward.New(&pforward.Options{Force: true, IdleTimeout: time.Duration(*idleClose) * time.Second}),
-	)
-
 	// Create server
-	srv := server.NewServer(filterChain)
+	srv := server.NewServer(time.Duration(*idleClose), proxyfilters.BlockLocal([]string{}))
 
 	// Add net.Listener wrappers for inbound connections
 	srv.AddListenerWrappers(
