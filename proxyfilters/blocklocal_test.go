@@ -1,4 +1,4 @@
-package filters
+package proxyfilters
 
 import (
 	"context"

@@ -1,15 +1,18 @@
 package server
 
 import (
+	"context"
 	"net"
-	"net/http"
 	"reflect"
+	"time"
 
-	"github.com/gorilla/context"
-
+	"github.com/getlantern/errors"
 	"github.com/getlantern/golog"
+	"github.com/getlantern/proxy"
+	"github.com/getlantern/proxy/filters"
 	"github.com/getlantern/tlsdefaults"
 
+	"github.com/getlantern/http-proxy/buffers"
 	"github.com/getlantern/http-proxy/listeners"
 )
 
@@ -25,49 +28,20 @@ type Server struct {
 	// Allow is a function that determines whether or not to allow connections
 	// from the given IP address. If unspecified, all connections are allowed.
 	Allow              func(string) bool
-	httpServer         http.Server
+	proxy              proxy.Proxy
 	listenerGenerators []listenerGenerator
 }
 
 // NewServer constructs a new HTTP proxy server using the given handler.
-func NewServer(handler http.Handler) *Server {
-	cb := NewConnBag()
-
-	proxy := http.HandlerFunc(
-		func(w http.ResponseWriter, req *http.Request) {
-			c := cb.Withdraw(req.RemoteAddr)
-			context.Set(req, "conn", c)
-			handler.ServeHTTP(w, req)
-			context.Clear(req)
-		})
-
-	server := &Server{
-		httpServer: http.Server{
-			Handler: proxy,
-			ConnState: func(c net.Conn, state http.ConnState) {
-				wconn, ok := c.(listeners.WrapConn)
-				if !ok {
-					panic("Should be of type WrapConn")
-				}
-
-				wconn.OnState(state)
-
-				switch state {
-				case http.StateActive:
-					cb.Put(wconn)
-				case http.StateClosed:
-					// When go server encounters abnormal request, it
-					// will transit to StateClosed directly without
-					// the handler being invoked, hence the connection
-					// will not be withdrawed. Purge it in such case.
-					cb.Purge(c.RemoteAddr().String())
-				}
-			},
-			ErrorLog: log.AsStdLogger(),
-		},
+func NewServer(idleTimeout time.Duration, filter filters.Filter) *Server {
+	return &Server{
+		proxy: proxy.New(&proxy.Opts{
+			Filter:             filter,
+			IdleTimeout:        idleTimeout,
+			BufferSource:       buffers.Pool(),
+			OKWaitsForUpstream: true,
+		}),
 	}
-
-	return server
 }
 
 func (s *Server) AddListenerWrappers(listenerGens ...listenerGenerator) {
@@ -114,7 +88,20 @@ func (s *Server) serve(listener net.Listener, readyCb func(addr string)) error {
 		readyCb(l.Addr().String())
 	}
 
-	return s.httpServer.Serve(l)
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			return errors.New("Error accepting: %v", err)
+		}
+		go s.proxy.Handle(context.Background(), conn)
+	}
+}
+
+func (s *Server) handle(conn net.Conn) {
+	err := s.proxy.Handle(context.Background(), conn)
+	if err != nil {
+		log.Errorf("Error handling connection: %v", err)
+	}
 }
 
 func (s *Server) wrapListenerIfNecessary(l net.Listener) net.Listener {

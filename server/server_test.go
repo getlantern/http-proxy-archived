@@ -19,10 +19,6 @@ import (
 	"github.com/getlantern/keyman"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/getlantern/http-proxy/commonfilter"
-	"github.com/getlantern/http-proxy/filters"
-	"github.com/getlantern/http-proxy/forward"
-	"github.com/getlantern/http-proxy/httpconnect"
 	"github.com/getlantern/http-proxy/listeners"
 )
 
@@ -55,10 +51,6 @@ var (
 		tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
 	}
 )
-
-func init() {
-	testingLocal = true
-}
 
 func TestMain(m *testing.M) {
 	flag.Parse()
@@ -176,15 +168,7 @@ func TestIdleClientConnections(t *testing.T) {
 
 // A proxy with a custom origin server connection timeout
 func impatientProxy(maxConns uint64, idleTimeout time.Duration) (string, error) {
-	filterChain := filters.Join(
-		httpconnect.New(&httpconnect.Options{
-			IdleTimeout: idleTimeout,
-		}),
-		forward.New(&forward.Options{
-			IdleTimeout: idleTimeout,
-		}),
-	)
-	srv := NewServer(filterChain)
+	srv := NewServer(idleTimeout, nil)
 
 	// Add net.Listener wrappers for inbound connections
 
@@ -307,7 +291,7 @@ func TestConnectOK(t *testing.T) {
 		}
 
 		resp, _ := http.ReadResponse(bufio.NewReader(conn), nil)
-		buf, _ := ioutil.ReadAll(resp.Body)
+		ioutil.ReadAll(resp.Body)
 		if !assert.Equal(t, 200, resp.StatusCode) {
 			t.FailNow()
 		}
@@ -318,7 +302,7 @@ func TestConnectOK(t *testing.T) {
 		}
 
 		resp, _ = http.ReadResponse(bufio.NewReader(conn), nil)
-		buf, _ = ioutil.ReadAll(resp.Body)
+		buf, _ := ioutil.ReadAll(resp.Body)
 		assert.Contains(t, string(buf[:]), originResponse, "should read tunneled response")
 	}
 
@@ -331,7 +315,7 @@ func TestConnectOK(t *testing.T) {
 		}
 
 		resp, _ := http.ReadResponse(bufio.NewReader(conn), nil)
-		buf, _ := ioutil.ReadAll(resp.Body)
+		ioutil.ReadAll(resp.Body)
 		if !assert.Equal(t, 200, resp.StatusCode) {
 			t.FailNow()
 		}
@@ -348,7 +332,7 @@ func TestConnectOK(t *testing.T) {
 		}
 
 		resp, _ = http.ReadResponse(bufio.NewReader(tunnConn), nil)
-		buf, _ = ioutil.ReadAll(resp.Body)
+		buf, _ := ioutil.ReadAll(resp.Body)
 		assert.Contains(t, string(buf[:]), originResponse, "should read tunneled response")
 	}
 
@@ -484,29 +468,9 @@ func testRoundTrip(t *testing.T, addr string, isTLS bool, origin *originHandler,
 	checkerFn(conn, url)
 }
 
-//
-// Proxy server
-//
-
-type proxy struct {
-	protocol string
-	addr     string
-}
-
 func basicServer(maxConns uint64, idleTimeout time.Duration) *Server {
-	filterChain := filters.Join(
-		commonfilter.New(&commonfilter.Options{
-			AllowLocalhost: testingLocal,
-		}),
-		httpconnect.New(&httpconnect.Options{
-			IdleTimeout: idleTimeout,
-		}),
-		forward.New(&forward.Options{
-			IdleTimeout: idleTimeout,
-		}),
-	)
 	// Create server
-	srv := NewServer(filterChain)
+	srv := NewServer(idleTimeout, nil)
 
 	// Add net.Listener wrappers for inbound connections
 	srv.AddListenerWrappers(
