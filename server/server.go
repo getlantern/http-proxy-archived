@@ -2,8 +2,11 @@ package server
 
 import (
 	"context"
+	"io/ioutil"
 	"net"
+	"net/http"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/getlantern/errors"
@@ -40,6 +43,17 @@ func NewServer(idleTimeout time.Duration, filter filters.Filter) *Server {
 			IdleTimeout:        idleTimeout,
 			BufferSource:       buffers.Pool(),
 			OKWaitsForUpstream: true,
+			OnError: func(ctx context.Context, req *http.Request, read bool, err error) *http.Response {
+				status := http.StatusBadGateway
+				if read {
+					status = http.StatusBadRequest
+				}
+				return &http.Response{
+					Request:    req,
+					StatusCode: status,
+					Body:       ioutil.NopCloser(strings.NewReader(err.Error())),
+				}
+			},
 		}),
 	}
 }
@@ -93,15 +107,24 @@ func (s *Server) serve(listener net.Listener, readyCb func(addr string)) error {
 		if err != nil {
 			return errors.New("Error accepting: %v", err)
 		}
-		go s.proxy.Handle(context.Background(), conn)
+		s.proxy.Handle(context.Background(), conn)
 	}
 }
 
 func (s *Server) handle(conn net.Conn) {
-	err := s.proxy.Handle(context.Background(), conn)
-	if err != nil {
-		log.Errorf("Error handling connection: %v", err)
+	wrapConn, isWrapConn := conn.(listeners.WrapConn)
+	if isWrapConn {
+		wrapConn.OnState(http.StateNew)
 	}
+	go func() {
+		err := s.proxy.Handle(context.Background(), conn)
+		if err != nil {
+			log.Errorf("Error handling connection: %v", err)
+		}
+		if isWrapConn {
+			wrapConn.OnState(http.StateClosed)
+		}
+	}()
 }
 
 func (s *Server) wrapListenerIfNecessary(l net.Listener) net.Listener {
