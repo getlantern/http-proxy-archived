@@ -43,7 +43,7 @@ func main() {
 	}
 
 	// Create server
-	srv := server.NewServer(time.Duration(*idleClose), proxyfilters.BlockLocal([]string{}))
+	srv := server.NewServer(time.Duration(*idleClose), nil, proxyfilters.BlockLocal([]string{}))
 
 	// Add net.Listener wrappers for inbound connections
 	srv.AddListenerWrappers(

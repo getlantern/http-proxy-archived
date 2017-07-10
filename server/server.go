@@ -36,11 +36,12 @@ type Server struct {
 }
 
 // NewServer constructs a new HTTP proxy server using the given handler.
-func NewServer(idleTimeout time.Duration, filter filters.Filter) *Server {
+func NewServer(idleTimeout time.Duration, dial proxy.DialFunc, filter filters.Filter) *Server {
 	return &Server{
 		proxy: proxy.New(&proxy.Opts{
-			Filter:             filter,
 			IdleTimeout:        idleTimeout,
+			Dial:               dial,
+			Filter:             filter,
 			BufferSource:       buffers.Pool(),
 			OKWaitsForUpstream: true,
 			OnError: func(ctx context.Context, req *http.Request, read bool, err error) *http.Response {
