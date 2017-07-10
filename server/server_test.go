@@ -173,9 +173,9 @@ func impatientProxy(maxConns uint64, idleTimeout time.Duration) (string, error) 
 	// Add net.Listener wrappers for inbound connections
 
 	srv.AddListenerWrappers(
-		// Close connections after 30 seconds of no activity
+		// Close connections after idleTimeout of no activity
 		func(ls net.Listener) net.Listener {
-			return listeners.NewIdleConnListener(ls, time.Second*30)
+			return listeners.NewIdleConnListener(ls, idleTimeout)
 		},
 	)
 
@@ -212,6 +212,15 @@ func chunkedReq(t *testing.T, buf *[400]byte, conn net.Conn, originURL *url.URL)
 	return err
 }
 
+func bufEmpty(buf [400]byte) bool {
+	for _, c := range buf {
+		if c != 0 {
+			return false
+		}
+	}
+	return true
+}
+
 func TestIdleOriginDirect(t *testing.T) {
 	okAddr, err := impatientProxy(0, 30*time.Second)
 	if err != nil {
@@ -232,7 +241,7 @@ func TestIdleOriginDirect(t *testing.T) {
 	failForwardFn := func(conn net.Conn, originURL *url.URL) {
 		var buf [400]byte
 		chunkedReq(t, &buf, conn, originURL)
-		assert.Contains(t, string(buf[:]), "502 Bad Gateway", "should fail with 502")
+		assert.True(t, bufEmpty(buf), "should fail")
 	}
 
 	testRoundTrip(t, okAddr, false, httpOriginServer, okForwardFn)
@@ -403,7 +412,8 @@ func TestInvalidRequest(t *testing.T) {
 }
 
 func TestDisconnectingServer(t *testing.T) {
-	addr, err := setupNewDisconnectingServer(0, 5*time.Second)
+	idleTimeout := 500 * time.Millisecond
+	addr, err := setupNewDisconnectingServer(0, idleTimeout)
 	if err != nil {
 		assert.Fail(t, "Error starting proxy server")
 	}
@@ -414,17 +424,17 @@ func TestDisconnectingServer(t *testing.T) {
 		return
 	}
 
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(idleTimeout)
 	_, err = conn.Write([]byte("GET HTTP/1.1\r\n\r\n"))
 	if !assert.NoError(t, err) {
 		return
 	}
 
 	out, err := ioutil.ReadAll(conn)
-	if !assert.NoError(t, err) {
-		return
+	if err == nil {
+		// We either get a connection reset or read nothing
+		assert.Empty(t, string(out), "Server shouldn't have sent anything")
 	}
-	assert.Empty(t, string(out), "Server shouldn't have sent anything")
 }
 
 //
