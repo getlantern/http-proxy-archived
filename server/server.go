@@ -108,7 +108,7 @@ func (s *Server) serve(listener net.Listener, readyCb func(addr string)) error {
 		if err != nil {
 			return errors.New("Error accepting: %v", err)
 		}
-		s.proxy.Handle(context.Background(), conn)
+		s.handle(conn)
 	}
 }
 
