@@ -20,7 +20,7 @@ func RateLimit(numClients int, hostPeriods map[string]time.Duration) filters.Fil
 	hostAccessesByClient, _ := lru.New(numClients)
 	var mx sync.Mutex
 
-	return filters.FilterFunc(func(ctx context.Context, req *http.Request, next filters.Next) (*http.Response, error) {
+	return filters.FilterFunc(func(ctx context.Context, req *http.Request, next filters.Next) (*http.Response, context.Context, error) {
 		host, _, err := net.SplitHostPort(req.Host)
 		if err != nil {
 			host = req.Host
@@ -32,7 +32,7 @@ func RateLimit(numClients int, hostPeriods map[string]time.Duration) filters.Fil
 		defer mx.Unlock()
 		period := hostPeriods[host]
 		if period == 0 {
-			return fail(req, http.StatusForbidden, "Access to %v not allowed", host)
+			return fail(ctx, req, http.StatusForbidden, "Access to %v not allowed", host)
 		}
 		var hostAccesses map[string]time.Time
 		_hostAccesses, found := hostAccessesByClient.Get(client)
@@ -47,7 +47,7 @@ func RateLimit(numClients int, hostPeriods map[string]time.Duration) filters.Fil
 			hostAccessesByClient.Add(client, hostAccesses)
 		}
 		if !allowed {
-			return fail(req, http.StatusForbidden, "Rate limit for %v exceeded", host)
+			return fail(ctx, req, http.StatusForbidden, "Rate limit for %v exceeded", host)
 		}
 
 		return next(ctx, req)

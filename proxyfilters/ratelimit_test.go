@@ -17,10 +17,10 @@ func TestRateLimit(t *testing.T) {
 	})
 
 	ctx := context.Background()
-	next := func(ctx context.Context, req *http.Request) (*http.Response, error) {
+	next := func(ctx context.Context, req *http.Request) (*http.Response, context.Context, error) {
 		return &http.Response{
 			StatusCode: http.StatusOK,
-		}, nil
+		}, ctx, nil
 	}
 
 	google, _ := http.NewRequest("GET", "https://www.google.com", nil)
@@ -35,18 +35,18 @@ func TestRateLimit(t *testing.T) {
 			facebook.RemoteAddr = fmt.Sprintf("%v:%d", client, port)
 			twitter.RemoteAddr = fmt.Sprintf("%v:%d", client, port)
 			if expectSuccess {
-				resp, _ := rateLimiter.Apply(ctx, google, next)
+				resp, _, _ := rateLimiter.Apply(ctx, google, next)
 				assert.NotEqual(t, http.StatusForbidden, resp.StatusCode, "Request from client %v to google should have succeeded: %v", client, desc)
-				resp, _ = rateLimiter.Apply(ctx, facebook, next)
+				resp, _, _ = rateLimiter.Apply(ctx, facebook, next)
 				assert.NotEqual(t, http.StatusForbidden, resp.StatusCode, "Request from client %v to facebook should have succeeded: %v", client, desc)
-				resp, _ = rateLimiter.Apply(ctx, twitter, next)
+				resp, _, _ = rateLimiter.Apply(ctx, twitter, next)
 				assert.Equal(t, http.StatusForbidden, resp.StatusCode, "Request from client %v to twitter should have failed: %v", client, desc)
 			} else {
-				resp, _ := rateLimiter.Apply(ctx, google, next)
+				resp, _, _ := rateLimiter.Apply(ctx, google, next)
 				assert.Equal(t, http.StatusForbidden, resp.StatusCode, "Request from client %v to google should have failed: %v", client, desc)
-				resp, _ = rateLimiter.Apply(ctx, facebook, next)
+				resp, _, _ = rateLimiter.Apply(ctx, facebook, next)
 				assert.Equal(t, http.StatusForbidden, resp.StatusCode, "Request from client %v to facebook should have failed: %v", client, desc)
-				resp, _ = rateLimiter.Apply(ctx, twitter, next)
+				resp, _, _ = rateLimiter.Apply(ctx, twitter, next)
 				assert.Equal(t, http.StatusForbidden, resp.StatusCode, "Request from client %v to twitter should have failed: %v", desc)
 			}
 		}

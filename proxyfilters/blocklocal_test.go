@@ -22,15 +22,15 @@ func TestBlockLocalNotLocal(t *testing.T) {
 
 func doTestBlockLocal(t *testing.T, exceptions []string, urlStr string, expectedStatus int) {
 	ctx := context.Background()
-	next := func(ctx context.Context, req *http.Request) (*http.Response, error) {
+	next := func(ctx context.Context, req *http.Request) (*http.Response, context.Context, error) {
 		return &http.Response{
 			StatusCode: http.StatusOK,
-		}, nil
+		}, ctx, nil
 	}
 
 	filter := BlockLocal(exceptions)
 	req, _ := http.NewRequest(http.MethodGet, urlStr, nil)
 	log.Debug(req.Host)
-	resp, _ := filter.Apply(ctx, req, next)
+	resp, _, _ := filter.Apply(ctx, req, next)
 	assert.Equal(t, expectedStatus, resp.StatusCode)
 }

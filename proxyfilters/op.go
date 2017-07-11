@@ -17,17 +17,17 @@ func getOp(ctx context.Context) ops.Op {
 }
 
 // RecordOp records the proxy_http op.
-var RecordOp = filters.FilterFunc(func(ctx context.Context, req *http.Request, next filters.Next) (*http.Response, error) {
+var RecordOp = filters.FilterFunc(func(ctx context.Context, req *http.Request, next filters.Next) (*http.Response, context.Context, error) {
 	name := "proxy_http"
 	if req.Method == http.MethodConnect {
 		name += "s"
 	}
 	op := ops.Begin(name)
 	ctx = context.WithValue(ctx, opKey, op)
-	resp, err := next(ctx, req)
+	resp, nextCtx, err := next(ctx, req)
 	if err != nil {
 		log.Error(op.FailIf(err))
 	}
 	op.End()
-	return resp, err
+	return resp, nextCtx, err
 })

@@ -38,7 +38,7 @@ func BlockLocal(exceptions []string) filters.Filter {
 		return false
 	}
 
-	return filters.FilterFunc(func(ctx context.Context, req *http.Request, next filters.Next) (*http.Response, error) {
+	return filters.FilterFunc(func(ctx context.Context, req *http.Request, next filters.Next) (*http.Response, context.Context, error) {
 		host, _, err := net.SplitHostPort(req.URL.Host)
 		if err != nil {
 			// host didn't have a port, thus splitting didn't work
@@ -55,11 +55,11 @@ func BlockLocal(exceptions []string) filters.Filter {
 		// in the form host or host:port
 		if err == nil {
 			if ipAddr.IP.IsLoopback() {
-				return fail(req, http.StatusForbidden, "%v requested loopback address %v (%v)", req.RemoteAddr, req.Host, ipAddr)
+				return fail(ctx, req, http.StatusForbidden, "%v requested loopback address %v (%v)", req.RemoteAddr, req.Host, ipAddr)
 			}
 			for _, localIP := range localIPs {
 				if ipAddr.IP.Equal(localIP) {
-					return fail(req, http.StatusForbidden, "%v requested local address %v (%v)", req.RemoteAddr, req.Host, ipAddr)
+					return fail(ctx, req, http.StatusForbidden, "%v requested local address %v (%v)", req.RemoteAddr, req.Host, ipAddr)
 				}
 			}
 		}
