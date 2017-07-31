@@ -1,7 +1,6 @@
 package proxyfilters
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/getlantern/ops"
@@ -12,18 +11,18 @@ type ctxKey string
 
 const opKey = ctxKey("op")
 
-func getOp(ctx context.Context) ops.Op {
+func getOp(ctx filters.Context) ops.Op {
 	return ctx.Value(opKey).(ops.Op)
 }
 
 // RecordOp records the proxy_http op.
-var RecordOp = filters.FilterFunc(func(ctx context.Context, req *http.Request, next filters.Next) (*http.Response, context.Context, error) {
+var RecordOp = filters.FilterFunc(func(ctx filters.Context, req *http.Request, next filters.Next) (*http.Response, filters.Context, error) {
 	name := "proxy_http"
 	if req.Method == http.MethodConnect {
 		name += "s"
 	}
 	op := ops.Begin(name)
-	ctx = context.WithValue(ctx, opKey, op)
+	ctx = ctx.WithValue(opKey, op)
 	resp, nextCtx, err := next(ctx, req)
 	if err != nil {
 		log.Error(op.FailIf(err))

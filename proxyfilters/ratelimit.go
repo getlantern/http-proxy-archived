@@ -1,7 +1,6 @@
 package proxyfilters
 
 import (
-	"context"
 	"net"
 	"net/http"
 	"sync"
@@ -20,7 +19,7 @@ func RateLimit(numClients int, hostPeriods map[string]time.Duration) filters.Fil
 	hostAccessesByClient, _ := lru.New(numClients)
 	var mx sync.Mutex
 
-	return filters.FilterFunc(func(ctx context.Context, req *http.Request, next filters.Next) (*http.Response, context.Context, error) {
+	return filters.FilterFunc(func(ctx filters.Context, req *http.Request, next filters.Next) (*http.Response, filters.Context, error) {
 		host, _, err := net.SplitHostPort(req.Host)
 		if err != nil {
 			host = req.Host

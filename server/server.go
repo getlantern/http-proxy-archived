@@ -44,7 +44,7 @@ func NewServer(idleTimeout time.Duration, dial proxy.DialFunc, filter filters.Fi
 			Filter:             filter,
 			BufferSource:       buffers.Pool(),
 			OKWaitsForUpstream: true,
-			OnError: func(ctx context.Context, req *http.Request, read bool, err error) *http.Response {
+			OnError: func(ctx filters.Context, req *http.Request, read bool, err error) *http.Response {
 				status := http.StatusBadGateway
 				if read {
 					status = http.StatusBadRequest

@@ -1,7 +1,6 @@
 package proxyfilters
 
 import (
-	"context"
 	"net"
 	"net/http"
 	"strconv"
@@ -13,7 +12,7 @@ import (
 // ports and returns either a 400 error if the request is missing a port or a
 // 403 error if the port is not allowed.
 func RestrictConnectPorts(allowedPorts []int) filters.Filter {
-	return filters.FilterFunc(func(ctx context.Context, req *http.Request, next filters.Next) (*http.Response, context.Context, error) {
+	return filters.FilterFunc(func(ctx filters.Context, req *http.Request, next filters.Next) (*http.Response, filters.Context, error) {
 		if req.Method != http.MethodConnect || len(allowedPorts) == 0 {
 			return next(ctx, req)
 		}

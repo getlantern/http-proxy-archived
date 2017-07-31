@@ -1,7 +1,6 @@
 package proxyfilters
 
 import (
-	"context"
 	"net"
 	"net/http"
 	"strings"
@@ -38,7 +37,7 @@ func BlockLocal(exceptions []string) filters.Filter {
 		return false
 	}
 
-	return filters.FilterFunc(func(ctx context.Context, req *http.Request, next filters.Next) (*http.Response, context.Context, error) {
+	return filters.FilterFunc(func(ctx filters.Context, req *http.Request, next filters.Next) (*http.Response, filters.Context, error) {
 		host, _, err := net.SplitHostPort(req.URL.Host)
 		if err != nil {
 			// host didn't have a port, thus splitting didn't work

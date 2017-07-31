@@ -1,10 +1,10 @@
 package proxyfilters
 
 import (
-	"context"
 	"net/http"
 	"testing"
 
+	"github.com/getlantern/proxy/filters"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,8 +21,8 @@ func TestBlockLocalNotLocal(t *testing.T) {
 }
 
 func doTestBlockLocal(t *testing.T, exceptions []string, urlStr string, expectedStatus int) {
-	ctx := context.Background()
-	next := func(ctx context.Context, req *http.Request) (*http.Response, context.Context, error) {
+	ctx := filters.BackgroundContext()
+	next := func(ctx filters.Context, req *http.Request) (*http.Response, filters.Context, error) {
 		return &http.Response{
 			StatusCode: http.StatusOK,
 		}, ctx, nil

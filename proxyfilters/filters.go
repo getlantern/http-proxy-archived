@@ -1,7 +1,6 @@
 package proxyfilters
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/getlantern/errors"
@@ -11,6 +10,6 @@ import (
 
 var log = golog.LoggerFor("http-proxy.filters")
 
-func fail(ctx context.Context, req *http.Request, statusCode int, description string, params ...interface{}) (*http.Response, context.Context, error) {
+func fail(ctx filters.Context, req *http.Request, statusCode int, description string, params ...interface{}) (*http.Response, filters.Context, error) {
 	return filters.Fail(ctx, req, statusCode, errors.New(description, params...))
 }

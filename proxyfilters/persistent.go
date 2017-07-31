@@ -1,7 +1,6 @@
 package proxyfilters
 
 import (
-	"context"
 	"net/http"
 	"strconv"
 
@@ -16,7 +15,7 @@ const (
 
 // DiscardInitialPersistentRequest discards the initial request for persistent
 // HTTP connections from the Lantern client.
-var DiscardInitialPersistentRequest = filters.FilterFunc(func(ctx context.Context, req *http.Request, next filters.Next) (*http.Response, context.Context, error) {
+var DiscardInitialPersistentRequest = filters.FilterFunc(func(ctx filters.Context, req *http.Request, next filters.Next) (*http.Response, filters.Context, error) {
 	isInitialPersistent, _ := strconv.ParseBool(req.Header.Get(xLanternPersistent))
 	if isInitialPersistent {
 		return filters.Discard(ctx, req)
