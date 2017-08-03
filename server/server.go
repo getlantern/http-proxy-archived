@@ -26,6 +26,13 @@ var (
 
 type listenerGenerator func(net.Listener) net.Listener
 
+// Opts are used to configure a Server
+type Opts struct {
+	IdleTimeout time.Duration
+	Filter      filters.Filter
+	Dial        proxy.DialFunc
+}
+
 // Server is an HTTP proxy server.
 type Server struct {
 	// Allow is a function that determines whether or not to allow connections
@@ -35,13 +42,13 @@ type Server struct {
 	listenerGenerators []listenerGenerator
 }
 
-// NewServer constructs a new HTTP proxy server using the given handler.
-func NewServer(idleTimeout time.Duration, dial proxy.DialFunc, filter filters.Filter) *Server {
+// New constructs a new HTTP proxy server using the given options
+func New(opts *Opts) *Server {
 	return &Server{
 		proxy: proxy.New(&proxy.Opts{
-			IdleTimeout:        idleTimeout,
-			Dial:               dial,
-			Filter:             filter,
+			IdleTimeout:        opts.IdleTimeout,
+			Dial:               opts.Dial,
+			Filter:             opts.Filter,
 			BufferSource:       buffers.Pool(),
 			OKWaitsForUpstream: true,
 			OnError: func(ctx filters.Context, req *http.Request, read bool, err error) *http.Response {
@@ -125,6 +132,7 @@ func (s *Server) handle(conn net.Conn) {
 		if isWrapConn {
 			wrapConn.OnState(http.StateClosed)
 		}
+
 	}()
 }
 

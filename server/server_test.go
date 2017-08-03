@@ -168,7 +168,7 @@ func TestIdleClientConnections(t *testing.T) {
 
 // A proxy with a custom origin server connection timeout
 func impatientProxy(maxConns uint64, idleTimeout time.Duration) (string, error) {
-	srv := NewServer(idleTimeout, nil, nil)
+	srv := New(&Opts{IdleTimeout: idleTimeout})
 
 	// Add net.Listener wrappers for inbound connections
 
@@ -480,7 +480,7 @@ func testRoundTrip(t *testing.T, addr string, isTLS bool, origin *originHandler,
 
 func basicServer(maxConns uint64, idleTimeout time.Duration) *Server {
 	// Create server
-	srv := NewServer(idleTimeout, nil, nil)
+	srv := New(&Opts{IdleTimeout: idleTimeout})
 
 	// Add net.Listener wrappers for inbound connections
 	srv.AddListenerWrappers(
