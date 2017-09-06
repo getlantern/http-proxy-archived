@@ -16,6 +16,10 @@ func TestBlockLocalException(t *testing.T) {
 	doTestBlockLocal(t, []string{"localhost"}, "http://localhost/index.html", http.StatusOK)
 }
 
+func TestBlockLocalExceptionWithPort(t *testing.T) {
+	doTestBlockLocal(t, []string{"127.0.0.1:7300"}, "http://127.0.0.1:7300/index.html", http.StatusOK)
+}
+
 func TestBlockLocalNotLocal(t *testing.T) {
 	doTestBlockLocal(t, []string{"localhost"}, "http://example.com/index.html", http.StatusOK)
 }

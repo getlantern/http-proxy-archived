@@ -38,14 +38,14 @@ func BlockLocal(exceptions []string) filters.Filter {
 	}
 
 	return filters.FilterFunc(func(ctx filters.Context, req *http.Request, next filters.Next) (*http.Response, filters.Context, error) {
+		if isException(req.URL.Host) {
+			return next(ctx, req)
+		}
+
 		host, _, err := net.SplitHostPort(req.URL.Host)
 		if err != nil {
 			// host didn't have a port, thus splitting didn't work
 			host = req.URL.Host
-		}
-
-		if isException(host) {
-			return next(ctx, req)
 		}
 
 		ipAddr, err := net.ResolveIPAddr("ip", host)
