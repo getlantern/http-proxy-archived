@@ -21,7 +21,8 @@ import (
 
 var (
 	testingLocal = false
-	log          = golog.LoggerFor("server")
+
+	log = golog.LoggerFor("server")
 )
 
 type listenerGenerator func(net.Listener) net.Listener
