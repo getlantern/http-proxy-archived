@@ -125,7 +125,7 @@ func (s *Server) handle(conn net.Conn) {
 		wrapConn.OnState(http.StateNew)
 	}
 	go func() {
-		err := s.proxy.Handle(context.Background(), conn, conn)
+		err := s.proxy.Handle(context.Background(), conn)
 		if err != nil {
 			log.Errorf("Error handling connection: %v", err)
 		}
