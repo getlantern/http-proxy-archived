@@ -130,6 +130,7 @@ func (s *Server) serve(listener net.Listener, readyCb func(addr string)) error {
 			}
 			return errors.New("Error accepting: %v", err)
 		}
+		tempDelay = 0
 		s.handle(conn)
 	}
 }
