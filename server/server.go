@@ -110,11 +110,27 @@ func (s *Server) serve(listener net.Listener, readyCb func(addr string)) error {
 		readyCb(l.Addr().String())
 	}
 
+	var tempDelay time.Duration // how long to sleep on accept failure
 	for {
 		conn, err := l.Accept()
 		if err != nil {
+			if ne, ok := err.(net.Error); ok && ne.Temporary() {
+				// delay code based on net/http.Server
+				if tempDelay == 0 {
+					tempDelay = 5 * time.Millisecond
+				} else {
+					tempDelay *= 2
+				}
+				if max := 1 * time.Second; tempDelay > max {
+					tempDelay = max
+				}
+				log.Errorf("http: Accept error: %v; retrying in %v", err, tempDelay)
+				time.Sleep(tempDelay)
+				continue
+			}
 			return errors.New("Error accepting: %v", err)
 		}
+		tempDelay = 0
 		s.handle(conn)
 	}
 }
