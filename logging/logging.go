@@ -5,11 +5,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
-	"github.com/getlantern/go-loggly"
 	"github.com/getlantern/golog"
 	"github.com/getlantern/rotator"
 )
@@ -21,7 +19,6 @@ const (
 var (
 	log          = golog.LoggerFor("flashlight.logging")
 	logdir       = "/var/log/http-proxy"
-	logglyTag    = "http-proxy"
 	processStart = time.Now()
 
 	logFile *rotator.SizeRotator
@@ -43,7 +40,7 @@ func (t timestamped) Write(p []byte) (int, error) {
 	return io.WriteString(t.Writer, time.Now().In(time.UTC).Format(logTimestampFormat)+" "+string(p))
 }
 
-func Init(instanceId string, version string, revisionDate string, logglyToken string) error {
+func Init(instanceId string, version string, revisionDate string) error {
 	log.Tracef("Placing logs in %v", logdir)
 	if _, err := os.Stat(logdir); err != nil {
 		if os.IsNotExist(err) {
@@ -65,15 +62,6 @@ func Init(instanceId string, version string, revisionDate string, logglyToken st
 	debugOut = timestamped{NonStopWriter(os.Stdout, logFile)}
 	golog.SetOutputs(errorOut, debugOut)
 
-	if logglyToken != "" {
-		logglyWriter := &logglyErrorWriter{
-			versionToLoggly: fmt.Sprintf("%v (%v)", version, revisionDate),
-			client:          loggly.New(logglyToken, logglyTag),
-		}
-		logglyWriter.client.Defaults["instanceid"] = instanceId
-		addLoggly(logglyWriter)
-	}
-
 	return nil
 }
 
@@ -88,14 +76,6 @@ func Flush() {
 func Close() error {
 	golog.ResetOutputs()
 	return logFile.Close()
-}
-
-func addLoggly(logglyWriter io.Writer) {
-	golog.SetOutputs(NonStopWriter(errorOut, logglyWriter), debugOut)
-}
-
-func removeLoggly() {
-	golog.SetOutputs(errorOut, debugOut)
 }
 
 func isDuplicate(msg string) bool {
@@ -118,74 +98,6 @@ func isDuplicate(msg string) bool {
 type flushable interface {
 	flush()
 	Write(p []byte) (n int, err error)
-}
-
-type logglyErrorWriter struct {
-	versionToLoggly string
-	client          *loggly.Client
-}
-
-func (w logglyErrorWriter) Write(b []byte) (int, error) {
-	fullMessage := string(b)
-	if isDuplicate(fullMessage) {
-		log.Tracef("Not logging duplicate: %v", fullMessage)
-		return 0, nil
-	}
-
-	extra := map[string]string{
-		"logLevel": "ERROR",
-		"version":  w.versionToLoggly,
-	}
-
-	// extract last 2 (at most) chunks of fullMessage to message, without prefix,
-	// so we can group logs with same reason in Loggly
-	lastColonPos := -1
-	colonsSeen := 0
-	for p := len(fullMessage) - 2; p >= 0; p-- {
-		if fullMessage[p] == ':' {
-			lastChar := fullMessage[p+1]
-			// to prevent colon in "http://" and "x.x.x.x:80" be treated as seperator
-			if !(lastChar == '/' || lastChar >= '0' && lastChar <= '9') {
-				lastColonPos = p
-				colonsSeen++
-				if colonsSeen == 2 {
-					break
-				}
-			}
-		}
-	}
-	message := strings.TrimSpace(fullMessage[lastColonPos+1:])
-
-	// Loggly doesn't group fields with more than 100 characters
-	if len(message) > 100 {
-		message = message[0:100]
-	}
-
-	firstColonPos := strings.IndexRune(fullMessage, ':')
-	if firstColonPos == -1 {
-		firstColonPos = 0
-	}
-	prefix := fullMessage[0:firstColonPos]
-
-	m := loggly.Message{
-		"extra":        extra,
-		"locationInfo": prefix,
-		"message":      message,
-		"fullMessage":  fullMessage,
-	}
-
-	err := w.client.Send(m)
-	if err != nil {
-		return 0, err
-	}
-	return len(b), nil
-}
-
-// flush forces output, since it normally flushes based on an interval
-func (w *logglyErrorWriter) flush() {
-	if err := w.client.Flush(); err != nil {
-		log.Tracef("Error flushing loggly error writer: %v", err)
-	}
 }
 
 type nonStopWriter struct {

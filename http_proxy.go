@@ -37,7 +37,7 @@ func main() {
 
 	// Logging
 	// TODO: use real parameters
-	err = logging.Init("instanceid", "version", "releasedate", "")
+	err = logging.Init("instanceid", "version", "releasedate")
 	if err != nil {
 		log.Error(err)
 	}
