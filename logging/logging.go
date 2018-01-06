@@ -5,9 +5,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"time"
 
+	"github.com/getlantern/appdir"
 	"github.com/getlantern/golog"
 	"github.com/getlantern/rotator"
 )
@@ -18,7 +20,7 @@ const (
 
 var (
 	log          = golog.LoggerFor("flashlight.logging")
-	logdir       = "/var/log/http-proxy"
+	logdir       = logDir()
 	processStart = time.Now()
 
 	logFile *rotator.SizeRotator
@@ -33,6 +35,14 @@ var (
 // timestamped adds a timestamp to the beginning of log lines
 type timestamped struct {
 	io.Writer
+}
+
+func logDir() string {
+	if runtime.GOOS == "darwin" {
+		return appdir.Logs("http-proxy")
+	}
+
+	return "/var/log/http-proxy"
 }
 
 func (t timestamped) Write(p []byte) (int, error) {
