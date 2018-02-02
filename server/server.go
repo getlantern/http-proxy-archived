@@ -44,25 +44,26 @@ type Server struct {
 
 // New constructs a new HTTP proxy server using the given options
 func New(opts *Opts) *Server {
+	p, _ := proxy.New(&proxy.Opts{
+		IdleTimeout:        opts.IdleTimeout,
+		Dial:               opts.Dial,
+		Filter:             opts.Filter,
+		BufferSource:       buffers.Pool(),
+		OKWaitsForUpstream: true,
+		OnError: func(ctx filters.Context, req *http.Request, read bool, err error) *http.Response {
+			status := http.StatusBadGateway
+			if read {
+				status = http.StatusBadRequest
+			}
+			return &http.Response{
+				Request:    req,
+				StatusCode: status,
+				Body:       ioutil.NopCloser(strings.NewReader(err.Error())),
+			}
+		},
+	})
 	return &Server{
-		proxy: proxy.New(&proxy.Opts{
-			IdleTimeout:        opts.IdleTimeout,
-			Dial:               opts.Dial,
-			Filter:             opts.Filter,
-			BufferSource:       buffers.Pool(),
-			OKWaitsForUpstream: true,
-			OnError: func(ctx filters.Context, req *http.Request, read bool, err error) *http.Response {
-				status := http.StatusBadGateway
-				if read {
-					status = http.StatusBadRequest
-				}
-				return &http.Response{
-					Request:    req,
-					StatusCode: status,
-					Body:       ioutil.NopCloser(strings.NewReader(err.Error())),
-				}
-			},
-		}),
+		proxy: p,
 	}
 }
 

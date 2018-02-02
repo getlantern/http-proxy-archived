@@ -95,7 +95,7 @@ func doTestFilter(t *testing.T, filter filters.Filter, run func(send func(method
 		return
 	}
 
-	p := proxy.New(&proxy.Opts{
+	p , _ := proxy.New(&proxy.Opts{
 		Filter: filter,
 	})
 	go p.Serve(pl)
