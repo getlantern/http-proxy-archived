@@ -29,3 +29,5 @@ http-proxy
 /bin
 /pkg
 http-proxy.raw
+
+vendor
