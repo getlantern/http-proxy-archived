@@ -141,16 +141,36 @@ func (s *Server) handle(conn net.Conn) {
 	if isWrapConn {
 		wrapConn.OnState(http.StateNew)
 	}
-	go func() {
-		err := s.proxy.Handle(context.Background(), conn, conn)
-		if err != nil {
-			log.Errorf("Error handling connection: %v", err)
-		}
-		if isWrapConn {
-			wrapConn.OnState(http.StateClosed)
-		}
+	go s.doHandle(conn, isWrapConn, wrapConn)
+}
 
+func (s *Server) doHandle(conn net.Conn, isWrapConn bool, wrapConn listeners.WrapConn) {
+	defer func() {
+		p := recover()
+		if p != nil {
+			log.Errorf("Caught panic handling connection: %v", p)
+			safeClose(conn)
+		}
 	}()
+
+	err := s.proxy.Handle(context.Background(), conn, conn)
+	if err != nil {
+		log.Errorf("Error handling connection: %v", err)
+	}
+	if isWrapConn {
+		wrapConn.OnState(http.StateClosed)
+	}
+}
+
+func safeClose(conn net.Conn) {
+	defer func() {
+		p := recover()
+		if p != nil {
+			log.Errorf("Panic on closing connection: %v", p)
+		}
+	}()
+
+	conn.Close()
 }
 
 func (s *Server) wrapListenerIfNecessary(l net.Listener) net.Listener {

@@ -2,6 +2,7 @@ package server
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/tls"
 	"flag"
 	"fmt"
@@ -12,11 +13,15 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/getlantern/errors"
 	"github.com/getlantern/keyman"
+	"github.com/getlantern/mockconn"
+	"github.com/getlantern/proxy/filters"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/getlantern/http-proxy/listeners"
@@ -435,6 +440,20 @@ func TestDisconnectingServer(t *testing.T) {
 		// We either get a connection reset or read nothing
 		assert.Empty(t, string(out), "Server shouldn't have sent anything")
 	}
+}
+
+func TestPanicRecover(t *testing.T) {
+	req := "GET / HTTP/1.1\r\nHost: thehost.com\r\n\r\n"
+	conn := mockconn.New(&bytes.Buffer{}, strings.NewReader(req))
+
+	// Use a filter that alwasy panics to make sure server handles it
+	server := New(&Opts{
+		Filter: filters.FilterFunc(func(ctx filters.Context, req *http.Request, next filters.Next) (*http.Response, filters.Context, error) {
+			panic(errors.New("I'm panicking!"))
+		}),
+	})
+	server.doHandle(conn, false, nil)
+	assert.True(t, conn.Closed(), "Connection should have been closed after recovering from panic")
 }
 
 //
