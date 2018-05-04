@@ -11,6 +11,7 @@ import (
 
 	"github.com/getlantern/errors"
 	"github.com/getlantern/golog"
+	"github.com/getlantern/ops"
 	"github.com/getlantern/proxy"
 	"github.com/getlantern/proxy/filters"
 	"github.com/getlantern/tlsdefaults"
@@ -145,17 +146,30 @@ func (s *Server) handle(conn net.Conn) {
 }
 
 func (s *Server) doHandle(conn net.Conn, isWrapConn bool, wrapConn listeners.WrapConn) {
+	log.Debug(conn)
+	log.Debug(conn.RemoteAddr())
+	clientIP := ""
+	remoteAddr := conn.RemoteAddr()
+	if remoteAddr != nil {
+		clientIP, _, _ = net.SplitHostPort(remoteAddr.String())
+	}
+	op := ops.Begin("http_proxy_handle").Set("client_ip", clientIP)
+	defer op.End()
+
 	defer func() {
 		p := recover()
 		if p != nil {
-			log.Errorf("Caught panic handling connection from %v: %v", conn.RemoteAddr(), p)
+			err := log.Errorf("Caught panic handling connection from %v: %v", conn.RemoteAddr(), p)
+			if op != nil {
+				op.FailIf(err)
+			}
 			safeClose(conn)
 		}
 	}()
 
 	err := s.proxy.Handle(context.Background(), conn, conn)
 	if err != nil {
-		log.Errorf("Error handling connection from %v: %v", conn.RemoteAddr(), err)
+		op.FailIf(log.Errorf("Error handling connection from %v: %v", conn.RemoteAddr(), err))
 	}
 	if isWrapConn {
 		wrapConn.OnState(http.StateClosed)
