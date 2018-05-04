@@ -148,14 +148,14 @@ func (s *Server) doHandle(conn net.Conn, isWrapConn bool, wrapConn listeners.Wra
 	defer func() {
 		p := recover()
 		if p != nil {
-			log.Errorf("Caught panic handling connection: %v", p)
+			log.Errorf("Caught panic handling connection from %v: %v", conn.RemoteAddr(), p)
 			safeClose(conn)
 		}
 	}()
 
 	err := s.proxy.Handle(context.Background(), conn, conn)
 	if err != nil {
-		log.Errorf("Error handling connection: %v", err)
+		log.Errorf("Error handling connection from %v: %v", conn.RemoteAddr(), err)
 	}
 	if isWrapConn {
 		wrapConn.OnState(http.StateClosed)
@@ -166,7 +166,7 @@ func safeClose(conn net.Conn) {
 	defer func() {
 		p := recover()
 		if p != nil {
-			log.Errorf("Panic on closing connection: %v", p)
+			log.Errorf("Panic on closing connection from %v: %v", conn.RemoteAddr(), p)
 		}
 	}()
 
