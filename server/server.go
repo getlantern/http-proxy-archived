@@ -146,8 +146,6 @@ func (s *Server) handle(conn net.Conn) {
 }
 
 func (s *Server) doHandle(conn net.Conn, isWrapConn bool, wrapConn listeners.WrapConn) {
-	log.Debug(conn)
-	log.Debug(conn.RemoteAddr())
 	clientIP := ""
 	remoteAddr := conn.RemoteAddr()
 	if remoteAddr != nil {
