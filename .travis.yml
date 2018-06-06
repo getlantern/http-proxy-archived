@@ -1,12 +1,12 @@
 language: go
 go:
-- 1.9.2
+- 1.10.2
 install:
 - go get golang.org/x/tools/cmd/cover
 - go get -v github.com/axw/gocov/gocov
 - go get -v github.com/mattn/goveralls
-- cd /tmp && curl -L https://github.com/Masterminds/glide/releases/download/v0.12.3/glide-v0.12.3-linux-amd64.tar.gz -o glide.tar.gz && tar -xf glide.tar.gz && sudo mv linux-amd64/glide /usr/local/bin/ && cd -
-- glide install
+- curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+- dep ensure
 script:
 - GOPATH=`pwd`:$GOPATH; go test -race -v -covermode=atomic -coverprofile=profile_tmp github.com/getlantern/http-proxy/server && tail -n +2 profile_tmp >> profile.cov && tail -n +2 profile_tmp >> profile.cov
 after_success:
