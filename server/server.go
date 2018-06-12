@@ -167,7 +167,14 @@ func (s *Server) doHandle(conn net.Conn, isWrapConn bool, wrapConn listeners.Wra
 
 	err := s.proxy.Handle(context.Background(), conn, conn)
 	if err != nil {
-		op.FailIf(log.Errorf("Error handling connection from %v: %v", conn.RemoteAddr(), err))
+		var failErr error
+		if strings.Contains(err.Error(), "no such host") {
+			// We don't want to log no such host (DNS) errors as true errors.
+			failErr = errors.New("DNS error handling connection from %v: %v", conn.RemoteAddr(), err)
+		} else {
+			failErr = log.Errorf("Error handling connection from %v: %v", conn.RemoteAddr(), err)
+		}
+		op.FailIf(failErr)
 	}
 	if isWrapConn {
 		wrapConn.OnState(http.StateClosed)
