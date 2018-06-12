@@ -147,12 +147,13 @@
   revision = "9d78068db81b714e7612e5d43030ee2e1ce6c49a"
 
 [[projects]]
+  branch = "master"
   name = "github.com/getlantern/proxy"
   packages = [
     ".",
     "filters"
   ]
-  revision = "bf5c9f61677cf800e1b560a10c89ea5955f74f65"
+  revision = "d004ed1a456e501d9ce6b651d3e4a1e947bd70d1"
 
 [[projects]]
   branch = "master"
