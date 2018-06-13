@@ -172,7 +172,7 @@ func (s *Server) doHandle(conn net.Conn, isWrapConn bool, wrapConn listeners.Wra
 			// We don't want to log no such host (DNS) errors as true errors.
 			failErr = errors.New("DNS error handling connection from %v: %v", conn.RemoteAddr(), err)
 		} else {
-			failErr = log.Errorf("Error handling connection from %v: %v", conn.RemoteAddr(), err)
+			failErr = errors.New("Error handling connection from %v: %v", conn.RemoteAddr(), err)
 		}
 		op.FailIf(failErr)
 	}
