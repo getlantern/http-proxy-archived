@@ -153,7 +153,7 @@
     ".",
     "filters"
   ]
-  revision = "5e4f286be962fb8f225d9bc8d9efc3331390aa16"
+  revision = "2e8f1a8906f7fdfc836eaabdff05e21e56e89d8e"
 
 [[projects]]
   branch = "master"
