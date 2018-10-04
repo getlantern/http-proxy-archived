@@ -32,6 +32,10 @@ type Opts struct {
 	IdleTimeout time.Duration
 	Filter      filters.Filter
 	Dial        proxy.DialFunc
+
+	// OKDoesNotWaitForUpstream can be set to true in order to immediately return
+	// OK to CONNECT requests.
+	OKDoesNotWaitForUpstream bool
 }
 
 // Server is an HTTP proxy server.
@@ -50,7 +54,7 @@ func New(opts *Opts) *Server {
 		Dial:                opts.Dial,
 		Filter:              opts.Filter,
 		BufferSource:        buffers.Pool(),
-		OKWaitsForUpstream:  true,
+		OKWaitsForUpstream:  !opts.OKDoesNotWaitForUpstream,
 		OKSendsServerTiming: true,
 		OnError: func(ctx filters.Context, req *http.Request, read bool, err error) *http.Response {
 			status := http.StatusBadGateway
