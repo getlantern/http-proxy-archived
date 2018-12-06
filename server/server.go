@@ -36,6 +36,10 @@ type Opts struct {
 	// OKDoesNotWaitForUpstream can be set to true in order to immediately return
 	// OK to CONNECT requests.
 	OKDoesNotWaitForUpstream bool
+
+	// On Error provides a callback that's invoked if the proxy encounters an
+	// error while proxying for the given client connection.
+	OnError func(conn net.Conn, err error)
 }
 
 // Server is an HTTP proxy server.
@@ -45,6 +49,7 @@ type Server struct {
 	Allow              func(string) bool
 	proxy              proxy.Proxy
 	listenerGenerators []listenerGenerator
+	onError            func(conn net.Conn, err error)
 }
 
 // New constructs a new HTTP proxy server using the given options
@@ -68,8 +73,13 @@ func New(opts *Opts) *Server {
 			}
 		},
 	})
+
+	if opts.OnError == nil {
+		opts.OnError = func(conn net.Conn, err error) {}
+	}
 	return &Server{
-		proxy: p,
+		proxy:   p,
+		onError: opts.OnError,
 	}
 }
 
@@ -173,6 +183,7 @@ func (s *Server) doHandle(conn net.Conn, isWrapConn bool, wrapConn listeners.Wra
 	err := s.proxy.Handle(context.Background(), conn, conn)
 	if err != nil {
 		op.FailIf(errors.New("Error handling connection from %v: %v", conn.RemoteAddr(), err))
+		s.onError(conn, err)
 	}
 	if isWrapConn {
 		wrapConn.OnState(http.StateClosed)
