@@ -3,6 +3,7 @@ package proxyfilters
 import (
 	"net/http"
 
+	"github.com/getlantern/errors"
 	"github.com/getlantern/ops"
 	"github.com/getlantern/proxy/filters"
 )
@@ -25,7 +26,14 @@ var RecordOp = filters.FilterFunc(func(ctx filters.Context, req *http.Request, n
 	ctx = ctx.WithValue(opKey, op)
 	resp, nextCtx, err := next(ctx, req)
 	if err != nil {
-		log.Error(op.FailIf(err))
+		op.FailIf(err)
+		// Dumping stack trace is useful but in this case, it would create tons
+		// of noises as the filters are called recursively.
+		if e, ok := err.(errors.Error); ok {
+			log.Error(e.RootCause())
+		} else {
+			log.Error(err)
+		}
 	}
 	op.End()
 	return resp, nextCtx, err

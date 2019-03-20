@@ -146,22 +146,20 @@ func TestIdleClientConnections(t *testing.T) {
 
 	okFn := func(conn net.Conn, originURL *url.URL) {
 		time.Sleep(time.Millisecond * 900)
-		conn.Write([]byte("GET / HTTP/1.1\r\nHost: www.google.com\r\n\r\n"))
+		conn.Write([]byte("GET / HTTP/1.1\r\nHost: " + originURL.Host + "\r\n\r\n"))
 
 		var buf [400]byte
 		_, err := conn.Read(buf[:])
-
 		assert.NoError(t, err)
 		wg.Done()
 	}
 
 	idleFn := func(conn net.Conn, originURL *url.URL) {
 		time.Sleep(time.Millisecond * 1100)
-		conn.Write([]byte("GET / HTTP/1.1\r\nHost: www.google.com\r\n\r\n"))
+		conn.Write([]byte("GET / HTTP/1.1\r\nHost: " + originURL.Host + "\r\n\r\n"))
 
 		var buf [400]byte
 		_, err := conn.Read(buf[:])
-
 		assert.Error(t, err)
 	}
 
