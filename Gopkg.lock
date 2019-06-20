@@ -3,220 +3,304 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:8fa55a6e302771a90a86ceae1ca3c0df4ef15d21092198e8313f61dde9eea963"
   name = "github.com/Yawning/chacha20"
   packages = ["."]
+  pruneopts = "UT"
   revision = "e3b1f968fc6397b51d963fee8ec8711a47bc0ce8"
 
 [[projects]]
+  digest = "1:7d191fd0c54ff370eaf6116a14dafe2a328df487baea280699f597aae858d00d"
   name = "github.com/aristanetworks/goarista"
   packages = ["monotime"]
+  pruneopts = "UT"
   revision = "94ff7b94cb7ddd528740cfc9c062037c2bc73b2d"
 
 [[projects]]
+  digest = "1:a2c1d0e43bd3baaa071d1b9ed72c27d78169b2b269f71c105ac4ba34b1be4a39"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
+  pruneopts = "UT"
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
   version = "v1.1.0"
 
 [[projects]]
+  digest = "1:b7b12120e5f6100413ec702a42e3b872c49edaacec9ee0336c310623a26123c0"
   name = "github.com/getlantern/appdir"
   packages = ["."]
+  pruneopts = "UT"
   revision = "659a155d06e8f3dd8b9f79d6147445897499b56b"
 
 [[projects]]
   branch = "master"
+  digest = "1:aba6216005f9d2c7e678b380e12bab326a41af23e76c65680c70c4bdbb59559a"
   name = "github.com/getlantern/byteexec"
   packages = ["."]
+  pruneopts = "UT"
   revision = "4cfb26ec74f460fda433dc06fddfbad7ddee3072"
 
 [[projects]]
   branch = "master"
+  digest = "1:54d414482fb70eaccdd6e6fca023986b16ab3004e5b499b6bc3667d89574fc07"
   name = "github.com/getlantern/context"
   packages = ["."]
+  pruneopts = "UT"
   revision = "624d99b1798d7c5375ea1d3ca4c5b04d58f7c775"
 
 [[projects]]
   branch = "master"
+  digest = "1:efdd91b82e28f23d8485c9639f1bd47337dd80189d7209ee369876a1f1a18016"
   name = "github.com/getlantern/elevate"
   packages = [
     ".",
-    "bin"
+    "bin",
   ]
+  pruneopts = "UT"
   revision = "c2e2e4901072d1f7e9f525426735acfab5fd9cdd"
 
 [[projects]]
   branch = "master"
+  digest = "1:fac7855c3a69b9e9beaee65df466a0ae2b45c5824b4e7355aae2295aa25a8e5e"
   name = "github.com/getlantern/ema"
   packages = ["."]
+  pruneopts = "UT"
   revision = "d906ee7c3465210c328abbe6ea0f855db9db679c"
 
 [[projects]]
   branch = "master"
+  digest = "1:5df6f40bc793fa4ad53f1228688a0bda3e4f90df2d2305cdfaeaaef636b0aac1"
   name = "github.com/getlantern/errors"
   packages = ["."]
+  pruneopts = "UT"
   revision = "e9c0296368b736086adb20832549567064224854"
 
 [[projects]]
   branch = "master"
+  digest = "1:99c1c515274e6c3ead7bf68dcc77f56131d0f937adeb6808ba86e0911adfdda7"
   name = "github.com/getlantern/filepersist"
   packages = ["."]
+  pruneopts = "UT"
   revision = "c5f0cd24e7991579ba6f5f1bd20a1ad2c9f06cd4"
 
 [[projects]]
   branch = "master"
+  digest = "1:5b5a5243e1ff1cc0ab23bfd7dcd0f09e65a0acdafa5ab82b167757ad0ca1128b"
   name = "github.com/getlantern/go-cache"
   packages = ["cache"]
+  pruneopts = "UT"
   revision = "88b53914f4672fafe9069972c1867222ef02eea1"
 
 [[projects]]
   branch = "master"
+  digest = "1:128515bf48085482f3b1269701a0be1b119087447d8f666a27211bdacf0b5dc9"
   name = "github.com/getlantern/golog"
   packages = ["."]
+  pruneopts = "UT"
   revision = "cca714f7feb5df8e455f409b549d384441ac4578"
 
 [[projects]]
   branch = "master"
+  digest = "1:f12c7103ba4c446c6822f331ada3e5f0c3626be111a115e92700cd2724bca9ed"
   name = "github.com/getlantern/hex"
   packages = ["."]
+  pruneopts = "UT"
   revision = "083fba3033ad473db3dd31c9bb368473d37581a7"
 
 [[projects]]
   branch = "master"
+  digest = "1:916634881c70eb3c2201419786896254d601a786a9124e662a079d4649df160d"
   name = "github.com/getlantern/hidden"
   packages = ["."]
+  pruneopts = "UT"
   revision = "d52a649ab33af200943bb599898dbdcfdbc94cb7"
 
 [[projects]]
   branch = "master"
+  digest = "1:0f43658ed2be6d724a02da81938204f5979397a896902c2fe23029994928df52"
   name = "github.com/getlantern/idletiming"
   packages = ["."]
+  pruneopts = "UT"
   revision = "7a71d2e71cf253f64b9610ce7aa9ddfc58aa9b2a"
 
 [[projects]]
   branch = "master"
+  digest = "1:4ed7858c81a08d41dbb945db6fd47da68d94e3c052847bf8e9849240d6fe5c25"
   name = "github.com/getlantern/keyman"
   packages = [
     ".",
-    "certimporter"
+    "certimporter",
   ]
+  pruneopts = "UT"
   revision = "f55e7280e93a8802a175e9c4beccad873f3fdf43"
 
 [[projects]]
+  digest = "1:cc1f9f27d0fe56dc0759a5f6e4fc325cdf1c0bbdc591f456faf0eaac718792b3"
   name = "github.com/getlantern/lampshade"
   packages = ["."]
+  pruneopts = "UT"
   revision = "b10a301ad56e92a66ef15f22c7ba921e6b84a884"
 
 [[projects]]
   branch = "master"
+  digest = "1:f63be9c75bfc0802834377a83660041daa70e3edf4963844009401137b5331d1"
   name = "github.com/getlantern/measured"
   packages = ["."]
+  pruneopts = "UT"
   revision = "0582bf799783fba9a890459155817f1cbcf00f17"
 
 [[projects]]
   branch = "master"
+  digest = "1:9fd06ebb3a00d133bc20af34e89e9fb0419fc2447aae435bbfd24b250ef6db4b"
   name = "github.com/getlantern/mitm"
   packages = ["."]
+  pruneopts = "UT"
   revision = "4ce456bae6504e6a1dc8c835cd849cba166eb3d8"
 
 [[projects]]
   branch = "master"
+  digest = "1:2d3658ecb4e37ed1ee7cb14ef73b51b90155d2b1f1d581a94c23026c0ba55c60"
   name = "github.com/getlantern/mockconn"
   packages = ["."]
+  pruneopts = "UT"
   revision = "422a5afd4432dd82b1389333d5352da003d898a6"
 
 [[projects]]
   branch = "master"
+  digest = "1:a333222d088d9bccccbafcbbcc1d54c0a3715cb9f645b9dc26572917b4bfab37"
   name = "github.com/getlantern/mtime"
   packages = ["."]
+  pruneopts = "UT"
   revision = "ba114e4a82b0d453c15c505073a5896453b5cbd2"
 
 [[projects]]
+  digest = "1:0943bbc91c7d118e9dafb5f668a6820311eba59e0162be9b752fb77556035939"
   name = "github.com/getlantern/netx"
   packages = ["."]
+  pruneopts = "UT"
   revision = "06a8a15aede91b4274bb0272108e16a4eabeca19"
 
 [[projects]]
   branch = "master"
+  digest = "1:f84e2692edf40301ae0ce718695cde032f5c6964e4fad812749eb1eaefa95785"
   name = "github.com/getlantern/ops"
   packages = ["."]
+  pruneopts = "UT"
   revision = "37353306c90844c8e0591956f56611f46299d202"
 
 [[projects]]
+  digest = "1:0ce01c4fe3214be4197d8e6bf390903d3dced0fec6ab925a7bbb4f1966ebcf1e"
   name = "github.com/getlantern/preconn"
   packages = ["."]
+  pruneopts = "UT"
   revision = "9d78068db81b714e7612e5d43030ee2e1ce6c49a"
 
 [[projects]]
   branch = "master"
+  digest = "1:6498038c3d87b08ecc4709973b8889c896d7be147edb9a25f4b4e0c326420622"
   name = "github.com/getlantern/proxy"
   packages = [
     ".",
-    "filters"
+    "filters",
   ]
+  pruneopts = "UT"
   revision = "e822de39af648c8ee96450786897a50e455baa05"
 
 [[projects]]
   branch = "master"
+  digest = "1:fe83a44c95f15ae21643250231ac9a2bb163a0ce92708f8d0cb8b9b7e54012fe"
   name = "github.com/getlantern/reconn"
   packages = ["."]
+  pruneopts = "UT"
   revision = "7053d017511c663a3fc3b3a367b57689b1b2fd9f"
 
 [[projects]]
   branch = "master"
+  digest = "1:ac7d53b528b3256b0023c900530cafbe5853012d1fdae148aab899d64f0d4fab"
   name = "github.com/getlantern/rotator"
   packages = ["."]
+  pruneopts = "UT"
   revision = "013d4f8e36a2f6369b2435d89866056b5b74c69e"
 
 [[projects]]
   branch = "master"
+  digest = "1:6f594606795392c9cec33deb4b8106e75851a5c16179130066f3b6f87388572a"
   name = "github.com/getlantern/stack"
   packages = ["."]
+  pruneopts = "UT"
   revision = "02f928aad224fbccd50d66edd776fc9d1e9f2f2b"
 
 [[projects]]
   branch = "master"
+  digest = "1:c1e882a662cef1bad0c2b7a6a881b6573a53a528099831defbce67ac42d33082"
   name = "github.com/getlantern/tlsdefaults"
   packages = ["."]
+  pruneopts = "UT"
   revision = "cf35cfd0b1b460b031536c9846ffcd5f7811dddb"
 
 [[projects]]
   branch = "master"
+  digest = "1:cf296baa185baae04a9a7004efee8511d08e2f5f51d4cbe5375da89722d681db"
   name = "github.com/hashicorp/golang-lru"
   packages = [
     ".",
-    "simplelru"
+    "simplelru",
   ]
+  pruneopts = "UT"
   revision = "0fb14efe8c47ae851c0034ed7a448854d3d34cf3"
 
 [[projects]]
   branch = "master"
+  digest = "1:df63a8ddf6fd32f2cdf09db1ada151c8a27f5fe2516ee977b72d6a0707e94910"
   name = "github.com/oxtoacart/bpool"
   packages = ["."]
+  pruneopts = "UT"
   revision = "4e1c5567d7c2dd59fa4c7c83d34c2f3528b025d6"
 
 [[projects]]
+  digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
   name = "github.com/pmezard/go-difflib"
   packages = ["difflib"]
+  pruneopts = "UT"
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:9d49e57f1c539e4e84a6432038db512aa1ff3472fcdc450de7fdf2e7ff638bd7"
   name = "github.com/stretchr/testify"
   packages = ["assert"]
+  pruneopts = "UT"
   revision = "b89eecf5ca5db6d3ba60b237ffe3df7bafb7662f"
 
 [[projects]]
+  digest = "1:e911c0deda1f062ba03a40ea172b6f709182cf5c449eca4fa42280971907db80"
   name = "golang.org/x/crypto"
   packages = [
     "chacha20poly1305",
     "internal/chacha20",
-    "poly1305"
+    "poly1305",
   ]
+  pruneopts = "UT"
   revision = "c7dcf104e3a7a1417abc0230cb0d5240d764159d"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "9fedbdb07b6d2febc9913cc8e2c7833ff1f20e55675c9e44ba3408ef603b09bf"
+  input-imports = [
+    "github.com/getlantern/appdir",
+    "github.com/getlantern/errors",
+    "github.com/getlantern/golog",
+    "github.com/getlantern/idletiming",
+    "github.com/getlantern/keyman",
+    "github.com/getlantern/lampshade",
+    "github.com/getlantern/measured",
+    "github.com/getlantern/mockconn",
+    "github.com/getlantern/ops",
+    "github.com/getlantern/proxy",
+    "github.com/getlantern/proxy/filters",
+    "github.com/getlantern/rotator",
+    "github.com/getlantern/tlsdefaults",
+    "github.com/hashicorp/golang-lru",
+    "github.com/stretchr/testify/assert",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1
