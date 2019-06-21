@@ -382,7 +382,7 @@ func TestDirectOK(t *testing.T) {
 		}
 
 		resp, _ := http.ReadResponse(bufio.NewReader(conn), nil)
-		assert.Equal(t, http.StatusBadGateway, resp.StatusCode, "should fail")
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode, "should fail")
 		defer resp.Body.Close()
 	}
 
