@@ -2,17 +2,13 @@
 
 [![Build Status](https://travis-ci.org/getlantern/http-proxy.svg?branch=master)](https://travis-ci.org/getlantern/http-proxy)&nbsp; [![Sourcegraph](https://sourcegraph.com/github.com/getlantern/http-proxy/-/badge.svg)](https://sourcegraph.com/github.com/getlantern/http-proxy?badge)
 
+## Go Modules
+
+This project uses [modules](https://github.com/golang/go/wiki/Modules). When running commands with the go tool (e.g. `go run` or `go test`), ensure that you are setting `GO111MODULE` to "on". For more details, consult the [go tool documentation](https://golang.org/cmd/go/#hdr-Preliminary_module_support).
+
 ## Run
 
-* [Go 1.7](https://golang.org/dl/) is the minimum supported version of Go
-
-First get dependencies:
-
-```
-go get -t
-```
-
-Then run with:
+* [Go 1.12](https://golang.org/dl/) is the minimum supported version of Go
 
 ```
 go run http_proxy.go
