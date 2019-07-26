@@ -52,6 +52,8 @@ github.com/getlantern/preconn v0.0.0-20170921211456-9d78068db81b h1:4IpHltR073rk
 github.com/getlantern/preconn v0.0.0-20170921211456-9d78068db81b/go.mod h1:FvIxQD61iYA42UjaJyzGl9DNne8jbowbgicdeNk/7kE=
 github.com/getlantern/proxy v0.0.0-20180713210748-e822de39af64 h1:m83S6t6E1RofTgylcejZeou+f8Tj1darXMvvrQ5y+XQ=
 github.com/getlantern/proxy v0.0.0-20180713210748-e822de39af64/go.mod h1:z6u2OS1ynUdXIraWO04T1wcHFcGaIHwPed0n0bNilZU=
+github.com/getlantern/proxy v0.0.0-20190726172457-67e2e2bd95b4 h1:Cdi1XXeH0Fg6ApJ+ngI7K4Bp7rDnKYbPEU29hzNbmZQ=
+github.com/getlantern/proxy v0.0.0-20190726172457-67e2e2bd95b4/go.mod h1:z6u2OS1ynUdXIraWO04T1wcHFcGaIHwPed0n0bNilZU=
 github.com/getlantern/reconn v0.0.0-20161128113912-7053d017511c h1:IkjF+RwRs8B/RsuD638eUFO2K/227OO2B1FLXGp17Ro=
 github.com/getlantern/reconn v0.0.0-20161128113912-7053d017511c/go.mod h1:kExwbqTx1krUnT9ohmXG3jayDTEBfxUKeoRzU6XucLw=
 github.com/getlantern/rotator v0.0.0-20160829164113-013d4f8e36a2 h1:smFR/kESUKlcdyatoOO3HngBzzrUU6S0LRw2vCBYQPg=
@@ -68,6 +70,8 @@ github.com/hashicorp/golang-lru v0.0.0-20180201235237-0fb14efe8c47 h1:UnszMmmmm5
 github.com/hashicorp/golang-lru v0.0.0-20180201235237-0fb14efe8c47/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ4Ao+sR/qLZy8=
 github.com/mitchellh/go-server-timing v1.0.0 h1:cdHk4f7lxjwbRqTSGZFw8PCeoNYXGp4T4Sdr8wT+Xlw=
 github.com/mitchellh/go-server-timing v1.0.0/go.mod h1:RdipKQzCJaL4HyxFQBINbf4XoDdZKkSshqw9Bbsx1ic=
+github.com/opentracing/opentracing-go v1.1.0 h1:pWlfV3Bxv7k65HYwkikxat0+s3pV4bsqf19k25Ur8rU=
+github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
 github.com/oxtoacart/bpool v0.0.0-20150712133111-4e1c5567d7c2 h1:CXwSGu/LYmbjEab5aMCs5usQRVBGThelUKBNnoSOuso=
 github.com/oxtoacart/bpool v0.0.0-20150712133111-4e1c5567d7c2/go.mod h1:L3UMQOThbttwfYRNFOWLLVXMhk5Lkio4GGOtw5UrxS0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=

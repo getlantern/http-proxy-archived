@@ -28,7 +28,7 @@ require (
 	github.com/getlantern/netx v0.0.0-20171024203529-06a8a15aede9 // indirect
 	github.com/getlantern/ops v0.0.0-20170904182230-37353306c908
 	github.com/getlantern/preconn v0.0.0-20170921211456-9d78068db81b // indirect
-	github.com/getlantern/proxy v0.0.0-20180713210748-e822de39af64
+	github.com/getlantern/proxy v0.0.0-20190726172457-67e2e2bd95b4
 	github.com/getlantern/reconn v0.0.0-20161128113912-7053d017511c // indirect
 	github.com/getlantern/rotator v0.0.0-20160829164113-013d4f8e36a2
 	github.com/getlantern/stack v0.0.0-20160516001742-02f928aad224 // indirect
@@ -36,6 +36,7 @@ require (
 	github.com/google/go-cmp v0.3.0 // indirect
 	github.com/hashicorp/golang-lru v0.0.0-20180201235237-0fb14efe8c47
 	github.com/mitchellh/go-server-timing v1.0.0 // indirect
+	github.com/opentracing/opentracing-go v1.1.0 // indirect
 	github.com/oxtoacart/bpool v0.0.0-20150712133111-4e1c5567d7c2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/testify v0.0.0-20180303142811-b89eecf5ca5d
