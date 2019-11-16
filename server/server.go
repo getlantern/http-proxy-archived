@@ -25,7 +25,8 @@ var (
 	log          = golog.LoggerFor("server")
 )
 
-type listenerGenerator func(net.Listener) net.Listener
+// A ListenerGenerator generates a new listener from an existing one.
+type ListenerGenerator func(net.Listener) net.Listener
 
 // Opts are used to configure a Server
 type Opts struct {
@@ -58,7 +59,7 @@ type Server struct {
 	// from the given IP address. If unspecified, all connections are allowed.
 	Allow              func(string) bool
 	proxy              proxy.Proxy
-	listenerGenerators []listenerGenerator
+	listenerGenerators []ListenerGenerator
 	onError            func(conn net.Conn, err error)
 	onAcceptError      func(err error) (fatalErr error)
 }
@@ -98,7 +99,7 @@ func New(opts *Opts) *Server {
 	}
 }
 
-func (s *Server) AddListenerWrappers(listenerGens ...listenerGenerator) {
+func (s *Server) AddListenerWrappers(listenerGens ...ListenerGenerator) {
 	for _, g := range listenerGens {
 		s.listenerGenerators = append(s.listenerGenerators, g)
 	}
