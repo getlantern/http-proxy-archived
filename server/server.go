@@ -37,9 +37,19 @@ type Opts struct {
 	// OK to CONNECT requests.
 	OKDoesNotWaitForUpstream bool
 
-	// On Error provides a callback that's invoked if the proxy encounters an
+	// OnError provides a callback that's invoked if the proxy encounters an
 	// error while proxying for the given client connection.
 	OnError func(conn net.Conn, err error)
+
+	// OnAcceptError is called when the server fails to accept a connection.
+	// If the error is fatal and should halt server operations, this callback
+	// should return an error. That error will be returned by functions like
+	// Serve, ListenAndServeHTTP, etc. If this callback returns nil, the
+	// server will carry on.
+	//
+	// Temporary network errors (errors of type net.Error for which Temporary()
+	// returns true) will not trigger this callback.
+	OnAcceptError func(err error) (fatalErr error)
 }
 
 // Server is an HTTP proxy server.
@@ -50,6 +60,7 @@ type Server struct {
 	proxy              proxy.Proxy
 	listenerGenerators []listenerGenerator
 	onError            func(conn net.Conn, err error)
+	onAcceptError      func(err error) (fatalErr error)
 }
 
 // New constructs a new HTTP proxy server using the given options
@@ -77,9 +88,13 @@ func New(opts *Opts) *Server {
 	if opts.OnError == nil {
 		opts.OnError = func(conn net.Conn, err error) {}
 	}
+	if opts.OnAcceptError == nil {
+		opts.OnAcceptError = func(err error) (fatalErr error) { return err }
+	}
 	return &Server{
-		proxy:   p,
-		onError: opts.OnError,
+		proxy:         p,
+		onError:       opts.OnError,
+		onAcceptError: opts.OnAcceptError,
 	}
 }
 
@@ -143,9 +158,10 @@ func (s *Server) serve(listener net.Listener, readyCb func(addr string)) error {
 				}
 				log.Errorf("http: Accept error: %v; retrying in %v", err, tempDelay)
 				time.Sleep(tempDelay)
-				continue
+			} else if fatalErr := s.onAcceptError(err); fatalErr != nil {
+				return fatalErr
 			}
-			return errors.New("Error accepting: %v", err)
+			continue
 		}
 		tempDelay = 0
 		s.handle(conn)
