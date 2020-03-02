@@ -16,7 +16,6 @@ import (
 	"github.com/getlantern/proxy/filters"
 	"github.com/getlantern/tlsdefaults"
 
-	"github.com/getlantern/http-proxy/buffers"
 	"github.com/getlantern/http-proxy/listeners"
 )
 
@@ -30,9 +29,10 @@ type ListenerGenerator func(net.Listener) net.Listener
 
 // Opts are used to configure a Server
 type Opts struct {
-	IdleTimeout time.Duration
-	Filter      filters.Filter
-	Dial        proxy.DialFunc
+	IdleTimeout  time.Duration
+	BufferSource proxy.BufferSource
+	Filter       filters.Filter
+	Dial         proxy.DialFunc
 
 	// OKDoesNotWaitForUpstream can be set to true in order to immediately return
 	// OK to CONNECT requests.
@@ -70,7 +70,7 @@ func New(opts *Opts) *Server {
 		IdleTimeout:         opts.IdleTimeout,
 		Dial:                opts.Dial,
 		Filter:              opts.Filter,
-		BufferSource:        buffers.Pool(),
+		BufferSource:        opts.BufferSource,
 		OKWaitsForUpstream:  !opts.OKDoesNotWaitForUpstream,
 		OKSendsServerTiming: true,
 		OnError: func(ctx filters.Context, req *http.Request, read bool, err error) *http.Response {
