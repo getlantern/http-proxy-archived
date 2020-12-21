@@ -14,6 +14,8 @@ github.com/getlantern/elevate v0.0.0-20180207094634-c2e2e4901072 h1:Sxd/u3rnHYAq
 github.com/getlantern/elevate v0.0.0-20180207094634-c2e2e4901072/go.mod h1:T4VB2POK13lsPLFV98WJQrL7gAXYD9TyJxBU2P8c8p4=
 github.com/getlantern/errors v0.0.0-20190325191628-abdb3e3e36f7 h1:6uJ+sZ/e03gkbqZ0kUG6mfKoqDb4XMAzMIwlajq19So=
 github.com/getlantern/errors v0.0.0-20190325191628-abdb3e3e36f7/go.mod h1:l+xpFBrCtDLpK9qNjxs+cHU6+BAdlBaxHqikB6Lku3A=
+github.com/getlantern/errors v1.0.1 h1:XukU2whlh7OdpxnkXhNH9VTLVz0EVPGKDV5K0oWhvzw=
+github.com/getlantern/errors v1.0.1/go.mod h1:l+xpFBrCtDLpK9qNjxs+cHU6+BAdlBaxHqikB6Lku3A=
 github.com/getlantern/fdcount v0.0.0-20190912142506-f89afd7367c4 h1:JdD4XSaT6/j6InM7MT1E4WRvzR8gurxfq53A3ML3B/Q=
 github.com/getlantern/fdcount v0.0.0-20190912142506-f89afd7367c4/go.mod h1:XZwE+iIlAgr64OFbXKFNCllBwV4wEipPx8Hlo2gZdbM=
 github.com/getlantern/filepersist v0.0.0-20160317154340-c5f0cd24e799 h1:FhkPUYCQYmoxS02r2GRrIV7dahUIncRl36xzs3/mnjA=
@@ -22,6 +24,8 @@ github.com/getlantern/go-cache v0.0.0-20141028142048-88b53914f467 h1:10ez8C+7zyH
 github.com/getlantern/go-cache v0.0.0-20141028142048-88b53914f467/go.mod h1:IQND0fl/mdTYNICpN/eDYKX+j90TqQYXdpNFWkJpCPs=
 github.com/getlantern/golog v0.0.0-20190830074920-4ef2e798c2d7 h1:guBYzEaLz0Vfc/jv0czrr2z7qyzTOGC9hiQ0VC+hKjk=
 github.com/getlantern/golog v0.0.0-20190830074920-4ef2e798c2d7/go.mod h1:zx/1xUUeYPy3Pcmet8OSXLbF47l+3y6hIPpyLWoR9oc=
+github.com/getlantern/golog v0.0.0-20200929154820-62107891371a h1:97NO5ovLBt5jj7TUzfPSwNDL6gyYhXEbaFhgzLB6h1o=
+github.com/getlantern/golog v0.0.0-20200929154820-62107891371a/go.mod h1:ZyIjgH/1wTCl+B+7yH1DqrWp6MPJqESmwmEQ89ZfhvA=
 github.com/getlantern/grtrack v0.0.0-20160824195228-cbf67d3fa0fd h1:GPrx88jy222gMuRHXxBSViT/3zdNO210nRAaXn+lL6s=
 github.com/getlantern/grtrack v0.0.0-20160824195228-cbf67d3fa0fd/go.mod h1:RkQEgBdrJCH5tYJP2D+a/aJ216V3c9q8w/tCJtEiDoY=
 github.com/getlantern/hex v0.0.0-20190417191902-c6586a6fe0b7 h1:micT5vkcr9tOVk1FiH8SWKID8ultN44Z+yzd2y/Vyb0=
@@ -48,16 +52,20 @@ github.com/getlantern/preconn v0.0.0-20180328114929-0b5766010efe h1:6KgbumDfWYBJ
 github.com/getlantern/preconn v0.0.0-20180328114929-0b5766010efe/go.mod h1:FvIxQD61iYA42UjaJyzGl9DNne8jbowbgicdeNk/7kE=
 github.com/getlantern/proxy v0.0.0-20200302081518-0bb851d75e72 h1:w7o+V3f0ZybU3AtI7zrIGzKaDLROgdToBpEJiYlxsPE=
 github.com/getlantern/proxy v0.0.0-20200302081518-0bb851d75e72/go.mod h1:40zgzXJCOqbq4JVe1geITEbgVJsPUgOIsQmaMoQsN2I=
+github.com/getlantern/proxy v0.0.0-20201001032732-eefd72879266 h1:+N2/1s3zbpekscxTJrikOius0bwq8k6ZCwpH8VdTUXI=
+github.com/getlantern/proxy v0.0.0-20201001032732-eefd72879266/go.mod h1:MF04hsRYe81kXjjvdyAkKbXWmg4uUwe2LjWMfP7wHE0=
 github.com/getlantern/reconn v0.0.0-20161128113912-7053d017511c h1:IkjF+RwRs8B/RsuD638eUFO2K/227OO2B1FLXGp17Ro=
 github.com/getlantern/reconn v0.0.0-20161128113912-7053d017511c/go.mod h1:kExwbqTx1krUnT9ohmXG3jayDTEBfxUKeoRzU6XucLw=
 github.com/getlantern/rotator v0.0.0-20160829164113-013d4f8e36a2 h1:smFR/kESUKlcdyatoOO3HngBzzrUU6S0LRw2vCBYQPg=
 github.com/getlantern/rotator v0.0.0-20160829164113-013d4f8e36a2/go.mod h1:Ap+QTDJeA24+0jjPHReq/LyP3ugEEDYvncluEgsm60A=
 github.com/getlantern/tlsdefaults v0.0.0-20171004213447-cf35cfd0b1b4 h1:73U3J4msGw3cXeKtCEbY7hbOdD6aX8gJv8BOu+VagF8=
 github.com/getlantern/tlsdefaults v0.0.0-20171004213447-cf35cfd0b1b4/go.mod h1:f8WmDYKFOaC5/y0d3GWl6UKf1ZbSlIoMzkuC8x7pUhg=
+github.com/getlantern/waitforserver v1.0.1/go.mod h1:K1oSA8lNKgQ9iC00OFpMfMNm4UMrsxoGCdHf0NT9LGs=
 github.com/go-stack/stack v1.8.0 h1:5SgMzNM5HxrEjV0ww2lTmX6E2Izsfxas4+YHWRs3Lsk=
 github.com/go-stack/stack v1.8.0/go.mod h1:v0f6uXyyMGvRgIKkXu+yp6POWl0qKG85gN/melR3HDY=
 github.com/golang/gddo v0.0.0-20180823221919-9d8ff1c67be5 h1:yrv1uUvgXH/tEat+wdvJMRJ4g51GlIydtDpU9pFjaaI=
 github.com/golang/gddo v0.0.0-20180823221919-9d8ff1c67be5/go.mod h1:xEhNfoBDX1hzLm2Nf80qUvZ2sVwoMZ8d6IE2SrsQfh4=
+github.com/google/go-cmp v0.5.2/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/hashicorp/golang-lru v0.5.3 h1:YPkqC67at8FYaadspW/6uE0COsBxS2656RLEr8Bppgk=
 github.com/hashicorp/golang-lru v0.5.3/go.mod h1:iADmTwqILo4mZ8BN3D2Q6+9jd8WM5uGBxy+E8yxSoD4=
 github.com/mitchellh/go-server-timing v1.0.0 h1:cdHk4f7lxjwbRqTSGZFw8PCeoNYXGp4T4Sdr8wT+Xlw=
@@ -71,6 +79,7 @@ github.com/stretchr/testify v1.3.0 h1:TivCn/peBQ7UY8ooIcPgZFpTNSz0Q2U6UrFlUfqbe0
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.5.1 h1:nOGnQDM7FYENwehXlg/kFVnos3rEvtKTjRvOWSzb6H4=
 github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
+golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v2 v2.2.2 h1:ZCJp+EgiOT7lHqUV2J862kp8Qj64Jo6az82+3Td9dZw=
