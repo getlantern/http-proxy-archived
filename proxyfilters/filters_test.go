@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/getlantern/proxy"
-	"github.com/getlantern/proxy/filters"
+	"github.com/getlantern/proxy/v2"
+	"github.com/getlantern/proxy/v2/filters"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -95,7 +95,7 @@ func doTestFilter(t *testing.T, filter filters.Filter, run func(send func(method
 		return
 	}
 
-	p , _ := proxy.New(&proxy.Opts{
+	p, _ := proxy.New(&proxy.Opts{
 		Filter: filter,
 	})
 	go p.Serve(pl)

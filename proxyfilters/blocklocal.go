@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/getlantern/proxy/filters"
+	"github.com/getlantern/proxy/v2/filters"
 )
 
 // BlockLocal blocks attempted accesses to localhost unless they're one of the
@@ -37,9 +37,9 @@ func BlockLocal(exceptions []string) filters.Filter {
 		return false
 	}
 
-	return filters.FilterFunc(func(ctx filters.Context, req *http.Request, next filters.Next) (*http.Response, filters.Context, error) {
+	return filters.FilterFunc(func(cs *filters.ConnectionState, req *http.Request, next filters.Next) (*http.Response, *filters.ConnectionState, error) {
 		if isException(req.URL.Host) {
-			return next(ctx, req)
+			return next(cs, req)
 		}
 
 		host, _, err := net.SplitHostPort(req.URL.Host)
@@ -54,15 +54,15 @@ func BlockLocal(exceptions []string) filters.Filter {
 		// in the form host or host:port
 		if err == nil {
 			if ipAddr.IP.IsLoopback() {
-				return fail(ctx, req, http.StatusForbidden, "%v requested loopback address %v (%v)", req.RemoteAddr, req.Host, ipAddr)
+				return fail(cs, req, http.StatusForbidden, "%v requested loopback address %v (%v)", req.RemoteAddr, req.Host, ipAddr)
 			}
 			for _, localIP := range localIPs {
 				if ipAddr.IP.Equal(localIP) {
-					return fail(ctx, req, http.StatusForbidden, "%v requested local address %v (%v)", req.RemoteAddr, req.Host, ipAddr)
+					return fail(cs, req, http.StatusForbidden, "%v requested local address %v (%v)", req.RemoteAddr, req.Host, ipAddr)
 				}
 			}
 		}
 
-		return next(ctx, req)
+		return next(cs, req)
 	})
 }

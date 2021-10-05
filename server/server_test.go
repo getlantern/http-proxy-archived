@@ -21,7 +21,7 @@ import (
 	"github.com/getlantern/errors"
 	"github.com/getlantern/keyman"
 	"github.com/getlantern/mockconn"
-	"github.com/getlantern/proxy/filters"
+	"github.com/getlantern/proxy/v2/filters"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/getlantern/http-proxy/listeners"
@@ -446,7 +446,7 @@ func TestPanicRecover(t *testing.T) {
 
 	// Use a filter that alwasy panics to make sure server handles it
 	server := New(&Opts{
-		Filter: filters.FilterFunc(func(ctx filters.Context, req *http.Request, next filters.Next) (*http.Response, filters.Context, error) {
+		Filter: filters.FilterFunc(func(_ *filters.ConnectionState, _ *http.Request, _ filters.Next) (*http.Response, *filters.ConnectionState, error) {
 			panic(errors.New("I'm panicking!"))
 		}),
 	})
