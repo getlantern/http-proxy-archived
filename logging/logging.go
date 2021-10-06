@@ -27,6 +27,7 @@ var (
 
 	errorOut io.Writer
 	debugOut io.Writer
+	outLock  sync.Mutex
 
 	duplicates = make(map[string]bool)
 	dupLock    sync.Mutex
@@ -51,6 +52,9 @@ func (t timestamped) Write(p []byte) (int, error) {
 }
 
 func Init(instanceId string, version string, revisionDate string) error {
+	outLock.Lock()
+	defer outLock.Unlock()
+
 	log.Tracef("Placing logs in %v", logdir)
 	if _, err := os.Stat(logdir); err != nil {
 		if os.IsNotExist(err) {
@@ -77,9 +81,18 @@ func Init(instanceId string, version string, revisionDate string) error {
 
 // Flush forces output flushing if the output is flushable
 func Flush() {
-	output := golog.GetOutputs().ErrorOut
-	if output, ok := output.(flushable); ok {
-		output.flush()
+	outLock.Lock()
+	defer outLock.Unlock()
+
+	if errorOut != nil {
+		if output, ok := errorOut.(flushable); ok {
+			output.flush()
+		}
+	}
+	if debugOut != nil {
+		if output, ok := debugOut.(flushable); ok {
+			output.flush()
+		}
 	}
 }
 

@@ -5,7 +5,7 @@ go 1.12
 require (
 	github.com/getlantern/appdir v0.0.0-20160830121117-659a155d06e8
 	github.com/getlantern/errors v1.0.1
-	github.com/getlantern/golog v0.0.0-20200929154820-62107891371a
+	github.com/getlantern/golog v0.0.0-20210606115803-bce9f9fe5a5f
 	github.com/getlantern/idletiming v0.0.0-20200228204104-10036786eac5
 	github.com/getlantern/keyman v0.0.0-20180207174507-f55e7280e93a
 	github.com/getlantern/measured v0.0.0-20170302221919-0582bf799783

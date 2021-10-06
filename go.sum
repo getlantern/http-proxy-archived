@@ -23,6 +23,8 @@ github.com/getlantern/go-cache v0.0.0-20141028142048-88b53914f467/go.mod h1:IQND
 github.com/getlantern/golog v0.0.0-20190830074920-4ef2e798c2d7/go.mod h1:zx/1xUUeYPy3Pcmet8OSXLbF47l+3y6hIPpyLWoR9oc=
 github.com/getlantern/golog v0.0.0-20200929154820-62107891371a h1:97NO5ovLBt5jj7TUzfPSwNDL6gyYhXEbaFhgzLB6h1o=
 github.com/getlantern/golog v0.0.0-20200929154820-62107891371a/go.mod h1:ZyIjgH/1wTCl+B+7yH1DqrWp6MPJqESmwmEQ89ZfhvA=
+github.com/getlantern/golog v0.0.0-20210606115803-bce9f9fe5a5f h1:wsVt3P/boVKkPFEZkWxgNgRq/+mD7sWHc17+Vw2PgH8=
+github.com/getlantern/golog v0.0.0-20210606115803-bce9f9fe5a5f/go.mod h1:ZyIjgH/1wTCl+B+7yH1DqrWp6MPJqESmwmEQ89ZfhvA=
 github.com/getlantern/grtrack v0.0.0-20160824195228-cbf67d3fa0fd h1:GPrx88jy222gMuRHXxBSViT/3zdNO210nRAaXn+lL6s=
 github.com/getlantern/grtrack v0.0.0-20160824195228-cbf67d3fa0fd/go.mod h1:RkQEgBdrJCH5tYJP2D+a/aJ216V3c9q8w/tCJtEiDoY=
 github.com/getlantern/hex v0.0.0-20190417191902-c6586a6fe0b7 h1:micT5vkcr9tOVk1FiH8SWKID8ultN44Z+yzd2y/Vyb0=
