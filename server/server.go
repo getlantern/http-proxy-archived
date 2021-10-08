@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -196,7 +197,7 @@ func (s *Server) doHandle(conn net.Conn, isWrapConn bool, wrapConn listeners.Wra
 		}
 	}()
 
-	err := s.proxy.Handle(conn, conn)
+	err := s.proxy.Handle(context.Background(), conn, conn)
 	if err != nil {
 		op.FailIf(errors.New("Error handling connection from %v: %v", conn.RemoteAddr(), err))
 		s.onError(conn, err)
