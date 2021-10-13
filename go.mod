@@ -11,7 +11,7 @@ require (
 	github.com/getlantern/measured v0.0.0-20170302221919-0582bf799783
 	github.com/getlantern/mockconn v0.0.0-20200818071412-cb30d065a848
 	github.com/getlantern/ops v0.0.0-20200403153110-8476b16edcd6
-	github.com/getlantern/proxy/v2 v2.0.0-20211008013723-571214ef7a70
+	github.com/getlantern/proxy/v2 v2.0.0
 	github.com/getlantern/rotator v0.0.0-20160829164113-013d4f8e36a2
 	github.com/getlantern/tlsdefaults v0.0.0-20171004213447-cf35cfd0b1b4
 	github.com/hashicorp/golang-lru v0.5.3

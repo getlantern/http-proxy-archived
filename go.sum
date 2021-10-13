@@ -52,10 +52,8 @@ github.com/getlantern/ops v0.0.0-20200403153110-8476b16edcd6 h1:QthAQCekS1YOeYWS
 github.com/getlantern/ops v0.0.0-20200403153110-8476b16edcd6/go.mod h1:D5ao98qkA6pxftxoqzibIBBrLSUli+kYnJqrgBf9cIA=
 github.com/getlantern/preconn v0.0.0-20180328114929-0b5766010efe h1:6KgbumDfWYBJFgySAvSTBhDiBZCJ6r03PVdfWrkBZa4=
 github.com/getlantern/preconn v0.0.0-20180328114929-0b5766010efe/go.mod h1:FvIxQD61iYA42UjaJyzGl9DNne8jbowbgicdeNk/7kE=
-github.com/getlantern/proxy/v2 v2.0.0-20211005223815-0e28d6c849e6 h1:jf6IwrIdu7rpT+BmXyEjsOgSwzqQ7Mr2tpPvxJXLLkA=
-github.com/getlantern/proxy/v2 v2.0.0-20211005223815-0e28d6c849e6/go.mod h1:jU6qNaMq92qDY0slT9afuER7arXLnh7jU+DTg3W/oDs=
-github.com/getlantern/proxy/v2 v2.0.0-20211008013723-571214ef7a70 h1:PrT1SLvf6qj2nprTaOQeKmv/A9sq9emD2tkxlzzPSJI=
-github.com/getlantern/proxy/v2 v2.0.0-20211008013723-571214ef7a70/go.mod h1:jU6qNaMq92qDY0slT9afuER7arXLnh7jU+DTg3W/oDs=
+github.com/getlantern/proxy/v2 v2.0.0 h1:k5ugH1sFQFei7lPcRTe3K5LFfpBmh4nX0wPK+4XRjF4=
+github.com/getlantern/proxy/v2 v2.0.0/go.mod h1:jU6qNaMq92qDY0slT9afuER7arXLnh7jU+DTg3W/oDs=
 github.com/getlantern/reconn v0.0.0-20161128113912-7053d017511c h1:IkjF+RwRs8B/RsuD638eUFO2K/227OO2B1FLXGp17Ro=
 github.com/getlantern/reconn v0.0.0-20161128113912-7053d017511c/go.mod h1:kExwbqTx1krUnT9ohmXG3jayDTEBfxUKeoRzU6XucLw=
 github.com/getlantern/rotator v0.0.0-20160829164113-013d4f8e36a2 h1:smFR/kESUKlcdyatoOO3HngBzzrUU6S0LRw2vCBYQPg=
