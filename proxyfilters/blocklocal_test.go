@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/getlantern/proxy/filters"
+	"github.com/getlantern/proxy/v2/filters"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,16 +25,16 @@ func TestBlockLocalNotLocal(t *testing.T) {
 }
 
 func doTestBlockLocal(t *testing.T, exceptions []string, urlStr string, expectedStatus int) {
-	ctx := filters.BackgroundContext()
-	next := func(ctx filters.Context, req *http.Request) (*http.Response, filters.Context, error) {
+	next := func(cs *filters.ConnectionState, req *http.Request) (*http.Response, *filters.ConnectionState, error) {
 		return &http.Response{
 			StatusCode: http.StatusOK,
-		}, ctx, nil
+		}, cs, nil
 	}
 
 	filter := BlockLocal(exceptions)
 	req, _ := http.NewRequest(http.MethodGet, urlStr, nil)
 	log.Debug(req.Host)
-	resp, _, _ := filter.Apply(ctx, req, next)
+	cs := filters.NewConnectionState(req, nil, nil)
+	resp, _, _ := filter.Apply(cs, req, next)
 	assert.Equal(t, expectedStatus, resp.StatusCode)
 }

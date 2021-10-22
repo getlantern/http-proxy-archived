@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/getlantern/proxy/filters"
+	"github.com/getlantern/proxy/v2/filters"
 )
 
 const (
@@ -15,10 +15,10 @@ const (
 
 // DiscardInitialPersistentRequest discards the initial request for persistent
 // HTTP connections from the Lantern client.
-var DiscardInitialPersistentRequest = filters.FilterFunc(func(ctx filters.Context, req *http.Request, next filters.Next) (*http.Response, filters.Context, error) {
+var DiscardInitialPersistentRequest = filters.FilterFunc(func(cs *filters.ConnectionState, req *http.Request, next filters.Next) (*http.Response, *filters.ConnectionState, error) {
 	isInitialPersistent, _ := strconv.ParseBool(req.Header.Get(xLanternPersistent))
 	if isInitialPersistent {
-		return filters.Discard(ctx, req)
+		return filters.Discard(cs, req)
 	}
-	return next(ctx, req)
+	return next(cs, req)
 })

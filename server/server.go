@@ -12,8 +12,8 @@ import (
 	"github.com/getlantern/errors"
 	"github.com/getlantern/golog"
 	"github.com/getlantern/ops"
-	"github.com/getlantern/proxy"
-	"github.com/getlantern/proxy/filters"
+	"github.com/getlantern/proxy/v2"
+	"github.com/getlantern/proxy/v2/filters"
 	"github.com/getlantern/tlsdefaults"
 
 	"github.com/getlantern/http-proxy/listeners"
@@ -73,7 +73,7 @@ func New(opts *Opts) *Server {
 		BufferSource:        opts.BufferSource,
 		OKWaitsForUpstream:  !opts.OKDoesNotWaitForUpstream,
 		OKSendsServerTiming: true,
-		OnError: func(ctx filters.Context, req *http.Request, read bool, err error) *http.Response {
+		OnError: func(_ *filters.ConnectionState, req *http.Request, read bool, err error) *http.Response {
 			status := http.StatusBadGateway
 			if read {
 				status = http.StatusBadRequest
