@@ -5,28 +5,14 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/getlantern/iptool"
 	"github.com/getlantern/proxy/v2/filters"
 )
 
 // BlockLocal blocks attempted accesses to localhost unless they're one of the
 // listed exceptions.
 func BlockLocal(exceptions []string) filters.Filter {
-	addrs, err := net.InterfaceAddrs()
-	if err != nil {
-		log.Errorf("Error enumerating local addresses: %v\n", err)
-	}
-
-	localIPs := make([]net.IP, 0, len(addrs))
-	for _, a := range addrs {
-		str := a.String()
-		idx := strings.Index(str, "/")
-		if idx != -1 {
-			str = str[:idx]
-		}
-		ip := net.ParseIP(str)
-		localIPs = append(localIPs, ip)
-	}
-
+	ipt, _ := iptool.New()
 	isException := func(host string) bool {
 		for _, exception := range exceptions {
 			if strings.EqualFold(host, exception) {
@@ -53,13 +39,8 @@ func BlockLocal(exceptions []string) filters.Filter {
 		// If there was an error resolving is probably because it wasn't an address
 		// in the form host or host:port
 		if err == nil {
-			if ipAddr.IP.IsLoopback() {
-				return fail(cs, req, http.StatusForbidden, "%v requested loopback address %v (%v)", req.RemoteAddr, req.Host, ipAddr)
-			}
-			for _, localIP := range localIPs {
-				if ipAddr.IP.Equal(localIP) {
-					return fail(cs, req, http.StatusForbidden, "%v requested local address %v (%v)", req.RemoteAddr, req.Host, ipAddr)
-				}
+			if ipt.IsPrivate(ipAddr) {
+				return fail(cs, req, http.StatusForbidden, "%v requested local address %v (%v)", req.RemoteAddr, req.Host, ipAddr)
 			}
 		}
 

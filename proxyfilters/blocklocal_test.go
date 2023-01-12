@@ -4,12 +4,17 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/getlantern/proxy/v2/filters"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/getlantern/proxy/v2/filters"
 )
 
 func TestBlockLocalBlocked(t *testing.T) {
 	doTestBlockLocal(t, []string{"localhost"}, "http://127.0.0.1/index.html", http.StatusForbidden)
+}
+
+func TestBlockLocalPrivate(t *testing.T) {
+	doTestBlockLocal(t, []string{"localhost"}, "http://192.168.0.1/index.html", http.StatusForbidden)
 }
 
 func TestBlockLocalException(t *testing.T) {
