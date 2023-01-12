@@ -7,6 +7,7 @@ require (
 	github.com/getlantern/errors v1.0.1
 	github.com/getlantern/golog v0.0.0-20210606115803-bce9f9fe5a5f
 	github.com/getlantern/idletiming v0.0.0-20200228204104-10036786eac5
+	github.com/getlantern/iptool v0.0.0-20230112135223-c00e863b2696 // indirect
 	github.com/getlantern/keyman v0.0.0-20180207174507-f55e7280e93a
 	github.com/getlantern/measured v0.0.0-20170302221919-0582bf799783
 	github.com/getlantern/mockconn v0.0.0-20200818071412-cb30d065a848
@@ -15,5 +16,5 @@ require (
 	github.com/getlantern/rotator v0.0.0-20160829164113-013d4f8e36a2
 	github.com/getlantern/tlsdefaults v0.0.0-20171004213447-cf35cfd0b1b4
 	github.com/hashicorp/golang-lru v0.5.3
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.8.1
 )
