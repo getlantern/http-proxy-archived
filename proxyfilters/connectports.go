@@ -28,7 +28,7 @@ func RestrictConnectPorts(allowedPorts []int) filters.Filter {
 
 		port, err := strconv.Atoi(portString)
 		if err != nil {
-			return fail(cs, req, http.StatusBadRequest, fmt.Sprintf("Invalid port: %v", portString))
+			return fail(cs, req, http.StatusBadRequest, fmt.Sprintf("Invalid port for %v: %v", req.Host, portString))
 		}
 
 		for _, p := range allowedPorts {
@@ -36,6 +36,6 @@ func RestrictConnectPorts(allowedPorts []int) filters.Filter {
 				return next(cs, req)
 			}
 		}
-		return fail(cs, req, http.StatusForbidden, fmt.Sprintf("Port not allowed: %d", port))
+		return fail(cs, req, http.StatusForbidden, fmt.Sprintf("Port not allowed for %v: %d", req.Host, port))
 	})
 }
