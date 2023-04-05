@@ -1,6 +1,7 @@
 package proxyfilters
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"strconv"
@@ -27,7 +28,7 @@ func RestrictConnectPorts(allowedPorts []int) filters.Filter {
 
 		port, err := strconv.Atoi(portString)
 		if err != nil {
-			return fail(cs, req, http.StatusBadRequest, "Invalid port")
+			return fail(cs, req, http.StatusBadRequest, fmt.Sprintf("Invalid port: %v", portString))
 		}
 
 		for _, p := range allowedPorts {
@@ -35,6 +36,6 @@ func RestrictConnectPorts(allowedPorts []int) filters.Filter {
 				return next(cs, req)
 			}
 		}
-		return fail(cs, req, http.StatusForbidden, "Port not allowed")
+		return fail(cs, req, http.StatusForbidden, fmt.Sprintf("Port not allowed: %d", port))
 	})
 }
