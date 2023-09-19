@@ -7,9 +7,9 @@ require (
 	github.com/getlantern/errors v1.0.1
 	github.com/getlantern/golog v0.0.0-20210606115803-bce9f9fe5a5f
 	github.com/getlantern/idletiming v0.0.0-20200228204104-10036786eac5
-	github.com/getlantern/iptool v0.0.0-20230112135223-c00e863b2696 // indirect
+	github.com/getlantern/iptool v0.0.0-20230112135223-c00e863b2696
 	github.com/getlantern/keyman v0.0.0-20180207174507-f55e7280e93a
-	github.com/getlantern/measured v0.0.0-20170302221919-0582bf799783
+	github.com/getlantern/measured v0.0.0-20230919230611-3d9e3776a6cd
 	github.com/getlantern/mockconn v0.0.0-20200818071412-cb30d065a848
 	github.com/getlantern/ops v0.0.0-20200403153110-8476b16edcd6
 	github.com/getlantern/proxy/v2 v2.0.0

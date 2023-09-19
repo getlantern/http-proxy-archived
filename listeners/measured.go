@@ -37,7 +37,7 @@ func (l *stateAwareMeasuredListener) Accept() (c net.Conn, err error) {
 	if err != nil {
 		return nil, err
 	}
-	fs := make(chan *measured.Stats)
+	fs := make(chan *measured.Stats, 1)
 	wc := &wrapMeasuredConn{
 		Conn: measured.Wrap(c, rateInterval, func(mc measured.Conn) {
 			fs <- mc.Stats()
