@@ -20,6 +20,7 @@ var (
 
 func init() {
 	go func() {
+		log.Debug("start tracking number of wrapMeasuredConns")
 		for {
 			log.Debugf("wrapMeasuredConns: %d", atomic.LoadInt64(&numConnections))
 			time.Sleep(5 * time.Second)
@@ -104,7 +105,9 @@ func (c *wrapMeasuredConn) track(reportInterval time.Duration, report MeasuredRe
 		case <-ticker.C:
 			applyStats(c.Conn.Stats(), false)
 		case stats := <-c.finalStats:
+			log.Debug("wrapMeasuredConn got final stats")
 			applyStats(stats, true)
+			log.Debug("wrapMeasuredConn.track returning")
 			return
 		}
 	}
