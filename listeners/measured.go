@@ -4,6 +4,7 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/getlantern/measured"
@@ -12,6 +13,19 @@ import (
 const (
 	rateInterval = 1 * time.Second
 )
+
+var (
+	numConnections int64
+)
+
+func init() {
+	go func() {
+		for {
+			log.Debugf("wrapMeasuredConns: %d", atomic.LoadInt64(&numConnections))
+			time.Sleep(5 * time.Second)
+		}
+	}()
+}
 
 // MeasuredReportFN is a function that gets called to report stats from the
 // measured connection. deltaStats is like stats except that SentTotal and
@@ -37,6 +51,7 @@ func (l *stateAwareMeasuredListener) Accept() (c net.Conn, err error) {
 	if err != nil {
 		return nil, err
 	}
+	atomic.AddInt64(&numConnections, 1)
 	fs := make(chan *measured.Stats, 1)
 	wc := &wrapMeasuredConn{
 		Conn: measured.Wrap(c, rateInterval, func(mc measured.Conn) {
@@ -61,6 +76,10 @@ type wrapMeasuredConn struct {
 }
 
 func (c *wrapMeasuredConn) track(reportInterval time.Duration, report MeasuredReportFN) {
+	defer func() {
+		atomic.AddInt64(&numConnections, -1)
+	}()
+
 	ticker := time.NewTicker(reportInterval)
 	defer ticker.Stop()
 
