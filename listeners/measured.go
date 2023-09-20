@@ -78,11 +78,16 @@ type wrapMeasuredConn struct {
 
 func (c *wrapMeasuredConn) track(reportInterval time.Duration, report MeasuredReportFN) {
 	defer func() {
+		log.Debugf("wrapMeasuredConn.track decrementing numConnections: %p", c)
 		atomic.AddInt64(&numConnections, -1)
 	}()
 
 	ticker := time.NewTicker(reportInterval)
-	defer ticker.Stop()
+	defer func() {
+		log.Debugf("wrapMeasuredConn stopping ticker: %p", c)
+		ticker.Stop()
+		log.Debugf("wrapMeasuredConn stopped ticker: %p", c)
+	}()
 
 	var priorStats *measured.Stats
 	applyStats := func(stats *measured.Stats, final bool) {
@@ -105,9 +110,9 @@ func (c *wrapMeasuredConn) track(reportInterval time.Duration, report MeasuredRe
 		case <-ticker.C:
 			applyStats(c.Conn.Stats(), false)
 		case stats := <-c.finalStats:
-			log.Debug("wrapMeasuredConn got final stats")
+			log.Debugf("wrapMeasuredConn got final stats: %p", c)
 			applyStats(stats, true)
-			log.Debug("wrapMeasuredConn.track returning")
+			log.Debugf("wrapMeasuredConn.track returning: %p", c)
 			return
 		}
 	}
